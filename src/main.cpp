@@ -8,27 +8,27 @@
 #include "main.h"
 
 #include "addrman.h"
-#include "alert.h"
+#include "duality/fluid/broadcast.h"
 #include "arith_uint256.h"
 #include "chainparams.h"
 #include "checkpoints.h"
 #include "checkqueue.h"
 #include "consensus/consensus.h"
-#include "dns/dns.h"
-#include "dynode-payments.h"
-#include "dynode-sync.h"
-#include "dynodeman.h"
-#include "governance.h"
+#include "duality/dns/dns.h"
+#include "duality/dynode/dynode-payments.h"
+#include "duality/dynode/dynode-sync.h"
+#include "duality/dynode/dynodeman.h"
+#include "duality/governance/governance.h"
 #include "hash.h"
 #include "init.h"
-#include "instantsend.h"
+#include "duality/instantsend/instantsend.h"
 #include "consensus/merkle.h"
 #include "merkleblock.h"
 #include "net.h"
 #include "consensus/params.h"
 #include "policy/policy.h"
 #include "pow.h"
-#include "privatesend.h"
+#include "duality/privatesend/privatesend.h"
 #include "primitives/block.h"
 #include "primitives/transaction.h"
 #include "script/script.h"
@@ -40,7 +40,7 @@
 #include "ui_interface.h"
 #include "undo.h"
 #include "util.h"
-#include "spork.h"
+#include "duality/spork.h"
 #include "utilmoneystr.h"
 #include "utilstrencodings.h"
 #include "consensus/validation.h"
@@ -1623,16 +1623,18 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, const CTransa
     return res;
 }
 
-bool GetTimestampIndex(const unsigned int &high, const unsigned int &low, std::vector<uint256> &hashes)
+
+bool GetTimestampIndex(const unsigned int &high, const unsigned int &low, const bool fActiveOnly, std::vector<std::pair<uint256, unsigned int> > &hashes)
 {
     if (!fTimestampIndex)
         return error("Timestamp index not enabled");
 
-    if (!pblocktree->ReadTimestampIndex(high, low, hashes))
+    if (!pblocktree->ReadTimestampIndex(high, low, fActiveOnly, hashes))
         return error("Unable to get hashes for timestamps");
 
     return true;
 }
+
 
 bool GetSpentIndex(CSpentIndexKey &key, CSpentIndexValue &value)
 {
@@ -1644,6 +1646,17 @@ bool GetSpentIndex(CSpentIndexKey &key, CSpentIndexValue &value)
 
     if (!pblocktree->ReadSpentIndex(key, value))
         return false;
+
+    return true;
+}
+
+bool HashOnchainActive(const uint256 &hash)
+{
+    CBlockIndex* pblockindex = mapBlockIndex[hash];
+
+    if (!chainActive.Contains(pblockindex)) {
+        return false;
+    }
 
     return true;
 }
@@ -1882,7 +1895,7 @@ void CheckForkWarningConditions()
             if(pindexBestForkBase->phashBlock){
                 std::string warning = std::string("'Warning: Large-work fork detected, forking after block ") +
                     pindexBestForkBase->phashBlock->ToString() + std::string("'");
-                CAlert::Notify(warning, true);
+                CBroadcast::Notify(warning, true);
             }
         }
         if (pindexBestForkTip && pindexBestForkBase)
@@ -2509,7 +2522,7 @@ void PartitionCheck(bool (*initialDownloadCheck)(), CCriticalSection& cs, const 
     if (!strWarning.empty())
     {
         strMiscWarning = strWarning;
-        CAlert::Notify(strWarning, true);
+        CBroadcast::Notify(strWarning, true);
         lastAlertTime = now;
     }
 }
@@ -2908,9 +2921,26 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         if (!pblocktree->UpdateSpentIndex(spentIndex))
             return AbortNode(state, "Failed to write transaction index");
 
-    if (fTimestampIndex)
-        if (!pblocktree->WriteTimestampIndex(CTimestampIndexKey(pindex->nTime, pindex->GetBlockHash())))
+    if (fTimestampIndex) {
+        unsigned int logicalTS = pindex->nTime;
+        unsigned int prevLogicalTS = 0;
+
+        // retrieve logical timestamp of the previous block
+        if (pindex->pprev)
+            if (!pblocktree->ReadTimestampBlockIndex(pindex->pprev->GetBlockHash(), prevLogicalTS))
+                LogPrintf("%s: Failed to read previous block's logical timestamp\n", __func__);
+
+        if (logicalTS <= prevLogicalTS) {
+            logicalTS = prevLogicalTS + 1;
+            LogPrintf("%s: Previous logical timestamp is newer Actual[%d] prevLogical[%d] Logical[%d]\n", __func__, pindex->nTime, prevLogicalTS, logicalTS);
+        }
+
+        if (!pblocktree->WriteTimestampIndex(CTimestampIndexKey(logicalTS, pindex->GetBlockHash())))
             return AbortNode(state, "Failed to write timestamp index");
+
+        if (!pblocktree->WriteTimestampBlockIndex(CTimestampBlockIndexKey(pindex->GetBlockHash()), CTimestampBlockIndexValue(logicalTS)))
+            return AbortNode(state, "Failed to write blockhash index");
+    }
 
     // add this block to the view's block chain
     view.SetBestBlock(pindex->GetBlockHash());
@@ -3087,7 +3117,7 @@ void static UpdateTip(CBlockIndex *pindexNew) {
                 if (state == THRESHOLD_ACTIVE) {
                     strMiscWarning = strprintf(_("Warning: unknown new rules activated (versionbit %i)"), bit);
                     if (!fWarned) {
-                        CAlert::Notify(strMiscWarning, true);
+                        CBroadcast::Notify(strMiscWarning, true);
                         fWarned = true;
                     }
                 } else {
@@ -3110,7 +3140,7 @@ void static UpdateTip(CBlockIndex *pindexNew) {
             // strMiscWarning is read by GetWarnings(), called by Qt and the JSON-RPC code to warn the user:
             strMiscWarning = _("Warning: Unknown block versions being mined! It's possible unknown rules are in effect");
             if (!fWarned) {
-                CAlert::Notify(strMiscWarning, true);
+                CBroadcast::Notify(strMiscWarning, true);
                 fWarned = true;
             }
         }
@@ -4605,17 +4635,22 @@ bool InitBlockIndex(const CChainParams& chainparams)
     // Use the provided setting for -txindex in the new database
     fTxIndex = GetBoolArg("-txindex", DEFAULT_TXINDEX);
     pblocktree->WriteFlag("txindex", fTxIndex);
+    LogPrintf("%s: transaction index %s\n", __func__, fTxIndex ? "enabled" : "disabled");
 
     // Use the provided setting for -addressindex in the new database
     fAddressIndex = GetBoolArg("-addressindex", DEFAULT_ADDRESSINDEX);
     pblocktree->WriteFlag("addressindex", fAddressIndex);
+    LogPrintf("%s: address index %s\n", __func__, fAddressIndex ? "enabled" : "disabled");
 
     // Use the provided setting for -timestampindex in the new database
     fTimestampIndex = GetBoolArg("-timestampindex", DEFAULT_TIMESTAMPINDEX);
     pblocktree->WriteFlag("timestampindex", fTimestampIndex);
+    LogPrintf("%s: timestamp index %s\n", __func__, fTimestampIndex ? "enabled" : "disabled");
 
+    // Use the provided setting for -spentindex in the new database
     fSpentIndex = GetBoolArg("-spentindex", DEFAULT_SPENTINDEX);
     pblocktree->WriteFlag("spentindex", fSpentIndex);
+    LogPrintf("%s: spent index %s\n", __func__, fSpentIndex ? "enabled" : "disabled");
 
     LogPrintf("Initializing databases...\n");
 
@@ -4944,66 +4979,72 @@ void static CheckBlockIndex(const Consensus::Params& consensusParams)
 
 //////////////////////////////////////////////////////////////////////////////
 //
-// CAlert
+// CBroadcast
 //
 
-std::string GetWarnings(const std::string& strFor)
+std::string GetWarnings(const std::string& strFor, bool isItToken)
 {
     int nPriority = 0;
-    std::string strStatusBar;
-    std::string strRPC;
-    std::string strGUI;
+    std::string strStatusBar, strRPC, strGUI, strBroadcast;
 
-    if (!CLIENT_VERSION_IS_RELEASE) {
-        strStatusBar = "This is a pre-release test build - use at your own risk - do not use for mining or merchant applications";
-        strGUI = _("This is a pre-release test build - use at your own risk - do not use for mining or merchant applications");
-    }
+	if(!isItToken) {
+		if (!CLIENT_VERSION_IS_RELEASE) {
+			strStatusBar = "This is a pre-release test build - use at your own risk - do not use for mining or merchant applications";
+			strGUI = _("This is a pre-release test build - use at your own risk - do not use for mining or merchant applications");
+		}
 
-    if (GetBoolArg("-testsafemode", DEFAULT_TESTSAFEMODE))
-        strStatusBar = strRPC = strGUI = "testsafemode enabled";
+		if (GetBoolArg("-testsafemode", DEFAULT_TESTSAFEMODE))
+			strStatusBar = strRPC = strGUI = "testsafemode enabled";
 
-    // Misc warnings like out of disk space and clock is wrong
-    if (strMiscWarning != "")
-    {
-        nPriority = 1000;
-        strStatusBar = strGUI = strMiscWarning;
-    }
+		// Misc warnings like out of disk space and clock is wrong
+		if (strMiscWarning != "")
+		{
+			nPriority = 1000;
+			strStatusBar = strGUI = strMiscWarning;
+		}
 
-    if (fLargeWorkForkFound)
-    {
-        nPriority = 2000;
-        strStatusBar = strRPC = "Warning: The network does not appear to fully agree! Some miners appear to be experiencing issues.";
-        strGUI = _("Warning: The network does not appear to fully agree! Some miners appear to be experiencing issues.");
-    }
-    else if (fLargeWorkInvalidChainFound)
-    {
-        nPriority = 2000;
-        strStatusBar = strRPC = "Warning: We do not appear to fully agree with our peers! You may need to upgrade, or other nodes may need to upgrade.";
-        strGUI = _("Warning: We do not appear to fully agree with our peers! You may need to upgrade, or other nodes may need to upgrade.");
-    }
+		if (fLargeWorkForkFound)
+		{
+			nPriority = 2000;
+			strStatusBar = strRPC = "Warning: The network does not appear to fully agree! Some miners appear to be experiencing issues.";
+			strGUI = _("Warning: The network does not appear to fully agree! Some miners appear to be experiencing issues.");
+		}
+		else if (fLargeWorkInvalidChainFound)
+		{
+			nPriority = 2000;
+			strStatusBar = strRPC = "Warning: We do not appear to fully agree with our peers! You may need to upgrade, or other nodes may need to upgrade.";
+			strGUI = _("Warning: We do not appear to fully agree with our peers! You may need to upgrade, or other nodes may need to upgrade.");
+		}
 
-    // Alerts
-    {
-        LOCK(cs_mapAlerts);
-        BOOST_FOREACH(PAIRTYPE(const uint256, CAlert)& item, mapAlerts)
-        {
-            const CAlert& alert = item.second;
-            if (alert.AppliesToMe() && alert.nPriority > nPriority)
-            {
-                nPriority = alert.nPriority;
-                strStatusBar = strGUI = alert.strStatusBar;
-            }
-        }
-    }
-
-    if (strFor == "gui")
-        return strGUI;
-    else if (strFor == "statusbar")
-        return strStatusBar;
-    else if (strFor == "rpc")
-        return strRPC;
-    assert(!"GetWarnings(): invalid parameter");
-    return "error";
+		if (strFor == "gui")
+			return strGUI;
+		else if (strFor == "statusbar")
+			return strStatusBar;
+		else if (strFor == "rpc")
+			return strRPC;
+		
+		assert(!"GetWarnings(): invalid parameter");
+		
+		return "error";
+	} else {
+		{
+			LOCK(cs_mapAlerts);
+			BOOST_FOREACH(PAIRTYPE(const uint256, CBroadcast)& item, mapAlerts)
+			{
+				const CBroadcast& alert = item.second;
+				if (alert.AppliesToMe() && alert.nPriority > nPriority)
+				{
+					nPriority = alert.nPriority;
+					strBroadcast = alert.strStatusBar;
+				}
+			}
+		}
+		
+		if (!IsHex(strBroadcast))
+			return "IncorrectData";
+		else
+			return strBroadcast;
+	}
 }
 
 
@@ -5524,7 +5565,7 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
         // Relay alerts
         {
             LOCK(cs_mapAlerts);
-            BOOST_FOREACH(PAIRTYPE(const uint256, CAlert)& item, mapAlerts)
+            BOOST_FOREACH(PAIRTYPE(const uint256, CBroadcast)& item, mapAlerts)
                 item.second.RelayTo(pfrom);
         }
 
@@ -6397,7 +6438,7 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
 
     else if (fAlerts && strCommand == NetMsgType::ALERT)
     {
-        CAlert alert;
+        CBroadcast alert;
         vRecv >> alert;
 
         uint256 alertHash = alert.GetHash();
@@ -6998,12 +7039,6 @@ bool SendMessages(CNode* pto)
         //
         // Message: getdata (non-blocks)
         //
-        int64_t nFirst = -1;
-        if(!pto->mapAskFor.empty()) {
-            nFirst = (*pto->mapAskFor.begin()).first;
-        }
-        // debug=1, seems to produce mostly this message
-        //LogPrint("net", "SendMessages (mapAskFor) -- before loop: nNow = %d, nFirst = %d\n", nNow, nFirst);
         while (!pto->fDisconnect && !pto->mapAskFor.empty() && (*pto->mapAskFor.begin()).first <= nNow)
         {
             const CInv& inv = (*pto->mapAskFor.begin()).second;

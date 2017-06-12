@@ -11,23 +11,23 @@
 
 #include "init.h"
 
-#include "activedynode.h"
+#include "duality/dynode/activedynode.h"
 #include "addrman.h"
 #include "amount.h"
 #include "chain.h"
 #include "chainparams.h"
 #include "checkpoints.h"
-#include "dns/dyndns.h"
-#include "dynode-payments.h"
-#include "dynode-sync.h"
-#include "dynodeconfig.h"
-#include "dynodeman.h"
+#include "duality/dns/dyndns.h"
+#include "duality/dynode/dynode-payments.h"
+#include "duality/dynode/dynode-sync.h"
+#include "duality/dynode/dynodeconfig.h"
+#include "duality/dynode/dynodeman.h"
 #include "flat-database.h"
-#include "governance.h"
-#include "instantsend.h"
-#include "dns/hooks.h"
-#include "httpserver.h"
-#include "httprpc.h"
+#include "duality/governance/governance.h"
+#include "duality/instantsend/instantsend.h"
+#include "duality/dns/hooks.h"
+#include "api/http/httpserver.h"
+#include "api/http/httprpc.h"
 #include "key.h"
 #include "main.h"
 #include "messagesigner.h"
@@ -35,14 +35,14 @@
 #include "net.h"
 #include "netfulfilledman.h"
 #include "policy/policy.h"
-#include "privatesend.h"
-#include "psnotificationinterface.h"
-#include "rpcserver.h"
+#include "duality/privatesend/privatesend.h"
+#include "duality/privatesend/psnotificationinterface.h"
+#include "api/rpc/rpcserver.h"
 #include "compat/sanity.h"
 #include "script/standard.h"
 #include "script/sigcache.h"
 #include "scheduler.h"
-#include "spork.h"
+#include "duality/spork.h"
 #include "txdb.h"
 #include "txmempool.h"
 #include "torcontrol.h"
@@ -54,10 +54,11 @@
 #include "validationinterface.h"
 #ifdef ENABLE_WALLET
 #include "wallet/db.h"
-#include "keepass.h"
+#include "duality/keepass.h"
 #include "wallet/wallet.h"
 #include "wallet/walletdb.h"
 #endif
+#include "duality/fluid/fluidtoken.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -81,8 +82,6 @@
 #if ENABLE_ZMQ
 #include "zmq/zmqnotificationinterface.h"
 #endif
-
-extern void ThreadSendAlert();
 
 #ifdef ENABLE_WALLET
 CWallet* pwalletMain = NULL;
@@ -1482,18 +1481,32 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         }
     }
 
+    // block tree db settings
+    int dbMaxOpenFiles = GetArg("-dbmaxopenfiles", DEFAULT_DB_MAX_OPEN_FILES);
+    bool dbCompression = GetBoolArg("-dbcompression", DEFAULT_DB_COMPRESSION);
+
+    LogPrintf("Block index database configuration:\n");
+    LogPrintf("* Using %d max open files\n", dbMaxOpenFiles);
+    LogPrintf("* Compression is %s\n", dbCompression ? "enabled" : "disabled");
+
     // cache size calculations
     int64_t nTotalCache = (GetArg("-dbcache", nDefaultDbCache) << 20);
     nTotalCache = std::max(nTotalCache, nMinDbCache << 20); // total cache cannot be less than nMinDbCache
     nTotalCache = std::min(nTotalCache, nMaxDbCache << 20); // total cache cannot be greated than nMaxDbcache
     int64_t nBlockTreeDBCache = nTotalCache / 8;
-    nBlockTreeDBCache = std::min(nBlockTreeDBCache, (GetBoolArg("-txindex", DEFAULT_TXINDEX) ? nMaxBlockDBAndTxIndexCache : nMaxBlockDBCache) << 20);
+    if (GetBoolArg("-addressindex", DEFAULT_ADDRESSINDEX) || GetBoolArg("-spentindex", DEFAULT_SPENTINDEX)) {
+        // enable 3/4 of the cache if addressindex and/or spentindex is enabled
+        nBlockTreeDBCache = nTotalCache * 3 / 4;
+    } else {
+        nBlockTreeDBCache = std::min(nBlockTreeDBCache, (GetBoolArg("-txindex", DEFAULT_TXINDEX) ? nMaxBlockDBAndTxIndexCache : nMaxBlockDBCache) << 20);
+    }    
     nTotalCache -= nBlockTreeDBCache;
     int64_t nCoinDBCache = std::min(nTotalCache / 2, (nTotalCache / 4) + (1 << 23)); // use 25%-50% of the remainder for disk cache
     nCoinDBCache = std::min(nCoinDBCache, nMaxCoinsDBCache << 20); // cap total coins db cache
     nTotalCache -= nCoinDBCache;
     nCoinCacheUsage = nTotalCache; // the rest goes to in-memory cache
     LogPrintf("Cache configuration:\n");
+    LogPrintf("* Max cache setting possible %.1fMiB\n", nMaxDbCache);
     LogPrintf("* Using %.1fMiB for block index database\n", nBlockTreeDBCache * (1.0 / 1024 / 1024));
     LogPrintf("* Using %.1fMiB for chain state database\n", nCoinDBCache * (1.0 / 1024 / 1024));
     LogPrintf("* Using %.1fMiB for in-memory UTXO set\n", nCoinCacheUsage * (1.0 / 1024 / 1024));
@@ -1514,7 +1527,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                 delete pcoinscatcher;
                 delete pblocktree;
 
-                pblocktree = new CBlockTreeDB(nBlockTreeDBCache, false, fReindex);
+                pblocktree = new CBlockTreeDB(nBlockTreeDBCache, false, fReindex, dbCompression, dbMaxOpenFiles);
                 pcoinsdbview = new CCoinsViewDB(nCoinDBCache, false, fReindex || fReindexChainState);
                 pcoinscatcher = new CCoinsViewErrorCatcher(pcoinsdbview);
                 pcoinsTip = new CCoinsViewCache(pcoinscatcher);
@@ -1545,6 +1558,24 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                 // Check for changed -txindex state
                 if (fTxIndex != GetBoolArg("-txindex", DEFAULT_TXINDEX)) {
                     strLoadError = _("You need to rebuild the database using -reindex-chainstate to change -txindex");
+                    break;
+                }
+
+                // Check for changed -addressindex state
+                if (fAddressIndex != GetBoolArg("-addressindex", DEFAULT_ADDRESSINDEX)) {
+                    strLoadError = _("You need to rebuild the database using -reindex-chainstate to change -addressindex");
+                    break;
+                }
+
+                // Check for changed -spentindex state
+                if (fSpentIndex != GetBoolArg("-spentindex", DEFAULT_SPENTINDEX)) {
+                    strLoadError = _("You need to rebuild the database using -reindex-chainstate to change -spentindex");
+                    break;
+                }
+
+                // Check for changed -timestampindex state
+                if (fTimestampIndex != GetBoolArg("-timestampindex", DEFAULT_TIMESTAMPINDEX)) {
+                    strLoadError = _("You need to rebuild the database using -reindex-chainstate to change -timestampindex");
                     break;
                 }
 
@@ -2061,8 +2092,8 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         suffix.c_str(), allowed.c_str(), localcf.c_str(), enums.c_str(), tf.c_str(), verbose);
         LogPrintf("dDNS server started\n");
     }
-
-    threadGroup.create_thread(boost::bind(&ThreadSendAlert));
-
+	
+	assert(IsFluidParametersSane() != false);
+	
     return !fRequestShutdown;
 }
