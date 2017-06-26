@@ -75,10 +75,7 @@ int64_t FluidTokenIssuanceAmount(int64_t nTime, CDynamicAddress &destination, st
 	std::string recipientAddress = ptrs.at(4);
 	
 	destination.SetString(recipientAddress);
-	
-	// if (GetTime() + 15 * 60 < issuanceTime || GetTime() - 15 * 60 > issuanceTime)
-	//	return 0 * COIN;
-		
+			
 	if(!destination.IsValid())
 		return 0 * COIN;
 	

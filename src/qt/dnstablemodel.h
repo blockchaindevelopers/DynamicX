@@ -15,7 +15,7 @@
 #include <QAbstractTableModel>
 #include <QStringList>
 
-class NameTablePriv;
+class IdentityTablePriv;
 class WalletModel;
 
 class CWallet;
@@ -23,13 +23,13 @@ class CWallet;
 /**
    Qt model for "DNS" page.
  */
-class NameTableModel : public QAbstractTableModel
+class IdentityTableModel : public QAbstractTableModel
 {
     Q_OBJECT
 
 public:
-    explicit NameTableModel(CWallet *wallet, WalletModel *parent = 0);
-    ~NameTableModel();
+    explicit IdentityTableModel(CWallet *wallet, WalletModel *parent = 0);
+    ~IdentityTableModel();
 
     bool fMyNames;
     bool fOtherNames;
@@ -56,7 +56,7 @@ private:
     WalletModel *walletModel;
     CWallet *wallet;
     QStringList columns;
-    NameTablePriv *priv;
+    IdentityTablePriv *priv;
     int cachedNumBlocks;
 
     /** Notify listeners that data changed. */
@@ -66,10 +66,10 @@ public Q_SLOTS:
     void updateEntry(const QString &name, const QString &value, const QString &address, int nHeight, int status, int *outNewRowIndex = NULL);
     void update(bool forced = false);
 
-    friend class NameTablePriv;
+    friend class IdentityTablePriv;
 };
 
-struct NameTableEntry
+struct IdentityTableEntry
 {
     QString name;
     QString value;
@@ -78,18 +78,18 @@ struct NameTableEntry
     bool fIsMine;
 
     // for pending (not yet in a block) name operations
-    static const int NAME_NEW = -1;
-    static const int NAME_UPDATE = -2;
-    static const int NAME_DELETE = -3;
-    static const int NAME_NON_EXISTING = -4; //no pending operation, just a blank
-    static const int NAME_MULTISIG = -5;
+    static const int IDENTITY_NEW = -1;
+    static const int IDENTITY_UPDATE = -2;
+    static const int IDENTITY_DELETE = -3;
+    static const int IDENTITY_NON_EXISTING = -4; //no pending operation, just a blank
+    static const int IDENTITY_MULTISIG = -5;
     
     bool HeightValid() { return nExpiresAt >= 0; }
 
-    NameTableEntry() : nExpiresAt(NAME_NON_EXISTING), fIsMine(true) {}
-    NameTableEntry(const QString &name, const QString &value, const QString &address, int nExpiresAt, bool fIsMine = true) :
+    IdentityTableEntry() : nExpiresAt(NAME_NON_EXISTING), fIsMine(true) {}
+    IdentityTableEntry(const QString &name, const QString &value, const QString &address, int nExpiresAt, bool fIsMine = true) :
         name(name), value(value), address(address), nExpiresAt(nExpiresAt), fIsMine(fIsMine) {}
-    NameTableEntry(const std::string &name, const std::string &value, const std::string &address, int nExpiresAt, bool fIsMine = true) :
+    IdentityTableEntry(const std::string &name, const std::string &value, const std::string &address, int nExpiresAt, bool fIsMine = true) :
         name(QString::fromStdString(name)), value(QString::fromStdString(value)), address(QString::fromStdString(address)), nExpiresAt(nExpiresAt), fIsMine(fIsMine) {}
 };
 

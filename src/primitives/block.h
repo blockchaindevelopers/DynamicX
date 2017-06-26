@@ -20,18 +20,7 @@
  * of the block.
  */
 
-// TODO: Use this as starting point to add money supply as part of block structure
-//       along with other structural modifications, possibly messing up a possible
-//       compact blocks implementation
-
-class FluidBlocks {
-public:
-	bool Version5Activated(int64_t time) {
-		return /* (time >= 1535347800) */ true;
-	}
-};
-
-class CBlockHeader : public FluidBlocks
+class CBlockHeader
 {
 public:
     // header
@@ -75,11 +64,8 @@ public:
         return (nBits == 0);
     }
 
-    uint256 GetHash() const
-    {
-        return hash_Argon2d(UVOIDBEGIN(nVersion), 1);
-    }
-    
+    uint256 GetHash() const;
+      
     #ifdef __AVX2__
     
     uint256 GetHashWithCtx(void *Matrix) const

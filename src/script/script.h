@@ -41,6 +41,34 @@ std::vector<unsigned char> ToByteVector(const T& in)
 /** Script opcodes */
 enum opcodetype
 {
+    // DYNAMIC aliases
+    OP_ALIAS_PAYMENT = 0x01,
+    OP_ALIAS_ACTIVATE=0x02,
+    OP_ALIAS_UPDATE=0x03,
+
+    // distributed exchange
+    OP_OFFER_ACTIVATE=0x04,
+    OP_OFFER_UPDATE=0x05,
+    OP_OFFER_ACCEPT=0x06,
+	OP_OFFER_ACCEPT_FEEDBACK=0x07,
+
+    // distributed licensing system
+    OP_CERT_ACTIVATE=0x08,
+    OP_CERT_UPDATE=0x09,
+    OP_CERT_TRANSFER=0x0a,
+
+    // distributed escrow system
+    OP_ESCROW_ACTIVATE=0x0b,
+    OP_ESCROW_RELEASE=0x0c,
+    OP_ESCROW_REFUND=0x0d,
+	OP_ESCROW_COMPLETE=0x0e,
+
+	// encrypted messaging
+	OP_MESSAGE_ACTIVATE=0x0f,
+
+    // dynamic extended reserved 
+    OP_DYNAMIC_EXTENDED=0x10,
+    
     // push value
     OP_0 = 0x00,
     OP_FALSE = OP_0,
@@ -175,7 +203,6 @@ enum opcodetype
     OP_NOP9 = 0xb8,
     OP_NOP10 = 0xb9,
 
-
     // template matching params
     OP_SMALLINTEGER = 0xfa,
     OP_PUBKEYS = 0xfb,
@@ -187,10 +214,10 @@ enum opcodetype
 
 const char* GetOpName(opcodetype opcode);
 
-static const int OP_NAME_NEW = 0x01;
-static const int OP_NAME_UPDATE = 0x02;
-static const int OP_NAME_DELETE = 0x03;
-static const int OP_NAME_MULTISIG = 0x04;
+static const int OP_IDENTITY_NEW = 0x01;
+static const int OP_IDENTITY_UPDATE = 0x02;
+static const int OP_IDENTITY_DELETE = 0x03;
+static const int OP_IDENTITY_MULTISIG = 0x04;
 
 class scriptnum_error : public std::runtime_error
 {

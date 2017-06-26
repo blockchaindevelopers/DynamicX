@@ -14,7 +14,7 @@
 namespace Ui {
     class DNSPage;
 }
-class NameTableModel;
+class IdentityTableModel;
 class WalletModel;
 
 QT_BEGIN_NAMESPACE
@@ -24,12 +24,12 @@ class QMenu;
 class QModelIndex;
 QT_END_NAMESPACE
 
-class NameFilterProxyModel : public QSortFilterProxyModel
+class IdentityFilterProxyModel : public QSortFilterProxyModel
 {
     Q_OBJECT
 
 public:
-    explicit NameFilterProxyModel(QObject *parent = 0);
+    explicit IdentityFilterProxyModel(QObject *parent = 0);
 
     void setNameSearch(const QString &search);
     void setValueSearch(const QString &search);
@@ -58,9 +58,9 @@ public:
 
 private:
     Ui::DNSPage *ui;
-    NameTableModel *model;
+    IdentityTableModel *model;
     WalletModel *walletModel;
-    NameFilterProxyModel *proxyModel;
+    IdentityFilterProxyModel *proxyModel;
     QMenu *contextMenu;
 
 public Q_SLOTS:

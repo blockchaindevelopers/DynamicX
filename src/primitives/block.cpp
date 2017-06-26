@@ -11,6 +11,12 @@
 #include "tinyformat.h"
 #include "utilstrencodings.h"
 
+// For the sake of convinence
+uint256 CBlockHeader::GetHash() const
+{
+	return hash_Argon2d(UVOIDBEGIN(nVersion), 1);
+}
+
 std::string CBlock::ToString() const
 {
     std::stringstream s;

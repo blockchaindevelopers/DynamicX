@@ -97,17 +97,17 @@ color: rgb(0, 0, 0);</string>
        </property>
        <item>
         <property name="text">
-         <string>NAME_NEW</string>
+         <string>IDENTITY_NEW</string>
         </property>
        </item>
        <item>
         <property name="text">
-         <string>NAME_UPDATE</string>
+         <string>IDENTITY_UPDATE</string>
         </property>
        </item>
        <item>
         <property name="text">
-         <string>NAME_DELETE</string>
+         <string>IDENTITY_DELETE</string>
         </property>
        </item>
       </widget>
@@ -204,7 +204,7 @@ color: rgb(0, 0, 0);</string>
         </size>
        </property>
        <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This will send name_new or name_update transaction (if you already did name_new).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This will send identity_new or identity_update transaction (if you already did identity_new).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
        <property name="layoutDirection">
         <enum>Qt::LeftToRight</enum>
@@ -1560,7 +1560,7 @@ color: rgb(0, 0, 0);</string>
           </sizepolicy>
          </property>
          <property name="toolTip">
-          <string>Enter Namecoin address (or prefix of it)</string>
+          <string>Enter Dynamic address (or prefix of it)</string>
          </property>
          <property name="text">
           <string notr="true"/>

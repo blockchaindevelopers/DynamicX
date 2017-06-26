@@ -41,9 +41,6 @@ private:
     //! data, so fValid should always correspond to the actual state.
     bool fValid;
 
-    //! Whether the public key corresponding to this private key is (to be) compressed.
-    bool fCompressed;
-
     //! The actual byte data
     std::vector<unsigned char, secure_allocator<unsigned char> > keydata;
 
@@ -52,7 +49,7 @@ private:
 
 public:
     //! Construct an invalid private key.
-    CKey() : fValid(false), fCompressed(false)
+    CKey() : fValid(false)
     {
         // Important: vch must be 32 bytes in length to not break serialization
         keydata.resize(32);
@@ -65,21 +62,19 @@ public:
     
     friend bool operator==(const CKey& a, const CKey& b)
     {
-        return a.fCompressed == b.fCompressed &&
-            a.size() == b.size() &&
+        return a.size() == b.size() &&
             memcmp(a.keydata.data(), b.keydata.data(), a.size()) == 0;
     }
 
     //! Initialize using begin and end iterators to byte data.
     template <typename T>
-    void Set(const T pbegin, const T pend, bool fCompressedIn)
+    void Set(const T pbegin, const T pend)
     {
         if (size_t(pend - pbegin) != keydata.size()) {
             fValid = false;
         } else if (Check(&pbegin[0])) {
             memcpy(keydata.data(), (unsigned char*)&pbegin[0], keydata.size());
             fValid = true;
-            fCompressed = fCompressedIn;
         } else {
             fValid = false;
         }
@@ -94,14 +89,11 @@ public:
     //! Check whether this private key is valid.
     bool IsValid() const { return fValid; }
 
-    //! Check whether the public key corresponding to this private key is (to be) compressed.
-    bool IsCompressed() const { return fCompressed; }
-
     //! Initialize from a CPrivKey (serialized OpenSSL private key data).
-    bool SetPrivKey(const CPrivKey& vchPrivKey, bool fCompressed);
+    bool SetPrivKey(const CPrivKey& vchPrivKey);
 
     //! Generate a new private key using a cryptographic PRNG.
-    void MakeNewKey(bool fCompressed);
+    void MakeNewKey();
 
     /**
      * Convert the private key to a CPrivKey (serialized OpenSSL private key data).
@@ -125,8 +117,7 @@ public:
      * Create a compact signature (65 bytes), which allows reconstructing the used public key.
      * The format is one header byte, followed by two times 32 bytes for the serialized r and s values.
      * The header byte: 0x1B = first key with even y, 0x1C = first key with odd y,
-     *                  0x1D = second key with even y, 0x1E = second key with odd y,
-     *                  add 0x04 for compressed keys.
+     *                  0x1D = second key with even y, 0x1E = second key with odd y
      */
     bool SignCompact(const uint256& hash, std::vector<unsigned char>& vchSig) const;
 

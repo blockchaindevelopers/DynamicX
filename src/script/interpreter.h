@@ -142,15 +142,15 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
 bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, unsigned int flags, const BaseSignatureChecker& checker, ScriptError* serror = NULL, const bool fDDNS = false);
 
 // dns stuff
-static const unsigned int MAX_NAME_LENGTH = 1024; // 1 kbytes
+static const unsigned int MAX_IDENTITY_LENGTH = 1024; // 1 kbytes
 static const unsigned int MAX_VALUE_LENGTH = 64*1024; // 64 kbytes
 static const int MAX_RENTAL_DAYS = 36525;  // 100 years.
 
-std::string stringFromNameVal(const CNameVal& nameVal);
-bool AddressMatchesPubKey(const CNameVal& name, const CNameVal& value, std::string& strError);
-bool checkNameValues(NameTxInfo& ret);
-bool DecodeNameScript(const CScript& script, NameTxInfo& ret, CScript::const_iterator& pc);
-bool DecodeNameScript(const CScript& script, NameTxInfo& ret);
+std::string stringFromNameVal(const CIdentityVal& nameVal);
+bool AddressMatchesPubKey(const CIdentityVal& name, const CIdentityVal& value, std::string& strError);
+bool checkNameValues(IdentityTxInfo& ret);
+bool DecodeNameScript(const CScript& script, IdentityTxInfo& ret, CScript::const_iterator& pc);
+bool DecodeNameScript(const CScript& script, IdentityTxInfo& ret);
 bool RemoveNameScriptPrefix(const CScript& scriptIn, CScript& scriptOut);
 
 #endif // DYNAMIC_SCRIPT_INTERPRETER_H

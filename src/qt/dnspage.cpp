@@ -29,39 +29,39 @@
 #include <QPainter>
 #include <QSettings>
 //
-// NameFilterProxyModel
+// IdentityFilterProxyModel
 //
 
-NameFilterProxyModel::NameFilterProxyModel(QObject *parent /* = 0*/)
+IdentityFilterProxyModel::IdentityFilterProxyModel(QObject *parent /* = 0*/)
     : QSortFilterProxyModel(parent)
 {
 }
 
-void NameFilterProxyModel::setNameSearch(const QString &search)
+void IdentityFilterProxyModel::setNameSearch(const QString &search)
 {
     nameSearch = search;
     invalidateFilter();
 }
 
-void NameFilterProxyModel::setValueSearch(const QString &search)
+void IdentityFilterProxyModel::setValueSearch(const QString &search)
 {
     valueSearch = search;
     invalidateFilter();
 }
 
-void NameFilterProxyModel::setAddressSearch(const QString &search)
+void IdentityFilterProxyModel::setAddressSearch(const QString &search)
 {
     addressSearch = search;
     invalidateFilter();
 }
 
-bool NameFilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
+bool IdentityFilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
 {
     QModelIndex index = sourceModel()->index(sourceRow, 0, sourceParent);
 
-    QString name = index.sibling(index.row(), NameTableModel::Name).data(Qt::EditRole).toString();
-    QString value = index.sibling(index.row(), NameTableModel::Value).data(Qt::EditRole).toString();
-    QString address = index.sibling(index.row(), NameTableModel::Address).data(Qt::EditRole).toString();
+    QString name = index.sibling(index.row(), IdentityTableModel::Name).data(Qt::EditRole).toString();
+    QString value = index.sibling(index.row(), IdentityTableModel::Value).data(Qt::EditRole).toString();
+    QString address = index.sibling(index.row(), IdentityTableModel::Address).data(Qt::EditRole).toString();
 
     Qt::CaseSensitivity case_sens = filterCaseSensitivity();
     return name.contains(nameSearch, case_sens)
@@ -69,20 +69,20 @@ bool NameFilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &so
         && address.startsWith(addressSearch, Qt::CaseSensitive);   // Address is always case-sensitive
 }
 
-bool NameFilterProxyModel::lessThan(const QModelIndex &left, const QModelIndex &right) const
+bool IdentityFilterProxyModel::lessThan(const QModelIndex &left, const QModelIndex &right) const
 {
-    NameTableEntry *rec1 = static_cast<NameTableEntry*>(left.internalPointer());
-    NameTableEntry *rec2 = static_cast<NameTableEntry*>(right.internalPointer());
+    IdentityTableEntry *rec1 = static_cast<IdentityTableEntry*>(left.internalPointer());
+    IdentityTableEntry *rec2 = static_cast<IdentityTableEntry*>(right.internalPointer());
 
     switch (left.column())
     {
-    case NameTableModel::Name:
+    case IdentityTableModel::Name:
         return QString::localeAwareCompare(rec1->name, rec2->name) < 0;
-    case NameTableModel::Value:
+    case IdentityTableModel::Value:
         return QString::localeAwareCompare(rec1->value, rec2->value) < 0;
-    case NameTableModel::Address:
+    case IdentityTableModel::Address:
         return QString::localeAwareCompare(rec1->address, rec2->address) < 0;
-    case NameTableModel::ExpiresIn:
+    case IdentityTableModel::ExpiresIn:
         return rec1->nExpiresAt < rec2->nExpiresAt;
     }
 
@@ -142,9 +142,9 @@ DNSPage::DNSPage(QWidget *parent) :
     ui->valueFilter->installEventFilter(this);
     ui->addressFilter->installEventFilter(this);
 
-    ui->registerName->setMaxLength(MAX_NAME_LENGTH);
+    ui->registerName->setMaxLength(MAX_IDENTITY_LENGTH);
 
-    ui->nameFilter->setMaxLength(MAX_NAME_LENGTH);
+    ui->nameFilter->setMaxLength(MAX_IDENTITY_LENGTH);
     ui->valueFilter->setMaxLength(MAX_VALUE_LENGTH);
     GUIUtil::setupAddressWidget(ui->addressFilter, this);
 
@@ -179,9 +179,9 @@ DNSPage::~DNSPage()
 void DNSPage::setModel(WalletModel *walletModel)
 {
     this->walletModel = walletModel;
-    model = walletModel->getNameTableModel();
+    model = walletModel->getIdentityTableModel();
 
-    proxyModel = new NameFilterProxyModel(this);
+    proxyModel = new IdentityFilterProxyModel(this);
     proxyModel->setSourceModel(model);
     proxyModel->setDynamicSortFilter(true);
     proxyModel->setSortCaseSensitivity(Qt::CaseInsensitive);
@@ -194,18 +194,18 @@ void DNSPage::setModel(WalletModel *walletModel)
 
     // Set column widths
     ui->tableView->horizontalHeader()->resizeSection(
-            NameTableModel::Name, COLUMN_WIDTH_NAME);
+            IdentityTableModel::Name, COLUMN_WIDTH_NAME);
 #if QT_VERSION < 0x050000
     ui->tableView->horizontalHeader()->setResizeMode(
-            NameTableModel::Value, QHeaderView::Stretch);
+            IdentityTableModel::Value, QHeaderView::Stretch);
 #else
     ui->tableView->horizontalHeader()->setSectionResizeMode(
-            NameTableModel::Value, QHeaderView::Stretch);
+            IdentityTableModel::Value, QHeaderView::Stretch);
 #endif
     ui->tableView->horizontalHeader()->resizeSection(
-            NameTableModel::Address, COLUMN_WIDTH_ADDRESS);
+            IdentityTableModel::Address, COLUMN_WIDTH_ADDRESS);
     ui->tableView->horizontalHeader()->resizeSection(
-            NameTableModel::ExpiresIn, COLUMN_WIDTH_EXPIRES_IN);
+            IdentityTableModel::ExpiresIn, COLUMN_WIDTH_EXPIRES_IN);
 
     connect(ui->tableView->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
             this, SLOT(selectionChanged()));
@@ -246,7 +246,7 @@ void DNSPage::on_submitNameButton_clicked()
 
     QString qsName = ui->registerName->text();
     qsName = qsName.toLower();  // make sure the DDNS entry is all lowercase.
-    CNameVal value;             // byte-by-byte value, as is
+    CIdentityVal value;             // byte-by-byte value, as is
     QString displayValue;       // for displaying value as unicode string
 
     if (ui->registerValue->isEnabled())
@@ -272,7 +272,7 @@ void DNSPage::on_submitNameButton_clicked()
 
     QString txType = ui->txTypeSelector->currentText();
     QString newAddress = ui->registerAddress->text();
-    if (txType == "NAME_UPDATE" || txType == "NAME_NEW")
+    if (txType == "IDENTITY_UPDATE" || txType == "IDENTITY_NEW")
         newAddress = ui->registerAddress->text();
 
     if (qsName == "")
@@ -281,7 +281,7 @@ void DNSPage::on_submitNameButton_clicked()
         return;
     }
 
-    if (value.empty() && (txType == "NAME_NEW" || txType == "NAME_UPDATE"))
+    if (value.empty() && (txType == "IDENTITY_NEW" || txType == "IDENTITY_UPDATE"))
     {
         QMessageBox::critical(this, tr("Value is empty"), tr("Enter value please"));
         return;
@@ -302,14 +302,14 @@ void DNSPage::on_submitNameButton_clicked()
 
     int64_t txFee = MIN_TX_FEE;
     std::string strName = qsName.toStdString();
-    CNameVal name(strName.begin(), strName.end());
+    CIdentityVal name(strName.begin(), strName.end());
     {
-        if (txType == "NAME_NEW")
-            txFee = GetNameOpFee(days, OP_NAME_NEW);
-        else if (txType == "NAME_UPDATE")
-            txFee = GetNameOpFee(days, OP_NAME_UPDATE);
-        else if (txType == "NAME_DELETE")
-            txFee = GetNameOpFee(days, OP_NAME_DELETE);
+        if (txType == "IDENTITY_NEW")
+            txFee = GetNameOpFee(days, OP_IDENTITY_NEW);
+        else if (txType == "IDENTITY_UPDATE")
+            txFee = GetNameOpFee(days, OP_IDENTITY_UPDATE);
+        else if (txType == "IDENTITY_DELETE")
+            txFee = GetNameOpFee(days, OP_IDENTITY_DELETE);
     }
 
     if (QMessageBox::Yes != QMessageBox::question(this, tr("Confirm name registration"),
@@ -328,26 +328,26 @@ void DNSPage::on_submitNameButton_clicked()
 
     try
     {
-        NameTxReturn res;
+        IdentityTxReturn res;
         int nHeight = 0;
         ChangeType status = CT_NEW;
-        if (txType == "NAME_NEW")
+        if (txType == "IDENTITY_NEW")
         {
-            nHeight = NameTableEntry::NAME_NEW;
+            nHeight = IdentityTableEntry::IDENTITY_NEW;
             status = CT_NEW;
-            res = name_operation(OP_NAME_NEW, name, value, days, newAddress.toStdString(), "");
+            res = identity_operation(OP_IDENTITY_NEW, name, value, days, newAddress.toStdString(), "");
         }
-        else if (txType == "NAME_UPDATE")
+        else if (txType == "IDENTITY_UPDATE")
         {
-            nHeight = NameTableEntry::NAME_UPDATE;
+            nHeight = IdentityTableEntry::IDENTITY_UPDATE;
             status = CT_UPDATED;
-            res = name_operation(OP_NAME_UPDATE, name, value, days, newAddress.toStdString(), "");
+            res = identity_operation(OP_IDENTITY_UPDATE, name, value, days, newAddress.toStdString(), "");
         }
-        else if (txType == "NAME_DELETE")
+        else if (txType == "IDENTITY_DELETE")
         {
-            nHeight = NameTableEntry::NAME_DELETE;
+            nHeight = IdentityTableEntry::IDENTITY_DELETE;
             status = CT_UPDATED; //we still want to display this name until it is deleted
-            res = name_operation(OP_NAME_DELETE, name, CNameVal(), 0, "", "");
+            res = identity_operation(OP_IDENTITY_DELETE, name, CIdentityVal(), 0, "", "");
         }
 
         importedAsBinaryFile.clear();
@@ -416,17 +416,17 @@ void DNSPage::contextualMenu(const QPoint &point)
 
 void DNSPage::onCopyNameAction()
 {
-    GUIUtil::copyEntryData(ui->tableView, NameTableModel::Name);
+    GUIUtil::copyEntryData(ui->tableView, IdentityTableModel::Name);
 }
 
 void DNSPage::onCopyValueAction()
 {
-    GUIUtil::copyEntryData(ui->tableView, NameTableModel::Value);
+    GUIUtil::copyEntryData(ui->tableView, IdentityTableModel::Value);
 }
 
 void DNSPage::onCopyAddressAction()
 {
-    GUIUtil::copyEntryData(ui->tableView, NameTableModel::Address);
+    GUIUtil::copyEntryData(ui->tableView, IdentityTableModel::Address);
 }
 
 void DNSPage::onCopyAllAction()
@@ -436,15 +436,15 @@ void DNSPage::onCopyAllAction()
 
     QModelIndexList selection;
 
-    selection = ui->tableView->selectionModel()->selectedRows(NameTableModel::Name);
+    selection = ui->tableView->selectionModel()->selectedRows(IdentityTableModel::Name);
     if (!selection.isEmpty())
         ui->registerName->setText(selection.at(0).data(Qt::EditRole).toString());
 
-    selection = ui->tableView->selectionModel()->selectedRows(NameTableModel::Value);
+    selection = ui->tableView->selectionModel()->selectedRows(IdentityTableModel::Value);
     if (!selection.isEmpty())
         ui->registerValue->setPlainText(selection.at(0).data(Qt::EditRole).toString());
 
-    selection = ui->tableView->selectionModel()->selectedRows(NameTableModel::Address);
+    selection = ui->tableView->selectionModel()->selectedRows(IdentityTableModel::Address);
     if (!selection.isEmpty())
         ui->registerAddress->setText(selection.at(0).data(Qt::EditRole).toString());
 }
@@ -462,18 +462,18 @@ void DNSPage::onSaveValueAsBinaryAction()
 
 // get name and value
     QModelIndexList selection;
-    selection = ui->tableView->selectionModel()->selectedRows(NameTableModel::Name);
+    selection = ui->tableView->selectionModel()->selectedRows(IdentityTableModel::Name);
     if (selection.isEmpty())
         return;
 
-    CNameVal name;
+    CIdentityVal name;
     {
         QString tmpName1 = selection.at(0).data(Qt::EditRole).toString();
         std::string tmpName2 = tmpName1.toStdString();
         name.assign(tmpName2.begin(), tmpName2.end());
     }
 
-    CNameVal value;
+    CIdentityVal value;
     GetNameValue(name, value);
 
 
@@ -504,10 +504,10 @@ void DNSPage::exportClicked()
     CSVModelWriter writer(filename);
     writer.setModel(proxyModel);
     // name, column, role
-    writer.addColumn("Name", NameTableModel::Name, Qt::EditRole);
-    writer.addColumn("Value", NameTableModel::Value, Qt::EditRole);
-    writer.addColumn("Address", NameTableModel::Address, Qt::EditRole);
-    writer.addColumn("Expires In", NameTableModel::ExpiresIn, Qt::EditRole);
+    writer.addColumn("Name", IdentityTableModel::Name, Qt::EditRole);
+    writer.addColumn("Value", IdentityTableModel::Value, Qt::EditRole);
+    writer.addColumn("Address", IdentityTableModel::Address, Qt::EditRole);
+    writer.addColumn("Expires In", IdentityTableModel::ExpiresIn, Qt::EditRole);
 
     if(!writer.write())
     {
@@ -518,21 +518,21 @@ void DNSPage::exportClicked()
 
 void DNSPage::on_txTypeSelector_currentIndexChanged(const QString &txType)
 {
-    if (txType == "NAME_NEW")
+    if (txType == "IDENTITY_NEW")
     {
         ui->txTimeTypeSelector->setEnabled(true);
         ui->registerTimeUnits->setEnabled(true);
         ui->registerAddress->setEnabled(true);
         ui->registerValue->setEnabled(true);
     }
-    else if (txType == "NAME_UPDATE")
+    else if (txType == "IDENTITY_UPDATE")
     {
         ui->txTimeTypeSelector->setEnabled(true);
         ui->registerTimeUnits->setEnabled(true);
         ui->registerAddress->setEnabled(true);
         ui->registerValue->setEnabled(true);
     }
-    else if (txType == "NAME_DELETE")
+    else if (txType == "IDENTITY_DELETE")
     {
         ui->txTimeTypeSelector->setDisabled(true);
         ui->registerTimeUnits->setDisabled(true);
@@ -613,7 +613,7 @@ void DNSPage::on_registerValue_textChanged()
     if (ui->registerValue->isEnabled())
     {
         std::string strValue = ui->registerValue->toPlainText().toStdString();
-        CNameVal value(strValue.begin(), strValue.end());
+        CIdentityVal value(strValue.begin(), strValue.end());
         byteSize = value.size();
     }
     else

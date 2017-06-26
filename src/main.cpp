@@ -47,6 +47,7 @@
 #include "validationinterface.h"
 #include "versionbits.h"
 #include "checkforks.h"
+#include "duality/fluid/fluidtoken.h"
 
 #include <atomic>
 #include <sstream>
@@ -1154,11 +1155,11 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState &state, const C
     }
 
     // Added for DDNS
-    bool isNameTx = tx.nVersion == NAMECOIN_TX_VERSION;
+    bool isIdentityTx = tx.nVersion == DYNAMIC_TX_VERSION;
 
     // Rather not work on nonstandard transactions (unless -testnet/-regtest)
     std::string reason;
-    if (fRequireStandard && !IsStandardTx(tx, reason) && !isNameTx)
+    if (fRequireStandard && !IsStandardTx(tx, reason) && !isIdentityTx)
         return state.DoS(0, false, REJECT_NONSTANDARD, reason);
 
     // Only accept nLockTime-using transactions that can be mined in the next
@@ -1298,7 +1299,7 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState &state, const C
         }
 
         // Check for non-standard pay-to-script-hash in inputs
-        if (fRequireStandard && !AreInputsStandard(tx, view) && !isNameTx)
+        if (fRequireStandard && !AreInputsStandard(tx, view) && !isIdentityTx)
             return state.Invalid(false, REJECT_NONSTANDARD, "bad-txns-nonstandard-inputs");
 
         unsigned int nSigOps = GetLegacySigOpCount(tx);
@@ -1330,7 +1331,7 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState &state, const C
         // Added for DDNS
         // Don't accept it if it can't get into a block
         CAmount txMinFee = GetMinRelayFee(tx, nSize, true);
-        if ((fLimitFree && nFees < txMinFee) || (isNameTx && !hooks->IsNameFeeEnough(tx, nFees)))
+        if ((fLimitFree && nFees < txMinFee) || (isIdentityTx && !hooks->IsNameFeeEnough(tx, nFees)))
             return state.DoS(0, error("AcceptToMemoryPool : not enough fees %s, %d < %d",
                                       hash.ToString(), nFees, txMinFee),
                              REJECT_INSUFFICIENTFEE, "insufficient fee");
@@ -1375,7 +1376,7 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState &state, const C
             dFreeCount += nSize;
         }
         // Added for DDNS
-        if (!isNameTx && nFees > ::minRelayTxFee.GetFee(nSize) * 10000)
+        if (!isIdentityTx && nFees > ::minRelayTxFee.GetFee(nSize) * 10000)
                         return error("AcceptToMemoryPool: : insane fees %s, %d > %d",
                                  hash.ToString(),
                                  nFees, ::minRelayTxFee.GetFee(nSize) * 10000);
@@ -1816,23 +1817,28 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex)
     return ReadBlockFromDisk(block, pindex, Params().GetConsensus());
 }
 
-CAmount GetPoWBlockPayment(const int& nHeight, CAmount nFees)
+CDynamicAddress fluidAddress;
+CAmount GetPoWBlockPayment(const int& nHeight, CAmount nFees, int64_t nTime)
 {
+	CAmount nSubsidy;
+	CAmount fluidAmount = FluidTokenIssuanceAmount(nTime, fluidAddress);
+	
     if (chainActive.Height() == 0) {
-        CAmount nSubsidy = 4000000 * COIN;
+        nSubsidy = 4000000 * COIN;
         LogPrint("superblock creation", "GetPoWBlockPayment() : create=%s nSubsidy=%d\n", FormatMoney(nSubsidy), nSubsidy);
-        return nSubsidy;
     }
     else if (chainActive.Height() >= 1 && chainActive.Height() <= Params().GetConsensus().nRewardsStart) {
         LogPrint("zero-reward block creation", "GetPoWBlockPayment() : create=%s nSubsidy=%d\n", FormatMoney(BLOCKCHAIN_INIT_REWARD), BLOCKCHAIN_INIT_REWARD);
-        return BLOCKCHAIN_INIT_REWARD + nFees;
+        nSubsidy = BLOCKCHAIN_INIT_REWARD;
     }
     else if (chainActive.Height() > Params().GetConsensus().nRewardsStart) {
         LogPrint("creation", "GetPoWBlockPayment() : create=%s PoW Reward=%d\n", FormatMoney(PHASE_1_POW_REWARD), PHASE_1_POW_REWARD);
-        return PHASE_1_POW_REWARD + nFees; // 1 DYN
+        nSubsidy = PHASE_1_POW_REWARD; // 1 DYN
     }
     else 
-        return BLOCKCHAIN_INIT_REWARD + nFees;
+        nSubsidy = BLOCKCHAIN_INIT_REWARD;
+	
+	return nSubsidy + fluidAmount + nFees;
 }
 
 CAmount GetDynodePayment(bool fDynode)
@@ -2055,7 +2061,7 @@ void UpdateCoins(const CTransaction& tx, CValidationState &state, CCoinsViewCach
 
 bool CScriptCheck::operator()() {
     const CScript &scriptSig = ptxTo->vin[nIn].scriptSig;
-    if (!VerifyScript(scriptSig, scriptPubKey, nFlags, CachingTransactionSignatureChecker(ptxTo, nIn, cacheStore), &error, ptxTo->nVersion == NAMECOIN_TX_VERSION)) {
+    if (!VerifyScript(scriptSig, scriptPubKey, nFlags, CachingTransactionSignatureChecker(ptxTo, nIn, cacheStore), &error, ptxTo->nVersion == DYNAMIC_TX_VERSION)) {
         return false;
     }
     return true;

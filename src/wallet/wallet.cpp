@@ -105,7 +105,6 @@ const CWalletTx* CWallet::GetWalletTx(const uint256& hash) const
 CPubKey CWallet::GenerateNewKey(uint32_t nAccountIndex, bool fInternal)
 {
     AssertLockHeld(cs_wallet); // mapKeyMetadata
-    bool fCompressed = CanSupportFeature(FEATURE_COMPRPUBKEY); // default to compressed public keys if we want 0.6.0 wallets
 
     CKey secret;
 
@@ -119,11 +118,7 @@ CPubKey CWallet::GenerateNewKey(uint32_t nAccountIndex, bool fInternal)
         DeriveNewChildKey(metadata, secret, nAccountIndex, fInternal);
         pubkey = secret.GetPubKey();
     } else {
-        secret.MakeNewKey(fCompressed);
-
-        // Compressed public keys were introduced in version 0.6.0
-        if (fCompressed)
-            SetMinVersion(FEATURE_COMPRPUBKEY);
+        secret.MakeNewKey();
 
         pubkey = secret.GetPubKey();
         assert(secret.VerifyPubKey(pubkey));
@@ -3543,7 +3538,7 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
     return true;
 }
 
-bool CWallet::CreateNameTx(CScript scriptPubKey, const CAmount& nValue, CWalletTx wtxNameIn, CAmount nFeeInput,
+bool CWallet::CreateIdentityTx(CScript scriptPubKey, const CAmount& nValue, CWalletTx wtxNameIn, CAmount nFeeInput,
                                 CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, int nSplitBlock, std::string& strFailReason, const CCoinControl* coinControl)
 {
     std::vector<CRecipient> vecSend;
@@ -4565,7 +4560,7 @@ void SendName(CScript scriptPubKey, CAmount nValue, CWalletTx& wtxNew, const CWa
     std::string strError;
     CReserveKey reservekey(pwalletMain);
     CAmount nFeeRequired;
-    if (!pwalletMain->CreateNameTx(scriptPubKey, nValue, wtxNameIn, nFeeInput, wtxNew, reservekey, nFeeRequired, nSplitBlock, strError))
+    if (!pwalletMain->CreateIdentityTx(scriptPubKey, nValue, wtxNameIn, nFeeInput, wtxNew, reservekey, nFeeRequired, nSplitBlock, strError))
     {
         if (nValue + nFeeRequired > pwalletMain->GetBalance())
             strError = strprintf("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!", FormatMoney(nFeeRequired));

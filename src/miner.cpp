@@ -409,12 +409,12 @@ std::unique_ptr<CBlockTemplate> CreateNewBlock(const CChainParams& chainparams, 
 
         // Compute regular coinbase transaction.
         txNew.vout[0].scriptPubKey = scriptPubKeyIn;
-        txNew.vout[0].nValue = blockReward + fluidIssuance;
+        txNew.vout[0].nValue = blockReward;
         txNew.vin[0].scriptSig = CScript() << nHeight << OP_0;
 
         // Ensure that we aren't doing this before fork and fluid to be issued isn't zero, else this is pointless
         // and minusing zero is kind of pointless
-        if (pblock->Version5Activated(pblock->nTime) && (fluidIssuance != (0*COIN))) {
+        if (fluidIssuance != (0*COIN)) {
             // Pick out the amount of issuance
             txNew.vout[0].nValue -= fluidIssuance;
 

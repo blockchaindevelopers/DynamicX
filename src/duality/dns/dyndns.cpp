@@ -9,7 +9,7 @@
  * Simple DNS server for Dynamic project
  *
  * Lookup for names like "dns:some-nake" in the local nameindex database.
- * Database is updates from blockchain, and keeps NMC-transactions.
+ * Database is updates from blockchain, and keeps DYN-transactions.
  *
  * Supports standard RFC1034 UDP DNS protocol only
  *
@@ -1059,18 +1059,18 @@ bool DynDns::CheckEnumSig(const char *q_str, char *sig_str) {
   return false; // Already unable to fetch
 
       do {
-        NameTxInfo nti;
-        CNameRecord nameRec;
+        IdentityTxInfo nti;
+        CIdentityRecord nameRec;
         CTransaction tx;
         LOCK(cs_main);
-        CNameDB dbName("r");
-        if(!dbName.ReadName(CNameVal(it->first.c_str(), it->first.c_str() + it->first.size()), nameRec))
+        CIdentityDB dbName("r");
+        if(!dbName.ReadName(CIdentityVal(it->first.c_str(), it->first.c_str() + it->first.size()), nameRec))
     break; // failed to read from name DB
         if(nameRec.vtxPos.size() < 1)
     break; // no result returned
         if(!tx.ReadFromDisk(nameRec.vtxPos.back().txPos))
           break; // failed to read from from disk
-        if(!DecodeNameTx(tx, nti, true))
+        if(!DecodeIdentityTx(tx, nti, true))
           break; // failed to decode name
   CDynamicAddress addr(nti.strAddress);
         if(!addr.IsValid())

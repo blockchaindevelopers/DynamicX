@@ -23,14 +23,14 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/xpressive/xpressive_dynamic.hpp>
 
-std::map<CNameVal, std::set<uint256> > mapNamePending; // for pending tx
+std::map<CIdentityVal, std::set<uint256> > mapNamePending; // for pending tx
 
 // forward decls
 extern std::string _(const char* psz);
 extern std::map<uint256, CTransaction> mapTransactions;
 extern CWallet* pwalletMain;
 
-class CNamecoinHooks : public CHooks
+class CDynamicHooks : public CHooks
 {
 public:
     virtual bool IsNameFeeEnough(const CTransaction& tx, const CAmount& txFee);
@@ -62,15 +62,15 @@ bool CTransaction::ReadFromDisk(const CDiskTxPos& postx)
     return true;
 }
 
-CNameVal nameValFromValue(const UniValue& value) {
+CIdentityVal nameValFromValue(const UniValue& value) {
     std::string strName = value.get_str();
     unsigned char *strbeg = (unsigned char*)strName.c_str();
-    return CNameVal(strbeg, strbeg + strName.size());
+    return CIdentityVal(strbeg, strbeg + strName.size());
 }
 
-CNameVal nameValFromString(const std::string& str) {
+CIdentityVal nameValFromString(const std::string& str) {
     unsigned char *strbeg = (unsigned char*)str.c_str();
-    return CNameVal(strbeg, strbeg + str.size());
+    return CIdentityVal(strbeg, strbeg + str.size());
 }
 
 std::string limitString(const std::string& inp, unsigned int size, std::string message = "")
@@ -85,7 +85,7 @@ std::string limitString(const std::string& inp, unsigned int size, std::string m
     return ret;
 }
 
-std::string encodeNameVal(const CNameVal& input, const std::string& format)
+std::string encodeNameVal(const CIdentityVal& input, const std::string& format)
 {
     std::string output;
     if      (format == "hex")    output = HexStr(input);
@@ -95,7 +95,7 @@ std::string encodeNameVal(const CNameVal& input, const std::string& format)
 }
 
 // Calculate at which block will expire.
-bool CalculateExpiresAt(CNameRecord& nameRec)
+bool CalculateExpiresAt(CIdentityRecord& nameRec)
 {
     if (nameRec.deleted())
     {
@@ -110,9 +110,9 @@ bool CalculateExpiresAt(CNameRecord& nameRec)
         if (!tx.ReadFromDisk(nameRec.vtxPos[i].txPos))
             return error("CalculateExpiresAt() : could not read tx from disk");
 
-        NameTxInfo nti;
-        if (!DecodeNameTx(tx, nti))
-            return error("CalculateExpiresAt() : %s is not namecoin tx, this should never happen", tx.GetHash().GetHex());
+        IdentityTxInfo nti;
+        if (!DecodeIdentityTx(tx, nti))
+            return error("CalculateExpiresAt() : %s is not dynamic tx, this should never happen", tx.GetHash().GetHex());
 
         sum += nti.nRentalDays * 1350; //days to blocks. 1350 is average number of PoS blocks per day
     }
@@ -125,24 +125,24 @@ bool CalculateExpiresAt(CNameRecord& nameRec)
 }
 
 // Tests if name is active. You can optionaly specify at which height it is/was active.
-bool NameActive(CNameDB& dbName, const CNameVal& name, int currentBlockHeight = -1)
+bool NameActive(CIdentityDB& dbName, const CIdentityVal& name, int currentBlockHeight = -1)
 {
-    CNameRecord nameRec;
+    CIdentityRecord nameRec;
     if (!dbName.ReadName(name, nameRec))
         return false;
 
     if (currentBlockHeight < 0)
         currentBlockHeight = chainActive.Height();
 
-    if (nameRec.deleted()) // last name op was name_delete
+    if (nameRec.deleted()) // last name op was identity_delete
         return false;
 
     return currentBlockHeight <= nameRec.nExpiresAt;
 }
 
-bool NameActive(const CNameVal& name, int currentBlockHeight = -1)
+bool NameActive(const CIdentityVal& name, int currentBlockHeight = -1)
 {
-    CNameDB dbName("r");
+    CIdentityDB dbName("r");
     return NameActive(dbName, name, currentBlockHeight);
 }
 
@@ -151,23 +151,23 @@ bool NameActive(const CNameVal& name, int currentBlockHeight = -1)
 // Generaly:  GetNameOpFee() > IsNameFeeEnough().
 CAmount GetNameOpFee(const unsigned int& nRentalDays, const int& op)
 {
-    if (op == OP_NAME_MULTISIG)
-        return MIN_MULTISIG_NAME_FEE;
+    if (op == OP_IDENTITY_MULTISIG)
+        return MIN_MULTISIG_IDENTITY_FEE;
     
-    if (op == OP_NAME_DELETE)
+    if (op == OP_IDENTITY_DELETE)
         return MIN_TX_FEE;
 
-    CAmount txMinFee = (CAmount)(nRentalDays * NAME_REGISTRATION_DAILY_FEE); // 
+    CAmount txMinFee = (CAmount)(nRentalDays * IDENTITY_REGISTRATION_DAILY_FEE); // 
 
     return txMinFee;
 }
 
-// scans nameindex.dat and return names with their last CNameIndex
-bool CNameDB::ScanNames(const CNameVal& name, unsigned int nMax,
+// scans nameindex.dat and return names with their last CIdentityIndex
+bool CIdentityDB::ScanNames(const CIdentityVal& name, unsigned int nMax,
         std::vector<
             std::pair<
-                CNameVal,
-                std::pair<CNameIndex, int>
+                CIdentityVal,
+                std::pair<CIdentityIndex, int>
             >
         > &nameScan)
 {
@@ -195,9 +195,9 @@ bool CNameDB::ScanNames(const CNameVal& name, unsigned int nMax,
         ssKey >> strType;
         if (strType == "namei")
         {
-            CNameVal name2;
+            CIdentityVal name2;
             ssKey >> name2;
-            CNameRecord val;
+            CIdentityRecord val;
             ssValue >> val;
             if (val.deleted() || val.vtxPos.empty())
                 continue;
@@ -211,7 +211,7 @@ bool CNameDB::ScanNames(const CNameVal& name, unsigned int nMax,
     return true;
 }
 
-bool CNameDB::ReadName(const CNameVal& name, CNameRecord& rec)
+bool CIdentityDB::ReadName(const CIdentityVal& name, CIdentityRecord& rec)
 {
     bool ret = Read(std::make_pair(std::string("namei"), name), rec);
     int s = rec.vtxPos.size();
@@ -230,10 +230,10 @@ bool CNameDB::ReadName(const CNameVal& name, CNameRecord& rec)
 
 CHooks* InitHook()
 {
-    return new CNamecoinHooks();
+    return new CDynamicHooks();
 }
 
-bool IsNameFeeEnough(const CTransaction& tx, const NameTxInfo& nti, const CBlockIndex* pindexBlock, const CAmount& txFee)
+bool IsNameFeeEnough(const CTransaction& tx, const IdentityTxInfo& nti, const CBlockIndex* pindexBlock, const CAmount& txFee)
 {
     // scan last 10 PoW block for tx fee that matches the one specified in tx
     const CBlockIndex* lastPoW = GetLastBlockIndex(pindexBlock);
@@ -254,48 +254,48 @@ bool IsNameFeeEnough(const CTransaction& tx, const NameTxInfo& nti, const CBlock
     return txFeePass;
 }
 
-bool CNamecoinHooks::IsNameFeeEnough(const CTransaction& tx, const CAmount& txFee)
+bool CDynamicHooks::IsNameFeeEnough(const CTransaction& tx, const CAmount& txFee)
 {
-    if (tx.nVersion != NAMECOIN_TX_VERSION)
+    if (tx.nVersion != DYNAMIC_TX_VERSION)
         return false;
 
-    NameTxInfo nti;
-    if (!DecodeNameTx(tx, nti))
+    IdentityTxInfo nti;
+    if (!DecodeIdentityTx(tx, nti))
         return false;
 
     return ::IsNameFeeEnough(tx, nti, chainActive.Tip(), txFee);
 }
 
-//returns first name operation. I.e. name_new from chain like name_new->name_update->name_update->...->name_update
-bool GetFirstTxOfName(CNameDB& dbName, const CNameVal& name, CTransaction& tx)
+//returns first name operation. I.e. identity_new from chain like identity_new->identity_update->identity_update->...->identity_update
+bool GetFirstTxOfName(CIdentityDB& dbName, const CIdentityVal& name, CTransaction& tx)
 {
-    CNameRecord nameRec;
+    CIdentityRecord nameRec;
     if (!dbName.ReadName(name, nameRec) || nameRec.vtxPos.empty())
         return false;
-    CNameIndex& txPos = nameRec.vtxPos[nameRec.nLastActiveChainIndex];
+    CIdentityIndex& txPos = nameRec.vtxPos[nameRec.nLastActiveChainIndex];
 
     if (!tx.ReadFromDisk(txPos.txPos))
         return error("GetFirstTxOfName() : could not read tx from disk");
     return true;
 }
 
-bool GetLastTxOfName(CNameDB& dbName, const CNameVal& name, CTransaction& tx, CNameRecord& nameRec)
+bool GetLastTxOfName(CIdentityDB& dbName, const CIdentityVal& name, CTransaction& tx, CIdentityRecord& nameRec)
 {
     if (!dbName.ReadName(name, nameRec))
         return false;
     if (nameRec.deleted() || nameRec.vtxPos.empty())
         return false;
 
-    CNameIndex& txPos = nameRec.vtxPos.back();
+    CIdentityIndex& txPos = nameRec.vtxPos.back();
 
     if (!tx.ReadFromDisk(txPos.txPos))
         return error("GetLastTxOfName() : could not read tx from disk");
     return true;
 }
 
-bool GetLastTxOfName(CNameDB& dbName, const CNameVal& name, CTransaction& tx)
+bool GetLastTxOfName(CIdentityDB& dbName, const CIdentityVal& name, CTransaction& tx)
 {
-    CNameRecord nameRec;
+    CIdentityRecord nameRec;
     return GetLastTxOfName(dbName, name, tx, nameRec);
 }
 
@@ -311,7 +311,7 @@ UniValue sendtoname(const UniValue& params, bool fHelp)
     if (IsInitialBlockDownload())
         throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Dynamic is downloading blocks...");
 
-    CNameVal name = nameValFromValue(params[0]);
+    CIdentityVal name = nameValFromValue(params[0]);
     CAmount nAmount = AmountFromValue(params[1]);
 
     // Wallet comments
@@ -334,9 +334,9 @@ UniValue sendtoname(const UniValue& params, bool fHelp)
     return res;
 }
 
-bool GetNameCurrentAddress(const CNameVal& name, CDynamicAddress& address, std::string& error)
+bool GetNameCurrentAddress(const CIdentityVal& name, CDynamicAddress& address, std::string& error)
 {
-    CNameDB dbName("r");
+    CIdentityDB dbName("r");
     if (!dbName.ExistsName(name))
     {
         error = "Name not found";
@@ -344,8 +344,8 @@ bool GetNameCurrentAddress(const CNameVal& name, CDynamicAddress& address, std::
     }
 
     CTransaction tx;
-    NameTxInfo nti;
-    if (!(GetLastTxOfName(dbName, name, tx) && DecodeNameTx(tx, nti, true)))
+    IdentityTxInfo nti;
+    if (!(GetLastTxOfName(dbName, name, tx) && DecodeIdentityTx(tx, nti, true)))
     {
         error = "Failed to read/decode last name transaction";
         return false;
@@ -370,16 +370,16 @@ bool GetNameCurrentAddress(const CNameVal& name, CDynamicAddress& address, std::
     return true;
 }
 
-bool CNamecoinHooks::RemoveNameScriptPrefix(const CScript& scriptIn, CScript& scriptOut)
+bool CDynamicHooks::RemoveNameScriptPrefix(const CScript& scriptIn, CScript& scriptOut)
 {
     return ::RemoveNameScriptPrefix(scriptIn, scriptOut);
 }
 
-UniValue name_list(const UniValue& params, bool fHelp)
+UniValue identity_list(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() > 2)
         throw std::runtime_error(
-                "name_list [name] [valuetype]\n"
+                "identity_list [name] [valuetype]\n"
                 "list my own names.\n"
                 "\nArguments:\n"
                 "1. name      (string, required) Restrict output to specific name.\n"
@@ -389,14 +389,14 @@ UniValue name_list(const UniValue& params, bool fHelp)
     if (IsInitialBlockDownload())
         throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Dynamic is downloading blocks...");
 
-    CNameVal nameUniq = params.size() > 0 ? nameValFromValue(params[0]) : CNameVal();
+    CIdentityVal nameUniq = params.size() > 0 ? nameValFromValue(params[0]) : CIdentityVal();
     std::string outputType = params.size() > 1 ? params[1].get_str() : "";
 
-    std::map<CNameVal, NameTxInfo> mapNames, mapPending;
+    std::map<CIdentityVal, IdentityTxInfo> mapNames, mapPending;
     GetNameList(nameUniq, mapNames, mapPending);
 
     UniValue oRes(UniValue::VARR);
-    BOOST_FOREACH(const PAIRTYPE(CNameVal, NameTxInfo)& item, mapNames)
+    BOOST_FOREACH(const PAIRTYPE(CIdentityVal, IdentityTxInfo)& item, mapNames)
     {
         UniValue oName(UniValue::VOBJ);
         oName.push_back(Pair("name", stringFromNameVal(item.second.name)));
@@ -413,39 +413,39 @@ UniValue name_list(const UniValue& params, bool fHelp)
     return oRes;
 }
 
-// read wallet name txs and extract: name, value, rentalDays, nOut and nExpiresAt.  Based On name_filter
-void GetNameList(const CNameVal& nameUniq, std::map<CNameVal, NameTxInfo>& mapNames, std::map<CNameVal, NameTxInfo>& mapPending)
+// read wallet name txs and extract: name, value, rentalDays, nOut and nExpiresAt.  Based On identity_filter
+void GetNameList(const CIdentityVal& nameUniq, std::map<CIdentityVal, IdentityTxInfo>& mapNames, std::map<CIdentityVal, IdentityTxInfo>& mapPending)
 {
     if (IsInitialBlockDownload())
         return;
 
-    CNameDB dbName("r");
+    CIdentityDB dbName("r");
     //vector<UniValue> oRes;
 
-    CNameVal name;
-    std::vector<std::pair<CNameVal, std::pair<CNameIndex,int> > > nameScan;
+    CIdentityVal name;
+    std::vector<std::pair<CIdentityVal, std::pair<CIdentityIndex,int> > > nameScan;
     if (!dbName.ScanNames(name, 100000000, nameScan))
         return; // throw JSONRPCError(RPC_WALLET_ERROR, "scan failed");
 
-    std::pair<CNameVal, std::pair<CNameIndex,int> > pairScan;
+    std::pair<CIdentityVal, std::pair<CIdentityIndex,int> > pairScan;
     BOOST_FOREACH(pairScan, nameScan)
     {
-        CNameVal name = pairScan.first;
-        CNameIndex txName = pairScan.second.first;
-        CNameVal value = txName.value;
+        CIdentityVal name = pairScan.first;
+        CIdentityIndex txName = pairScan.second.first;
+        CIdentityVal value = txName.value;
         int nHeightRegister = txName.nHeight;
         int op = txName.op;
 
-        CNameRecord nameRec;
+        CIdentityRecord nameRec;
         if (!dbName.ReadName(pairScan.first, nameRec))
             continue;
         int nExpiresAt = nameRec.nExpiresAt;
 
         int nRentalDays = nExpiresAt - nHeightRegister;
-        NameTxInfo nti(name, value, nRentalDays, op, 0, "");
+        IdentityTxInfo nti(name, value, nRentalDays, op, 0, "");
         CTransaction tx;
         GetLastTxOfName(dbName, name, tx, nameRec);
-        if (!DecodeNameTx(tx, nti, true))
+        if (!DecodeIdentityTx(tx, nti, true))
             continue;
 
         nti.nExpiresAt = nExpiresAt;
@@ -453,7 +453,7 @@ void GetNameList(const CNameVal& nameUniq, std::map<CNameVal, NameTxInfo>& mapNa
     }
 
     // add all pending names
-    BOOST_FOREACH(const PAIRTYPE(CNameVal, std::set<uint256>) &item, mapNamePending)
+    BOOST_FOREACH(const PAIRTYPE(CIdentityVal, std::set<uint256>) &item, mapNamePending)
     {
         if (!item.second.size())
             continue;
@@ -477,8 +477,8 @@ void GetNameList(const CNameVal& nameUniq, std::map<CNameVal, NameTxInfo>& mapNa
         if (!found)
             continue;
 
-        NameTxInfo nti;
-        if (!DecodeNameTx(tx, nti, true))
+        IdentityTxInfo nti;
+        if (!DecodeIdentityTx(tx, nti, true))
             continue;
 
         if (nameUniq.size() > 0 && nameUniq != nti.name)
@@ -488,18 +488,18 @@ void GetNameList(const CNameVal& nameUniq, std::map<CNameVal, NameTxInfo>& mapNa
     }
 }
 
-UniValue name_debug(const UniValue& params, bool fHelp)
+UniValue identity_debug(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() < 1)
         throw std::runtime_error(
-            "name_debug\n"
+            "identity_debug\n"
             "Dump pending transactions id in the debug file.\n");
 
     LogPrintf("Pending:\n----------------------------\n");
 
     {
         LOCK(cs_main);
-        BOOST_FOREACH(const PAIRTYPE(CNameVal, std::set<uint256>) &pairPending, mapNamePending)
+        BOOST_FOREACH(const PAIRTYPE(CIdentityVal, std::set<uint256>) &pairPending, mapNamePending)
         {
             std::string name = stringFromNameVal(pairPending.first);
             LogPrintf("%s :\n", name);
@@ -517,11 +517,11 @@ UniValue name_debug(const UniValue& params, bool fHelp)
     return true;
 }
 
-UniValue name_show(const UniValue& params, bool fHelp)
+UniValue identity_show(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() < 1 || params.size() > 3)
         throw std::runtime_error(
-            "name_show <name> [valuetype] [filepath]\n"
+            "identity_show <name> [valuetype] [filepath]\n"
             "Show values of a name.\n"
             "\nArguments:\n"
             "1. name      (string, required).\n"
@@ -533,14 +533,14 @@ UniValue name_show(const UniValue& params, bool fHelp)
         throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Dynamic is downloading blocks...");
 
     UniValue oName(UniValue::VOBJ);
-    CNameVal name = nameValFromValue(params[0]);
+    CIdentityVal name = nameValFromValue(params[0]);
     std::string outputType = params.size() > 1 ? params[1].get_str() : "";
     std::string sName = stringFromNameVal(name);
-    NameTxInfo nti;
+    IdentityTxInfo nti;
     {
         LOCK(cs_main);
-        CNameRecord nameRec;
-        CNameDB dbName("r");
+        CIdentityRecord nameRec;
+        CIdentityDB dbName("r");
         if (!dbName.ReadName(name, nameRec))
             throw JSONRPCError(RPC_WALLET_ERROR, "failed to read from name DB");
 
@@ -551,7 +551,7 @@ UniValue name_show(const UniValue& params, bool fHelp)
         if (!tx.ReadFromDisk(nameRec.vtxPos.back().txPos))
             throw JSONRPCError(RPC_WALLET_ERROR, "failed to read from from disk");
 
-        if (!DecodeNameTx(tx, nti, true))
+        if (!DecodeIdentityTx(tx, nti, true))
             throw JSONRPCError(RPC_WALLET_ERROR, "failed to decode name");
 
         oName.push_back(Pair("name", sName));
@@ -583,11 +583,11 @@ UniValue name_show(const UniValue& params, bool fHelp)
     return oName;
 }
 
-UniValue name_history (const UniValue& params, bool fHelp)
+UniValue identity_history (const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() < 1 || params.size() > 3)
         throw std::runtime_error (
-            "name_history <name> [fullhistory] [valuetype]\n"
+            "identity_history <name> [fullhistory] [valuetype]\n"
             "\nLook up the current and all past data for the given name.\n"
             "\nArguments:\n"
             "1. name        (string, required) the name to query for\n"
@@ -603,25 +603,25 @@ UniValue name_history (const UniValue& params, bool fHelp)
             "    \"address_is_mine\": \"xxxx\", (string) shows \"true\" if this is your address, otherwise not visible"
             "    \"operation\": \"xxxx\",       (string) name operation that was performed in this transaction"
             "    \"days_added\": xxxx,          (numeric) days added (1 day = 1350 blocks) to name expiration time, not visible if 0"
-            "    \"value\": xxxx,               (numeric) name value in this transaction; not visible when name_delete was used"
+            "    \"value\": xxxx,               (numeric) name value in this transaction; not visible when identity_delete was used"
             "  }\n"
             "]\n"
             "\nExamples:\n"
-            + HelpExampleCli ("name_history", "\"myname\"")
-            + HelpExampleRpc ("name_history", "\"myname\"")
+            + HelpExampleCli ("identity_history", "\"myname\"")
+            + HelpExampleRpc ("identity_history", "\"myname\"")
         );
 
     if (IsInitialBlockDownload())
         throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Dynamic is downloading blocks...");
 
-    CNameVal name = nameValFromValue(params[0]);
+    CIdentityVal name = nameValFromValue(params[0]);
     bool fFullHistory = params.size() > 1 ? params[1].get_bool() : false;
     std::string outputType = params.size() > 2 ? params[2].get_str() : "";
 
-    CNameRecord nameRec;
+    CIdentityRecord nameRec;
     {
         LOCK(cs_main);
-        CNameDB dbName("r");
+        CIdentityDB dbName("r");
         if (!dbName.ReadName(name, nameRec))
             throw JSONRPCError(RPC_DATABASE_ERROR, "failed to read from name DB");
     }
@@ -639,9 +639,9 @@ UniValue name_history (const UniValue& params, bool fHelp)
         if (!tx.ReadFromDisk(nameRec.vtxPos[i].txPos))
             throw JSONRPCError(RPC_DATABASE_ERROR, "could not read transaction from disk");
 
-        NameTxInfo nti;
-        if (!DecodeNameTx(tx, nti, true))
-            throw JSONRPCError(RPC_DATABASE_ERROR, "failed to decode namecoin transaction");
+        IdentityTxInfo nti;
+        if (!DecodeIdentityTx(tx, nti, true))
+            throw JSONRPCError(RPC_DATABASE_ERROR, "failed to decode dynamic transaction");
 
         UniValue obj(UniValue::VOBJ);
         obj.push_back(Pair("txid",             tx.GetHash().ToString()));
@@ -651,9 +651,9 @@ UniValue name_history (const UniValue& params, bool fHelp)
         if (nti.fIsMine)
             obj.push_back(Pair("address_is_mine",  "true"));
         obj.push_back(Pair("operation",        stringFromOp(nti.op)));
-        if (nti.op == OP_NAME_UPDATE || nti.op == OP_NAME_NEW || nti.op == OP_NAME_MULTISIG)
+        if (nti.op == OP_IDENTITY_UPDATE || nti.op == OP_IDENTITY_NEW || nti.op == OP_IDENTITY_MULTISIG)
             obj.push_back(Pair("days_added",       nti.nRentalDays));
-        if (nti.op == OP_NAME_UPDATE || nti.op == OP_NAME_NEW || nti.op == OP_NAME_MULTISIG)
+        if (nti.op == OP_IDENTITY_UPDATE || nti.op == OP_IDENTITY_NEW || nti.op == OP_IDENTITY_MULTISIG)
         obj.push_back(Pair("value", encodeNameVal(nti.value, outputType)));
 
         res.push_back(obj);
@@ -662,11 +662,11 @@ UniValue name_history (const UniValue& params, bool fHelp)
     return res;
 }
 
-UniValue name_mempool (const UniValue& params, bool fHelp)
+UniValue identity_mempool (const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() > 1)
         throw std::runtime_error (
-            "name_mempool [valuetype]\n"
+            "identity_mempool [valuetype]\n"
             "\nArguments:\n"
             "1. valuetype   (string, optional) If \"hex\" or \"base64\" is specified then it will print value in corresponding format instead of string.\n"
             "\nList pending name transactions in mempool.\n"
@@ -680,18 +680,18 @@ UniValue name_mempool (const UniValue& params, bool fHelp)
             "    \"address_is_mine\": \"xxxx\", (string) shows \"true\" if this is your address, otherwise not visible"
             "    \"operation\": \"xxxx\",       (string) name operation that was performed in this transaction"
             "    \"days_added\": xxxx,          (numeric) days added (1 day = 1350 blocks) to name expiration time, not visible if 0"
-            "    \"value\": xxxx,               (numeric) name value in this transaction; not visible when name_delete was used"
+            "    \"value\": xxxx,               (numeric) name value in this transaction; not visible when identity_delete was used"
             "  }\n"
             "]\n"
             "\nExamples:\n"
-            + HelpExampleCli ("name_mempool", "" )
-            + HelpExampleRpc ("name_mempool", "" )
+            + HelpExampleCli ("identity_mempool", "" )
+            + HelpExampleRpc ("identity_mempool", "" )
         );
 
     std::string outputType = params.size() > 0 ? params[0].get_str() : "";
 
     UniValue res(UniValue::VARR);
-    BOOST_FOREACH(const PAIRTYPE(CNameVal, std::set<uint256>) &pairPending, mapNamePending)
+    BOOST_FOREACH(const PAIRTYPE(CIdentityVal, std::set<uint256>) &pairPending, mapNamePending)
     {
         std::string sName = stringFromNameVal(pairPending.first);
         BOOST_FOREACH(const uint256& hash, pairPending.second)
@@ -700,9 +700,9 @@ UniValue name_mempool (const UniValue& params, bool fHelp)
                 continue;
 
             CTransaction tx = mempool.mapTx.find(hash)->GetTx();
-            NameTxInfo nti;
-            if (!DecodeNameTx(tx, nti, true))
-                throw JSONRPCError(RPC_DATABASE_ERROR, "failed to decode namecoin transaction");
+            IdentityTxInfo nti;
+            if (!DecodeIdentityTx(tx, nti, true))
+                throw JSONRPCError(RPC_DATABASE_ERROR, "failed to decode dynamic transaction");
 
             UniValue obj(UniValue::VOBJ);
             obj.push_back(Pair("name",             sName));
@@ -712,9 +712,9 @@ UniValue name_mempool (const UniValue& params, bool fHelp)
             if (nti.fIsMine)
                 obj.push_back(Pair("address_is_mine",  "true"));
             obj.push_back(Pair("operation",        stringFromOp(nti.op)));
-            if (nti.op == OP_NAME_UPDATE || nti.op == OP_NAME_NEW || nti.op == OP_NAME_MULTISIG)
+            if (nti.op == OP_IDENTITY_UPDATE || nti.op == OP_IDENTITY_NEW || nti.op == OP_IDENTITY_MULTISIG)
                 obj.push_back(Pair("days_added",       nti.nRentalDays));
-            if (nti.op == OP_NAME_UPDATE || nti.op == OP_NAME_NEW || nti.op == OP_NAME_MULTISIG)
+            if (nti.op == OP_IDENTITY_UPDATE || nti.op == OP_IDENTITY_NEW || nti.op == OP_IDENTITY_MULTISIG)
             obj.push_back(Pair("value",            encodeNameVal(nti.value, outputType)));
 
             res.push_back(obj);
@@ -723,19 +723,19 @@ UniValue name_mempool (const UniValue& params, bool fHelp)
     return res;
 }
 
-// used for sorting in name_filter by nHeight
+// used for sorting in identity_filter by nHeight
 bool mycompare2 (const UniValue& lhs, const UniValue& rhs)
 {
-    int pos = 2; //this should exactly match field name position in name_filter
+    int pos = 2; //this should exactly match field name position in identity_filter
 
     return lhs[pos].get_int() < rhs[pos].get_int();
 }
 
-UniValue name_filter(const UniValue& params, bool fHelp)
+UniValue identity_filter(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() > 6)
         throw std::runtime_error(
-                "name_filter [regexp] [maxage=0] [from=0] [nb=0] [stat] [valuetype]\n"
+                "identity_filter [regexp] [maxage=0] [from=0] [nb=0] [stat] [valuetype]\n"
                 "scan and filter names\n"
                 "[regexp] : apply [regexp] on names, empty means all names\n"
                 "[maxage] : look in last [maxage] blocks\n"
@@ -743,9 +743,9 @@ UniValue name_filter(const UniValue& params, bool fHelp)
                 "[nb] : show [nb] results, 0 means all\n"
                 "[stat] : show some stats instead of results\n"
                 "[valuetype] : if \"hex\" or \"base64\" is specified then it will print value in corresponding format instead of string.\n"                
-                "name_filter \"\" 5 # list names updated in last 5 blocks\n"
-                "name_filter \"^id/\" # list all names from the \"id\" namespace\n"
-                "name_filter \"^id/\" 0 0 0 stat # display stats (number of names) on active names from the \"id\" namespace\n"
+                "identity_filter \"\" 5 # list names updated in last 5 blocks\n"
+                "identity_filter \"^id/\" # list all names from the \"id\" namespace\n"
+                "identity_filter \"^id/\" 0 0 0 stat # display stats (number of names) on active names from the \"id\" namespace\n"
                 );
 
     if (IsInitialBlockDownload())
@@ -762,11 +762,11 @@ UniValue name_filter(const UniValue& params, bool fHelp)
     bool fStat        = params.size() > 4 ? (params[4].get_str() == "stat" ? true : false) : false;
     std::string outputType = params.size() > 5 ? params[5].get_str() : "";
 
-    CNameDB dbName("r");
+    CIdentityDB dbName("r");
     std::vector<UniValue> oRes;
 
-    CNameVal name;
-    std::vector<std::pair<CNameVal, std::pair<CNameIndex,int> > > nameScan;
+    CIdentityVal name;
+    std::vector<std::pair<CIdentityVal, std::pair<CIdentityIndex,int> > > nameScan;
     if (!dbName.ScanNames(name, 100000000, nameScan))
         throw JSONRPCError(RPC_WALLET_ERROR, "scan failed");
 
@@ -775,7 +775,7 @@ UniValue name_filter(const UniValue& params, bool fHelp)
     smatch nameparts;
     sregex cregex = sregex::compile(strRegexp);
 
-    std::pair<CNameVal, std::pair<CNameIndex,int> > pairScan;
+    std::pair<CIdentityVal, std::pair<CIdentityIndex,int> > pairScan;
     BOOST_FOREACH(pairScan, nameScan)
     {
         std::string name = stringFromNameVal(pairScan.first);
@@ -792,9 +792,9 @@ UniValue name_filter(const UniValue& params, bool fHelp)
         if(strRegexp != "" && !regex_search(name, nameparts, cregex))
             continue;
 
-        CNameIndex txName = pairScan.second.first;
+        CIdentityIndex txName = pairScan.second.first;
 
-        CNameRecord nameRec;
+        CIdentityRecord nameRec;
         if (!dbName.ReadName(pairScan.first, nameRec))
             continue;
 
@@ -811,9 +811,9 @@ UniValue name_filter(const UniValue& params, bool fHelp)
         UniValue oName(UniValue::VOBJ);
         if (!fStat) {
             oName.push_back(Pair("name", name));
-            oName.push_back(Pair("value", limitString(encodeNameVal(txName.value, outputType), 300, "\n...(value too large - use name_show to see full value)")));
+            oName.push_back(Pair("value", limitString(encodeNameVal(txName.value, outputType), 300, "\n...(value too large - use identity_show to see full value)")));
 
-            oName.push_back(Pair("registered_at", nHeight)); // pos = 2 in comparison function (above name_filter)
+            oName.push_back(Pair("registered_at", nHeight)); // pos = 2 in comparison function (above identity_filter)
 
             int nExpiresIn = nameRec.nExpiresAt - chainActive.Height();
             oName.push_back(Pair("expires_in", nExpiresIn));
@@ -847,11 +847,11 @@ UniValue name_filter(const UniValue& params, bool fHelp)
     return oRes2;
 }
 
-UniValue name_scan(const UniValue& params, bool fHelp)
+UniValue identity_scan(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() > 4)
         throw std::runtime_error(
-                "name_scan [start-name] [max-returned] [max-value-length=-1] [valuetype]\n"
+                "identity_scan [start-name] [max-returned] [max-value-length=-1] [valuetype]\n"
                 "Scan all names, starting at start-name and returning a maximum number of entries (default 500)\n"
                 "You can also control the length of shown value (0 = full value)\n"
                 "[valuetype] : if \"hex\" or \"base64\" is specified then it will print value in corresponding format instead of string.\n"
@@ -860,20 +860,20 @@ UniValue name_scan(const UniValue& params, bool fHelp)
     if (IsInitialBlockDownload())
         throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Dynamic is downloading blocks...");
 
-    CNameVal name      = params.size() > 0 ? nameValFromValue(params[0]) : CNameVal();
+    CIdentityVal name      = params.size() > 0 ? nameValFromValue(params[0]) : CIdentityVal();
     std::string strSearchName = "";
     int nMax           = params.size() > 1 ? params[1].get_int() : 500;
     int mMaxShownValue = params.size() > 2 ? params[2].get_int() : 0;
     std::string outputType  = params.size() > 3 ? params[3].get_str() : "";
 
-    CNameDB dbName("r");
+    CIdentityDB dbName("r");
     UniValue oRes(UniValue::VARR);
 
-    std::vector<std::pair<CNameVal, std::pair<CNameIndex,int> > > nameScan;
+    std::vector<std::pair<CIdentityVal, std::pair<CIdentityIndex,int> > > nameScan;
     if (!dbName.ScanNames(name, nMax, nameScan))
         throw JSONRPCError(RPC_WALLET_ERROR, "scan failed");
 
-    std::pair<CNameVal, std::pair<CNameIndex,int> > pairScan;
+    std::pair<CIdentityVal, std::pair<CIdentityIndex,int> > pairScan;
     BOOST_FOREACH(pairScan, nameScan)
     {
         std::string ddnsName = stringFromNameVal(pairScan.first);
@@ -884,11 +884,11 @@ UniValue name_scan(const UniValue& params, bool fHelp)
             std::string ddnsName = stringFromNameVal(pairScan.first);
             oName.push_back(Pair("name", ddnsName));
 
-            CNameIndex txName = pairScan.second.first;
+            CIdentityIndex txName = pairScan.second.first;
             int nExpiresAt    = pairScan.second.second;
-            CNameVal value = txName.value;
+            CIdentityVal value = txName.value;
 
-        oName.push_back(Pair("value", limitString(encodeNameVal(value, outputType), mMaxShownValue, "\n...(value too large - use name_show to see full value)")));
+        oName.push_back(Pair("value", limitString(encodeNameVal(value, outputType), mMaxShownValue, "\n...(value too large - use identity_show to see full value)")));
             oName.push_back(Pair("expires_in", nExpiresAt - chainActive.Height()));
             if (nExpiresAt - chainActive.Height() <= 0)
                 oName.push_back(Pair("expired", true));
@@ -900,15 +900,15 @@ UniValue name_scan(const UniValue& params, bool fHelp)
     return oRes;
 }
 
-bool createNameScript(CScript& nameScript, const CNameVal& name, const CNameVal& value, int nRentalDays, int op, std::string& err_msg)
+bool createNameScript(CScript& nameScript, const CIdentityVal& name, const CIdentityVal& value, int nRentalDays, int op, std::string& err_msg)
 {
-    if (op == OP_NAME_DELETE)
+    if (op == OP_IDENTITY_DELETE)
     {
         nameScript << op << OP_DROP << name << OP_DROP;
         return true;
     }
 
-    NameTxInfo nti(name, value, nRentalDays, op, -1, err_msg);
+    IdentityTxInfo nti(name, value, nRentalDays, op, -1, err_msg);
     if (!checkNameValues(nti))
     {
         err_msg = nti.err_msg;
@@ -941,7 +941,7 @@ bool createNameScript(CScript& nameScript, const CNameVal& name, const CNameVal&
     return true;
 }
 
-bool IsWalletLocked(NameTxReturn& ret)
+bool IsWalletLocked(IdentityTxReturn& ret)
 {
     if (pwalletMain->IsLocked())
     {
@@ -952,23 +952,23 @@ bool IsWalletLocked(NameTxReturn& ret)
     return false;
 }
 
-static CNameVal CNameValToLowerCase(const CNameVal& nameVal) {
+static CIdentityVal CIdentityValToLowerCase(const CIdentityVal& nameVal) {
     std::string strNameVal;
-    CNameVal::const_iterator vi = nameVal.begin();
+    CIdentityVal::const_iterator vi = nameVal.begin();
     while (vi != nameVal.end()) 
     {
         strNameVal += std::tolower(*vi);
         vi++;
     }
-    CNameVal returnNameVal(strNameVal.begin(), strNameVal.end());
+    CIdentityVal returnNameVal(strNameVal.begin(), strNameVal.end());
     return returnNameVal;
 }
 
-UniValue name_new(const UniValue& params, bool fHelp)
+UniValue identity_new(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() < 2 || params.size() > 5)
         throw std::runtime_error(
-                "name_new <name> <value> <days> [toaddress] [valuetype]\n"
+                "identity_new <name> <value> <days> [toaddress] [valuetype]\n"
                 "Creates new key->value pair which expires after specified number of days.\n"
                 "Cost is square root of (1% of last PoW + 1% per year of last PoW)."
                 "If <value> is empty then previous value is left intact.\n"
@@ -983,23 +983,23 @@ UniValue name_new(const UniValue& params, bool fHelp)
                 + HelpRequiringPassphrase());
 
     // make sure the DDNS entry is all lowercase.
-    CNameVal name = CNameValToLowerCase(nameValFromValue(params[0]));
-    CNameVal value = nameValFromValue(params[1]);
+    CIdentityVal name = CIdentityValToLowerCase(nameValFromValue(params[0]));
+    CIdentityVal value = nameValFromValue(params[1]);
     int nRentalDays = params[2].get_int();
     std::string strAddress = params.size() > 3 ? params[3].get_str() : "";
     std::string strValueType = params.size() > 4 ? params[4].get_str() : "";
 
-    NameTxReturn ret = name_operation(OP_NAME_NEW, name, value, nRentalDays, strAddress, strValueType);
+    IdentityTxReturn ret = identity_operation(OP_IDENTITY_NEW, name, value, nRentalDays, strAddress, strValueType);
     if (!ret.ok)
         throw JSONRPCError(ret.err_code, ret.err_msg);
     return ret.hex.GetHex();
 }
 
-UniValue name_update(const UniValue& params, bool fHelp)
+UniValue identity_update(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() < 2 || params.size() > 5)
         throw std::runtime_error(
-                "name_update <name> <value> <days> [toaddress] [valuetype]\n"
+                "identity_update <name> <value> <days> [toaddress] [valuetype]\n"
                 "Update name value, add days to expiration time and possibly transfer a name to diffrent address.\n"
                 "\nArguments:\n"
                 "1. name      (string, required) Name to update.\n"
@@ -1012,51 +1012,51 @@ UniValue name_update(const UniValue& params, bool fHelp)
                 + HelpRequiringPassphrase());
 
     // make sure the DDNS entry is all lowercase.
-    CNameVal name = CNameValToLowerCase(nameValFromValue(params[0]));
-    CNameVal value = nameValFromValue(params[1]);
+    CIdentityVal name = CIdentityValToLowerCase(nameValFromValue(params[0]));
+    CIdentityVal value = nameValFromValue(params[1]);
     int nRentalDays = params[2].get_int();
     std::string strAddress = params.size() > 3 ? params[3].get_str() : "";
     std::string strValueType = params.size() > 4 ? params[4].get_str() : "";
 
-    NameTxReturn ret = name_operation(OP_NAME_UPDATE, name, value, nRentalDays, strAddress, strValueType);
+    IdentityTxReturn ret = identity_operation(OP_IDENTITY_UPDATE, name, value, nRentalDays, strAddress, strValueType);
 
      if (!ret.ok)
         throw JSONRPCError(ret.err_code, ret.err_msg);
     return ret.hex.GetHex();
 }
 
-UniValue name_delete(const UniValue& params, bool fHelp)
+UniValue identity_delete(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
         throw std::runtime_error(
-                "name_delete <name>\nDelete a name if you own it. Others may do name_new after this command."
+                "identity_delete <name>\nDelete a name if you own it. Others may do identity_new after this command."
                 + HelpRequiringPassphrase());
 
     // make sure the DDNS entry is all lowercase.
-    CNameVal name = CNameValToLowerCase(nameValFromValue(params[0]));
+    CIdentityVal name = CIdentityValToLowerCase(nameValFromValue(params[0]));
 
-    NameTxReturn ret = name_operation(OP_NAME_DELETE, name, CNameVal(), 0, "", "");
+    IdentityTxReturn ret = identity_operation(OP_IDENTITY_DELETE, name, CIdentityVal(), 0, "", "");
     if (!ret.ok)
         throw JSONRPCError(ret.err_code, ret.err_msg);
     return ret.hex.GetHex();
 
 }
 
-NameTxReturn name_operation(const int op, const CNameVal& name, CNameVal value, const int nRentalDays, const std::string& strAddress, const std::string& strValueType)
+IdentityTxReturn identity_operation(const int op, const CIdentityVal& name, CIdentityVal value, const int nRentalDays, const std::string& strAddress, const std::string& strValueType)
 {
-    NameTxReturn ret;
+    IdentityTxReturn ret;
     ret.err_code = RPC_INTERNAL_ERROR; // default value in case of abnormal exit
     ret.err_msg = "unkown error";
     ret.ok = false;
 
-    if ((op == OP_NAME_NEW || op == OP_NAME_MULTISIG) && value.empty())
+    if ((op == OP_IDENTITY_NEW || op == OP_IDENTITY_MULTISIG) && value.empty())
     {
         ret.err_msg = "value must not be empty";
         return ret;
     }
 
     // currently supports only new, update, multisig and delete operations.
-    if (op != OP_NAME_NEW && op != OP_NAME_UPDATE && op != OP_NAME_DELETE && op != OP_NAME_MULTISIG)
+    if (op != OP_IDENTITY_NEW && op != OP_IDENTITY_UPDATE && op != OP_IDENTITY_DELETE && op != OP_IDENTITY_MULTISIG)
     {
         ret.err_msg = "illegal name op";
         return ret;
@@ -1121,7 +1121,7 @@ NameTxReturn name_operation(const int op, const CNameVal& name, CNameVal value, 
     }
 
     
-    if (op == OP_NAME_MULTISIG)
+    if (op == OP_IDENTITY_MULTISIG)
     {  
         if (!AddressMatchesPubKey(name, value, ret.err_msg))
         {
@@ -1134,7 +1134,7 @@ NameTxReturn name_operation(const int op, const CNameVal& name, CNameVal value, 
         return ret;
 
     CMutableTransaction tmpTx;
-    tmpTx.nVersion = NAMECOIN_TX_VERSION;
+    tmpTx.nVersion = DYNAMIC_TX_VERSION;
     CWalletTx wtx(pwalletMain, tmpTx);
     std::stringstream ss;
     CScript scriptPubKey;
@@ -1154,7 +1154,7 @@ NameTxReturn name_operation(const int op, const CNameVal& name, CNameVal value, 
         // check if op can be aplied to name remaining time
         if (NameActive(name))
         {
-            if (op == OP_NAME_NEW || op == OP_NAME_MULTISIG)
+            if (op == OP_IDENTITY_NEW || op == OP_IDENTITY_MULTISIG)
             {
                 ret.err_msg = stringFromOp(op) + " on an unexpired name";
                 return ret;
@@ -1162,7 +1162,7 @@ NameTxReturn name_operation(const int op, const CNameVal& name, CNameVal value, 
         }
         else
         {
-            if (op == OP_NAME_UPDATE || op == OP_NAME_DELETE)
+            if (op == OP_IDENTITY_UPDATE || op == OP_IDENTITY_DELETE)
             {
                 ret.err_msg = stringFromOp(op) + " on an unexpired name";
                 return ret;
@@ -1171,11 +1171,11 @@ NameTxReturn name_operation(const int op, const CNameVal& name, CNameVal value, 
 
         // grab last tx in name chain and check if it can be spent by us
         CWalletTx wtxIn = CWalletTx();
-        if (op == OP_NAME_UPDATE || op == OP_NAME_DELETE)
+        if (op == OP_IDENTITY_UPDATE || op == OP_IDENTITY_DELETE)
         {
-            CNameDB dbName("r");
+            CIdentityDB dbName("r");
             CTransaction prevTx;
-            CNameRecord nameRec;
+            CIdentityRecord nameRec;
             if (!GetLastTxOfName(dbName, name, prevTx, nameRec))
             {
                 ret.err_msg = "could not find tx with this name";
@@ -1183,7 +1183,7 @@ NameTxReturn name_operation(const int op, const CNameVal& name, CNameVal value, 
             }
 
             // empty value == reuse old value
-            if ((op == OP_NAME_UPDATE || op == OP_NAME_MULTISIG) && value.empty())
+            if ((op == OP_IDENTITY_UPDATE || op == OP_IDENTITY_MULTISIG) && value.empty())
                 value = nameRec.vtxPos.back().value;
 
             uint256 wtxInHash = prevTx.GetHash();
@@ -1214,7 +1214,7 @@ NameTxReturn name_operation(const int op, const CNameVal& name, CNameVal value, 
         }
 
         // add destination to namescript
-        if ((op == OP_NAME_UPDATE || op == OP_NAME_NEW || op == OP_NAME_MULTISIG) && strAddress != "")
+        if ((op == OP_IDENTITY_UPDATE || op == OP_IDENTITY_NEW || op == OP_IDENTITY_MULTISIG) && strAddress != "")
         {
             CDynamicAddress address(strAddress);
             if (!address.IsValid())
@@ -1238,7 +1238,7 @@ NameTxReturn name_operation(const int op, const CNameVal& name, CNameVal value, 
         nameScript += scriptPubKey;
 
         // verify namescript
-        NameTxInfo nti;
+        IdentityTxInfo nti;
         if (!DecodeNameScript(nameScript, nti))
         {
             ret.err_msg = nti.err_msg;
@@ -1248,7 +1248,7 @@ NameTxReturn name_operation(const int op, const CNameVal& name, CNameVal value, 
         // set fee and send!
         CAmount nameFee = GetNameOpFee(nRentalDays, op);
         CAmount minAmount = MIN_TXOUT_AMOUNT;
-        if (op == OP_NAME_MULTISIG)
+        if (op == OP_IDENTITY_MULTISIG)
             minAmount = (CAmount)(MIN_TXOUT_AMOUNT/10);
 
         SendName(nameScript, minAmount, wtx, wtxIn, nameFee);
@@ -1270,7 +1270,7 @@ NameTxReturn name_operation(const int op, const CNameVal& name, CNameVal value, 
 bool createNameIndexFile()
 {
     LogPrintf("Scanning blockchain for names to create fast index...\n");
-    CNameDB dbName("cr+");
+    CIdentityDB dbName("cr+");
 
     if (!fTxIndex)
         return error("createNameIndexFile() : transaction index not available");
@@ -1320,16 +1320,16 @@ bool createNameIndexFile()
 
 // read name tx and extract: name, value and rentalDays
 // optionaly it can extract destination address and check if tx is mine (note: it does not check if address is valid)
-bool DecodeNameTx(const CTransaction& tx, NameTxInfo& nti, bool checkAddressAndIfIsMine /* = false */)
+bool DecodeIdentityTx(const CTransaction& tx, IdentityTxInfo& nti, bool checkAddressAndIfIsMine /* = false */)
 {
-    if (tx.nVersion != NAMECOIN_TX_VERSION)
+    if (tx.nVersion != DYNAMIC_TX_VERSION)
         return false;
 
     bool found = false;
     for (unsigned int i = 0; i < tx.vout.size(); i++)
     {
         const CTxOut& out = tx.vout[i];
-        NameTxInfo ntiTmp;
+        IdentityTxInfo ntiTmp;
         CScript::const_iterator pc = out.scriptPubKey.begin();
         if (DecodeNameScript(out.scriptPubKey, ntiTmp, pc))
         {
@@ -1363,15 +1363,15 @@ bool DecodeNameTx(const CTransaction& tx, NameTxInfo& nti, bool checkAddressAndI
 
 int IndexOfNameOutput(const CTransaction& tx)
 {
-    NameTxInfo nti;
-    if (!DecodeNameTx(tx, nti))
+    IdentityTxInfo nti;
+    if (!DecodeIdentityTx(tx, nti))
         throw std::runtime_error("IndexOfNameOutput() : name output not found");
     return nti.nOut;
 }
 
-void CNamecoinHooks::AddToPendingNames(const CTransaction& tx)
+void CDynamicHooks::AddToPendingNames(const CTransaction& tx)
 {
-    if (tx.nVersion != NAMECOIN_TX_VERSION)
+    if (tx.nVersion != DYNAMIC_TX_VERSION)
         return;
 
     CCoins coins;
@@ -1384,8 +1384,8 @@ void CNamecoinHooks::AddToPendingNames(const CTransaction& tx)
         return;
     }
 
-    NameTxInfo nti;
-    if (!DecodeNameTx(tx, nti))
+    IdentityTxInfo nti;
+    if (!DecodeIdentityTx(tx, nti))
     {
         error("AddToPendingNames() : could not decode name script in tx %s", tx.ToString());
         return;
@@ -1398,40 +1398,40 @@ void CNamecoinHooks::AddToPendingNames(const CTransaction& tx)
 // Checks name tx and save name data to vName if valid
 // returns true if: (tx is valid name tx) OR (tx is not a name tx)
 // returns false if tx is invalid name tx
-bool CNamecoinHooks::CheckInputs(const CTransaction& tx, const CBlockIndex* pindexBlock, std::vector<nameTempProxy> &vName, const CDiskTxPos& pos, const CAmount& txFee)
+bool CDynamicHooks::CheckInputs(const CTransaction& tx, const CBlockIndex* pindexBlock, std::vector<nameTempProxy> &vName, const CDiskTxPos& pos, const CAmount& txFee)
 {
-    if (tx.nVersion != NAMECOIN_TX_VERSION)
+    if (tx.nVersion != DYNAMIC_TX_VERSION)
         return true;
 
 //read name tx
-    NameTxInfo nti;
-    if (!DecodeNameTx(tx, nti))
+    IdentityTxInfo nti;
+    if (!DecodeIdentityTx(tx, nti))
     {
         if (pindexBlock->nHeight > RELEASE_HEIGHT)
-            return error("CheckInputsHook() : could not decode namecoin tx %s in block %d", tx.GetHash().GetHex(), pindexBlock->nHeight);
+            return error("CheckInputsHook() : could not decode dynamic tx %s in block %d", tx.GetHash().GetHex(), pindexBlock->nHeight);
         return false;
     }
 
-    CNameVal name = nti.name;
+    CIdentityVal name = nti.name;
     std::string sName = stringFromNameVal(name);
     std::string info = str( boost::format("name %s, tx=%s, block=%d, value=%s") %
         sName % tx.GetHash().GetHex() % pindexBlock->nHeight % stringFromNameVal(nti.value));
 
 //check if last known tx on this name matches any of inputs of this tx
-    CNameDB dbName("r");
-    CNameRecord nameRec;
+    CIdentityDB dbName("r");
+    CIdentityRecord nameRec;
     if (dbName.ExistsName(name) && !dbName.ReadName(name, nameRec))
         return error("CheckInputsHook() : failed to read from name DB for %s", info);
 
     bool found = false;
-    NameTxInfo prev_nti;
+    IdentityTxInfo prev_nti;
     if (!nameRec.vtxPos.empty() && !nameRec.deleted())
     {
-        CTransaction lastKnownNameTx;
-        if (!lastKnownNameTx.ReadFromDisk(nameRec.vtxPos.back().txPos))
+        CTransaction lastKnownIdentityTx;
+        if (!lastKnownIdentityTx.ReadFromDisk(nameRec.vtxPos.back().txPos))
             return error("CheckInputsHook() : failed to read from name DB for %s", info);
-        uint256 lasthash = lastKnownNameTx.GetHash();
-        if (!DecodeNameTx(lastKnownNameTx, prev_nti))
+        uint256 lasthash = lastKnownIdentityTx.GetHash();
+        if (!DecodeIdentityTx(lastKnownIdentityTx, prev_nti))
             return error("CheckInputsHook() : Failed to decode existing previous name tx for %s. Your blockchain or nameindex.dat may be corrupt.", info);
 
         for (unsigned int i = 0; i < tx.vin.size(); i++) //this scans all scripts of tx.vin
@@ -1445,71 +1445,71 @@ bool CNamecoinHooks::CheckInputs(const CTransaction& tx, const CBlockIndex* pind
 
     switch (nti.op)
     {
-        case OP_NAME_NEW:
+        case OP_IDENTITY_NEW:
         {
             //scan last 10 PoW block for tx fee that matches the one specified in tx
             if (!::IsNameFeeEnough(tx, nti, pindexBlock, txFee))
             {
                 if (pindexBlock->nHeight > RELEASE_HEIGHT)
-                    return error("CheckInputsHook() : rejected name_new because not enough fee for %s", info);
+                    return error("CheckInputsHook() : rejected identity_new because not enough fee for %s", info);
                 return false;
             }
 
             if (NameActive(dbName, name, pindexBlock->nHeight))
             {
                 if (pindexBlock->nHeight > RELEASE_HEIGHT)
-                    return error("CheckInputsHook() : name_new on an unexpired name for %s", info);
+                    return error("CheckInputsHook() : identity_new on an unexpired name for %s", info);
                 return false;
             }
             break;
         }
-        case OP_NAME_MULTISIG:
+        case OP_IDENTITY_MULTISIG:
         {
             if (txFee < (CAmount)(MIN_TXOUT_AMOUNT/10))
             {
                 if (pindexBlock->nHeight > RELEASE_HEIGHT)
-                    return error("CheckInputsHook() : rejected name_multisig because not enough fee for %s", info);
+                    return error("CheckInputsHook() : rejected identity_multisig because not enough fee for %s", info);
                 return false;
             }
 
             if (NameActive(dbName, name, pindexBlock->nHeight))
             {
                 if (pindexBlock->nHeight > RELEASE_HEIGHT)
-                    return error("CheckInputsHook() : name_multisig on an unexpired name for %s", info);
+                    return error("CheckInputsHook() : identity_multisig on an unexpired name for %s", info);
                 return false;
             }
             break;
         }
-        case OP_NAME_UPDATE:
+        case OP_IDENTITY_UPDATE:
         {
             //scan last 10 PoW block for tx fee that matches the one specified in tx
             if (!::IsNameFeeEnough(tx, nti, pindexBlock, txFee))
             {
                 if (pindexBlock->nHeight > RELEASE_HEIGHT)
-                    return error("CheckInputsHook() : rejected name_update because not enough fee for %s", info);
+                    return error("CheckInputsHook() : rejected identity_update because not enough fee for %s", info);
                 return false;
             }
 
-            if (!found || (prev_nti.op != OP_NAME_NEW && prev_nti.op != OP_NAME_UPDATE))
-                return error("name_update without previous new or update tx for %s", info);
+            if (!found || (prev_nti.op != OP_IDENTITY_NEW && prev_nti.op != OP_IDENTITY_UPDATE))
+                return error("identity_update without previous new or update tx for %s", info);
 
             if (prev_nti.name != name)
-                return error("CheckInputsHook() : name_update name mismatch for %s", info);
+                return error("CheckInputsHook() : identity_update name mismatch for %s", info);
 
             if (!NameActive(dbName, name, pindexBlock->nHeight))
-                return error("CheckInputsHook() : name_update on an unexpired name for %s", info);
+                return error("CheckInputsHook() : identity_update on an unexpired name for %s", info);
             break;
         }
-        case OP_NAME_DELETE:
+        case OP_IDENTITY_DELETE:
         {
-            if (!found || (prev_nti.op != OP_NAME_NEW && prev_nti.op != OP_NAME_UPDATE))
-                return error("name_delete without previous new or update tx, for %s", info);
+            if (!found || (prev_nti.op != OP_IDENTITY_NEW && prev_nti.op != OP_IDENTITY_UPDATE))
+                return error("identity_delete without previous new or update tx, for %s", info);
 
             if (prev_nti.name != name)
-                return error("CheckInputsHook() : name_delete name mismatch for %s", info);
+                return error("CheckInputsHook() : identity_delete name mismatch for %s", info);
 
             if (!NameActive(dbName, name, pindexBlock->nHeight))
-                return error("CheckInputsHook() : name_delete on expired name for %s", info);
+                return error("CheckInputsHook() : identity_delete on expired name for %s", info);
             break;
         }
         default:
@@ -1517,7 +1517,7 @@ bool CNamecoinHooks::CheckInputs(const CTransaction& tx, const CBlockIndex* pind
     }
 
     // all checks passed - record tx information to vName. It will be sorted by nTime and writen to nameindex.dat at the end of ConnectBlock
-    CNameIndex txPos2;
+    CIdentityIndex txPos2;
     txPos2.nHeight = pindexBlock->nHeight;
     txPos2.value = nti.value;
     txPos2.txPos = pos;
@@ -1533,20 +1533,20 @@ bool CNamecoinHooks::CheckInputs(const CTransaction& tx, const CBlockIndex* pind
     return true;
 }
 
-bool CNamecoinHooks::DisconnectInputs(const CTransaction& tx)
+bool CDynamicHooks::DisconnectInputs(const CTransaction& tx)
 {
-    if (tx.nVersion != NAMECOIN_TX_VERSION)
+    if (tx.nVersion != DYNAMIC_TX_VERSION)
         return true;
 
-    NameTxInfo nti;
-    if (!DecodeNameTx(tx, nti))
-        return error("DisconnectInputsHook() : could not decode namecoin tx");
+    IdentityTxInfo nti;
+    if (!DecodeIdentityTx(tx, nti))
+        return error("DisconnectInputsHook() : could not decode dynamic tx");
 
     {
-        CNameDB dbName("cr+");
+        CIdentityDB dbName("cr+");
         dbName.TxnBegin();
 
-        CNameRecord nameRec;
+        CIdentityRecord nameRec;
         if (!dbName.ReadName(nti.name, nameRec))
             return error("DisconnectInputsHook() : failed to read from name DB");
 
@@ -1565,10 +1565,10 @@ bool CNamecoinHooks::DisconnectInputs(const CTransaction& tx)
             if (nameRec.vtxPos.size() == 0) // delete empty record
                 return dbName.EraseName(nti.name);
 
-            // if we have deleted name_new - recalculate Last Active Chain Index
-            if (nti.op == OP_NAME_NEW || nti.op == OP_NAME_MULTISIG)
+            // if we have deleted identity_new - recalculate Last Active Chain Index
+            if (nti.op == OP_IDENTITY_NEW || nti.op == OP_IDENTITY_MULTISIG)
                 for (int i = nameRec.vtxPos.size() - 1; i >= 0; i--)
-                    if (nameRec.vtxPos[i].op == OP_NAME_NEW || nameRec.vtxPos[i].op == OP_NAME_MULTISIG)
+                    if (nameRec.vtxPos[i].op == OP_IDENTITY_NEW || nameRec.vtxPos[i].op == OP_IDENTITY_MULTISIG)
                     {
                         nameRec.nLastActiveChainIndex = i;
                         break;
@@ -1592,22 +1592,22 @@ std::string stringFromOp(int op)
 {
     switch (op)
     {
-        case OP_NAME_UPDATE:
+        case OP_IDENTITY_UPDATE:
             return "Update Name";
-        case OP_NAME_NEW:
+        case OP_IDENTITY_NEW:
             return "New Name";
-        case OP_NAME_DELETE:
+        case OP_IDENTITY_DELETE:
             return "Delete Name";
-        case OP_NAME_MULTISIG:
+        case OP_IDENTITY_MULTISIG:
             return "Multisig Name";
         default:
             return "<unknown name op>";
     }
 }
 
-bool CNamecoinHooks::ExtractAddress(const CScript& script, std::string& address)
+bool CDynamicHooks::ExtractAddress(const CScript& script, std::string& address)
 {
-    NameTxInfo nti;
+    IdentityTxInfo nti;
     if (!DecodeNameScript(script, nti))
         return false;
 
@@ -1618,37 +1618,37 @@ bool CNamecoinHooks::ExtractAddress(const CScript& script, std::string& address)
 
 // Executes name operations in vName and writes result to nameindex.dat.
 // NOTE: the block should already be written to blockchain by now - otherwise this may fail.
-bool CNamecoinHooks::ConnectBlock(CBlockIndex* pindex, const std::vector<nameTempProxy> &vName)
+bool CDynamicHooks::ConnectBlock(CBlockIndex* pindex, const std::vector<nameTempProxy> &vName)
 {
     if (vName.empty())
         return true;
 
     // All of these name ops should succed. If there is an error - nameindex.dat is probably corrupt.
-    CNameDB dbName("r+");
-    std::set<CNameVal> sNameNew;
+    CIdentityDB dbName("r+");
+    std::set<CIdentityVal> sNameNew;
 
     BOOST_FOREACH(const nameTempProxy& i, vName)
     {
-        CNameRecord nameRec;
+        CIdentityRecord nameRec;
         if (dbName.ExistsName(i.name) && !dbName.ReadName(i.name, nameRec))
             return error("ConnectBlockHook() : failed to read from name DB");
 
         dbName.TxnBegin();
 
-        // only first name_new for same name in same block will get written
-        if  ((i.op == OP_NAME_NEW || i.op == OP_NAME_MULTISIG) && sNameNew.count(i.name))
+        // only first identity_new for same name in same block will get written
+        if  ((i.op == OP_IDENTITY_NEW || i.op == OP_IDENTITY_MULTISIG) && sNameNew.count(i.name))
             continue;
 
         nameRec.vtxPos.push_back(i.ind); // add
 
         // if starting new chain - save position of where it starts
-        if (i.op == OP_NAME_NEW || i.op == OP_NAME_MULTISIG)
+        if (i.op == OP_IDENTITY_NEW || i.op == OP_IDENTITY_MULTISIG)
             nameRec.nLastActiveChainIndex = nameRec.vtxPos.size()-1;
 
         // limit to 1000 tx per name or a full single chain - whichever is larger
         static size_t maxSize = 0;
         if(maxSize == 0)
-            GetArg("-nameindexchainsize", NAMEINDEX_CHAIN_SIZE);
+            GetArg("-nameindexchainsize", IDINDEX_CHAIN_SIZE);
 
         if (nameRec.vtxPos.size() > maxSize &&
             nameRec.vtxPos.size() - nameRec.nLastActiveChainIndex + 1 <= maxSize)
@@ -1666,14 +1666,14 @@ bool CNamecoinHooks::ConnectBlock(CBlockIndex* pindex, const std::vector<nameTem
             return error("ConnectBlockHook() : failed to calculate expiration time before writing to name DB for %s", i.hash.GetHex());
         if (!dbName.WriteName(i.name, nameRec))
             return error("ConnectBlockHook() : failed to write to name DB");
-        if  (i.op == OP_NAME_NEW || i.op == OP_NAME_MULTISIG)
+        if  (i.op == OP_IDENTITY_NEW || i.op == OP_IDENTITY_MULTISIG)
             sNameNew.insert(i.name);
         LogPrintf("ConnectBlockHook(): writing %s %s in block %d to ddns.dat\n", stringFromOp(i.op), stringFromNameVal(i.name), pindex->nHeight);
 
         {
             // remove from pending names list
             LOCK(cs_main);
-            std::map<CNameVal, std::set<uint256> >::iterator mi = mapNamePending.find(i.name);
+            std::map<CIdentityVal, std::set<uint256> >::iterator mi = mapNamePending.find(i.name);
             if (mi != mapNamePending.end())
             {
                 mi->second.erase(i.hash);
@@ -1688,22 +1688,22 @@ bool CNamecoinHooks::ConnectBlock(CBlockIndex* pindex, const std::vector<nameTem
     return true;
 }
 
-bool CNamecoinHooks::IsNameScript(CScript scr)
+bool CDynamicHooks::IsNameScript(CScript scr)
 {
-    NameTxInfo nti;
+    IdentityTxInfo nti;
     return DecodeNameScript(scr, nti);
 }
 
-bool CNamecoinHooks::getNameValue(const std::string& sName, std::string& sValue)
+bool CDynamicHooks::getNameValue(const std::string& sName, std::string& sValue)
 {
-    CNameVal name = nameValFromString(sName);
-    CNameDB dbName("r");
+    CIdentityVal name = nameValFromString(sName);
+    CIdentityDB dbName("r");
     if (!dbName.ExistsName(name))
         return false;
 
     CTransaction tx;
-    NameTxInfo nti;
-    if (!(GetLastTxOfName(dbName, name, tx) && DecodeNameTx(tx, nti, true)))
+    IdentityTxInfo nti;
+    if (!(GetLastTxOfName(dbName, name, tx) && DecodeIdentityTx(tx, nti, true)))
         return false;
 
     if (!NameActive(dbName, name))
@@ -1714,10 +1714,10 @@ bool CNamecoinHooks::getNameValue(const std::string& sName, std::string& sValue)
     return true;
 }
 
-bool GetNameValue(const CNameVal& name, CNameVal& value)
+bool GetNameValue(const CIdentityVal& name, CIdentityVal& value)
 {
-    CNameDB dbName("r");
-    CNameRecord nameRec;
+    CIdentityDB dbName("r");
+    CIdentityRecord nameRec;
 
     if (!NameActive(name))
         return false;
@@ -1730,14 +1730,14 @@ bool GetNameValue(const CNameVal& name, CNameVal& value)
     return true;
 }
 
-bool CNamecoinHooks::DumpToTextFile()
+bool CDynamicHooks::DumpToTextFile()
 {
-    CNameDB dbName("r");
+    CIdentityDB dbName("r");
     return dbName.DumpToTextFile();
 }
 
 
-bool CNameDB::DumpToTextFile()
+bool CIdentityDB::DumpToTextFile()
 {
     std::ofstream myfile ("example111.txt");
     if (!myfile.is_open())
@@ -1747,7 +1747,7 @@ bool CNameDB::DumpToTextFile()
     if (!pcursor)
         return false;
 
-    CNameVal name;
+    CIdentityVal name;
     unsigned int fFlags = DB_SET_RANGE;
     while (true)
     {
@@ -1768,9 +1768,9 @@ bool CNameDB::DumpToTextFile()
         ssKey >> strType;
         if (strType == "namei")
         {
-            CNameVal name2;
+            CIdentityVal name2;
             ssKey >> name2;
-            CNameRecord val;
+            CIdentityRecord val;
             ssValue >> val;
             if (val.vtxPos.empty())
                 continue;
@@ -1814,29 +1814,29 @@ bool SignNameSignature(const CKeyStore& keystore, const CTransaction& txFrom, CM
         return false;
 
     // Test solution
-    return VerifyScript(txin.scriptSig, txout.scriptPubKey, STANDARD_SCRIPT_VERIFY_FLAGS, MutableTransactionSignatureChecker(&txTo, nIn), NULL, txTo.nVersion == NAMECOIN_TX_VERSION);
+    return VerifyScript(txin.scriptSig, txout.scriptPubKey, STANDARD_SCRIPT_VERIFY_FLAGS, MutableTransactionSignatureChecker(&txTo, nIn), NULL, txTo.nVersion == DYNAMIC_TX_VERSION);
 }
 
 std::string MultiSigGetPubKeyFromAddress(const std::string& strAddress)
 {
     std::string strErrorMessage = "";
-    CNameVal nameVal;
+    CIdentityVal nameVal;
     unsigned int nMax = 500;
     
-    CNameDB dbName("r");
+    CIdentityDB dbName("r");
 
-    std::vector<std::pair<CNameVal, std::pair<CNameIndex,int> > > nameScan;
+    std::vector<std::pair<CIdentityVal, std::pair<CIdentityIndex,int> > > nameScan;
     if (!dbName.ScanNames(nameVal, nMax, nameScan))
         throw JSONRPCError(RPC_WALLET_ERROR, "scan failed");
 
-    std::pair<CNameVal, std::pair<CNameIndex,int> > pairScan;
+    std::pair<CIdentityVal, std::pair<CIdentityIndex,int> > pairScan;
     BOOST_FOREACH(pairScan, nameScan)
     {
-        CNameIndex nameIndex = pairScan.second.first;
-        CNameVal name = pairScan.first;
-        CNameVal value = nameIndex.value;
+        CIdentityIndex nameIndex = pairScan.second.first;
+        CIdentityVal name = pairScan.first;
+        CIdentityVal value = nameIndex.value;
         const std::string ddnsName = stringFromNameVal(name);
-        if (ddnsName == ("address:" + strAddress) && nameIndex.op == OP_NAME_MULTISIG && AddressMatchesPubKey(name, value, strErrorMessage))
+        if (ddnsName == ("address:" + strAddress) && nameIndex.op == OP_IDENTITY_MULTISIG && AddressMatchesPubKey(name, value, strErrorMessage))
         {
             return stringFromNameVal(value);
         }

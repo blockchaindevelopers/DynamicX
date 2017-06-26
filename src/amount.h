@@ -17,7 +17,7 @@ static const CAmount COIN = 100000000;
 static const CAmount CENT = 1000000;
 static const CAmount SUBCENT = 100;
 static const CAmount MIN_TX_FEE = CENT;
-static const CAmount MIN_MULTISIG_NAME_FEE = SUBCENT;
+static const CAmount MIN_MULTISIG_IDENTITY_FEE = SUBCENT;
 
 extern const std::string CURRENCY_UNIT;
 

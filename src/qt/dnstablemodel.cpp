@@ -24,31 +24,31 @@ static int column_alignments[] = {
         Qt::AlignRight|Qt::AlignVCenter     // Expires in
     };
 
-struct NameTableEntryLessThan
+struct IdentityTableEntryLessThan
 {
-    bool operator()(const NameTableEntry &a, const NameTableEntry &b) const
+    bool operator()(const IdentityTableEntry &a, const IdentityTableEntry &b) const
     {
         return a.name < b.name;
     }
-    bool operator()(const NameTableEntry &a, const QString &b) const
+    bool operator()(const IdentityTableEntry &a, const QString &b) const
     {
         return a.name < b;
     }
-    bool operator()(const QString &a, const NameTableEntry &b) const
+    bool operator()(const QString &a, const IdentityTableEntry &b) const
     {
         return a < b.name;
     }
 };
 
 // Private implementation
-class NameTablePriv
+class IdentityTablePriv
 {
 public:
     CWallet *wallet;
-    QList<NameTableEntry> cachedNameTable;
-    NameTableModel *parent;
+    QList<IdentityTableEntry> cachedNameTable;
+    IdentityTableModel *parent;
 
-    NameTablePriv(CWallet *wallet, NameTableModel *parent):
+    IdentityTablePriv(CWallet *wallet, IdentityTableModel *parent):
         wallet(wallet), parent(parent) {}
 
     void refreshNameTable(bool fMyNames, bool fOtherNames, bool fExpired)
@@ -56,12 +56,12 @@ public:
         parent->beginResetModel();
         cachedNameTable.clear();
 
-        CNameVal nameUniq;
-        std::map<CNameVal, NameTxInfo> mapNames, mapPending;
+        CIdentityVal nameUniq;
+        std::map<CIdentityVal, IdentityTxInfo> mapNames, mapPending;
         GetNameList(nameUniq, mapNames, mapPending);
 
         // add info about existing names
-        BOOST_FOREACH(const PAIRTYPE(CNameVal, NameTxInfo)& item, mapNames)
+        BOOST_FOREACH(const PAIRTYPE(CIdentityVal, IdentityTxInfo)& item, mapNames)
         {
             // name is mine and user asked to hide my names
             if (item.second.fIsMine && !fMyNames)
@@ -73,12 +73,12 @@ public:
             if (item.second.nExpiresAt - chainActive.Height() <= 0 && !fExpired)
                 continue;
 
-            NameTableEntry nte(stringFromNameVal(item.second.name), stringFromNameVal(item.second.value), item.second.strAddress, item.second.nExpiresAt, item.second.fIsMine);
+            IdentityTableEntry nte(stringFromNameVal(item.second.name), stringFromNameVal(item.second.value), item.second.strAddress, item.second.nExpiresAt, item.second.fIsMine);
             cachedNameTable.append(nte);
         }
 
         // add pending name operations
-        BOOST_FOREACH(const PAIRTYPE(CNameVal, NameTxInfo)& item, mapPending)
+        BOOST_FOREACH(const PAIRTYPE(CIdentityVal, IdentityTxInfo)& item, mapPending)
         {
             // name is mine and user asked to hide my names
             if (item.second.fIsMine && !fMyNames)
@@ -87,24 +87,24 @@ public:
             if (!item.second.fIsMine && !fOtherNames)
                 continue;
 
-            int nHeightStatus = NameTableEntry::NAME_NON_EXISTING;
-            if (item.second.op == OP_NAME_NEW)
-                nHeightStatus = NameTableEntry::NAME_NEW;
-            else if (item.second.op == OP_NAME_UPDATE)
-                nHeightStatus = NameTableEntry::NAME_UPDATE;
-            else if (item.second.op == OP_NAME_DELETE)
-                nHeightStatus = NameTableEntry::NAME_DELETE;
+            int nHeightStatus = IdentityTableEntry::IDENTITY_NON_EXISTING;
+            if (item.second.op == OP_IDENTITY_NEW)
+                nHeightStatus = IdentityTableEntry::IDENTITY_NEW;
+            else if (item.second.op == OP_IDENTITY_UPDATE)
+                nHeightStatus = IdentityTableEntry::IDENTITY_UPDATE;
+            else if (item.second.op == OP_IDENTITY_DELETE)
+                nHeightStatus = IdentityTableEntry::IDENTITY_DELETE;
 
-            NameTableEntry nte(stringFromNameVal(item.second.name), stringFromNameVal(item.second.value), item.second.strAddress, nHeightStatus, item.second.fIsMine);
+            IdentityTableEntry nte(stringFromNameVal(item.second.name), stringFromNameVal(item.second.value), item.second.strAddress, nHeightStatus, item.second.fIsMine);
             cachedNameTable.append(nte);
         }
 
         // qLowerBound() and qUpperBound() require our cachedNameTable list to be sorted in asc order
-        qSort(cachedNameTable.begin(), cachedNameTable.end(), NameTableEntryLessThan());
+        qSort(cachedNameTable.begin(), cachedNameTable.end(), IdentityTableEntryLessThan());
         parent->endResetModel();
     }
 
-    void updateEntry(const NameTableEntry &nameObj, int status, int *outNewRowIndex = NULL)
+    void updateEntry(const IdentityTableEntry &nameObj, int status, int *outNewRowIndex = NULL)
     {
         updateEntry(nameObj.name, nameObj.value, nameObj.address, nameObj.nExpiresAt, status, outNewRowIndex);
     }
@@ -112,10 +112,10 @@ public:
     void updateEntry(const QString &name, const QString &value, const QString &address, int nExpiresAt, int status, int *outNewRowIndex = NULL)
     {
         // Find name in model
-        QList<NameTableEntry>::iterator lower = qLowerBound(
-            cachedNameTable.begin(), cachedNameTable.end(), name, NameTableEntryLessThan());
-        QList<NameTableEntry>::iterator upper = qUpperBound(
-            cachedNameTable.begin(), cachedNameTable.end(), name, NameTableEntryLessThan());
+        QList<IdentityTableEntry>::iterator lower = qLowerBound(
+            cachedNameTable.begin(), cachedNameTable.end(), name, IdentityTableEntryLessThan());
+        QList<IdentityTableEntry>::iterator upper = qUpperBound(
+            cachedNameTable.begin(), cachedNameTable.end(), name, IdentityTableEntryLessThan());
         int lowerIndex = (lower - cachedNameTable.begin());
         int upperIndex = (upper - cachedNameTable.begin());
         bool inModel = (lower != upper);
@@ -132,11 +132,11 @@ public:
                     // so we do not write warning into the log in this case
                 }
                 else
-                    LogPrintf("Warning: NameTablePriv::updateEntry: Got CT_NEW, but entry is already in model\n");
+                    LogPrintf("Warning: IdentityTablePriv::updateEntry: Got CT_NEW, but entry is already in model\n");
                 break;
             }
             parent->beginInsertRows(QModelIndex(), lowerIndex, lowerIndex);
-            cachedNameTable.insert(lowerIndex, NameTableEntry(name, value, address, nExpiresAt));
+            cachedNameTable.insert(lowerIndex, IdentityTableEntry(name, value, address, nExpiresAt));
             parent->endInsertRows();
             if (outNewRowIndex)
                 *outNewRowIndex = parent->index(lowerIndex, 0).row();
@@ -144,7 +144,7 @@ public:
         case CT_UPDATED:
             if (!inModel)
             {
-                LogPrintf("Warning: NameTablePriv::updateEntry: Got CT_UPDATED, but entry is not in model\n");
+                LogPrintf("Warning: IdentityTablePriv::updateEntry: Got CT_UPDATED, but entry is not in model\n");
                 break;
             }
             lower->name = name;
@@ -156,7 +156,7 @@ public:
         case CT_DELETED:
             if (!inModel)
             {
-                LogPrintf("Warning: NameTablePriv::updateEntry: Got CT_DELETED, but entry is not in model\n");
+                LogPrintf("Warning: IdentityTablePriv::updateEntry: Got CT_DELETED, but entry is not in model\n");
                 break;
             }
             parent->beginRemoveRows(QModelIndex(), lowerIndex, upperIndex-1);
@@ -171,7 +171,7 @@ public:
         return cachedNameTable.size();
     }
 
-    NameTableEntry *index(int idx)
+    IdentityTableEntry *index(int idx)
     {
         if (idx >= 0 && idx < cachedNameTable.size())
         {
@@ -185,11 +185,11 @@ public:
 };
 
 
-NameTableModel::NameTableModel(CWallet *wallet, WalletModel *parent) :
+IdentityTableModel::IdentityTableModel(CWallet *wallet, WalletModel *parent) :
     QAbstractTableModel(parent), walletModel(parent), wallet(wallet), priv(0), cachedNumBlocks(0)
 {
     columns << tr("Name") << tr("Value") << tr("Address") << tr("Expires in");
-    priv = new NameTablePriv(wallet, this);
+    priv = new IdentityTablePriv(wallet, this);
 
     fMyNames = true;
     fOtherNames = false;
@@ -197,36 +197,36 @@ NameTableModel::NameTableModel(CWallet *wallet, WalletModel *parent) :
     priv->refreshNameTable(fMyNames, fOtherNames, fExpired);
 }
 
-NameTableModel::~NameTableModel()
+IdentityTableModel::~IdentityTableModel()
 {
     delete priv;
 }
 
-void NameTableModel::update(bool forced)
+void IdentityTableModel::update(bool forced)
 {
     // just do a complete table refresh, for simplicity sake
     // TODO: redo this to allow increment updates, just like in TransactionTableModel::updateTransaction
     priv->refreshNameTable(fMyNames, fOtherNames, fExpired);
 }
 
-int NameTableModel::rowCount(const QModelIndex &parent /* = QModelIndex()*/) const
+int IdentityTableModel::rowCount(const QModelIndex &parent /* = QModelIndex()*/) const
 {
     Q_UNUSED(parent);
     return priv->size();
 }
 
-int NameTableModel::columnCount(const QModelIndex &parent /* = QModelIndex()*/) const
+int IdentityTableModel::columnCount(const QModelIndex &parent /* = QModelIndex()*/) const
 {
     Q_UNUSED(parent);
     return columns.length();
 }
 
-QVariant NameTableModel::data(const QModelIndex &index, int role) const
+QVariant IdentityTableModel::data(const QModelIndex &index, int role) const
 {
     if (!index.isValid())
         return QVariant();
 
-    NameTableEntry *rec = static_cast<NameTableEntry*>(index.internalPointer());
+    IdentityTableEntry *rec = static_cast<IdentityTableEntry*>(index.internalPointer());
 
     switch (role)
     {
@@ -243,11 +243,11 @@ QVariant NameTableModel::data(const QModelIndex &index, int role) const
         case ExpiresIn:
             if (!rec->HeightValid())
             {
-                if (rec->nExpiresAt == NameTableEntry::NAME_NEW)
+                if (rec->nExpiresAt == IdentityTableEntry::IDENTITY_NEW)
                     return QString("pending (new)");
-                if (rec->nExpiresAt == NameTableEntry::NAME_UPDATE)
+                if (rec->nExpiresAt == IdentityTableEntry::IDENTITY_UPDATE)
                     return QString("pending (update)");
-                if (rec->nExpiresAt == NameTableEntry::NAME_DELETE)
+                if (rec->nExpiresAt == IdentityTableEntry::IDENTITY_DELETE)
                     return QString("pending (delete)");
             }
             else
@@ -275,7 +275,7 @@ QVariant NameTableModel::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
-QVariant NameTableModel::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant IdentityTableModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if (orientation == Qt::Horizontal)
     {
@@ -305,19 +305,19 @@ QVariant NameTableModel::headerData(int section, Qt::Orientation orientation, in
     return QVariant();
 }
 
-Qt::ItemFlags NameTableModel::flags(const QModelIndex &index) const
+Qt::ItemFlags IdentityTableModel::flags(const QModelIndex &index) const
 {
     if (!index.isValid())
         return 0;
-    //NameTableEntry *rec = static_cast<NameTableEntry*>(index.internalPointer());
+    //IdentityTableEntry *rec = static_cast<IdentityTableEntry*>(index.internalPointer());
 
     return Qt::ItemIsSelectable | Qt::ItemIsEnabled;
 }
 
-QModelIndex NameTableModel::index(int row, int column, const QModelIndex &parent /* = QModelIndex()*/) const
+QModelIndex IdentityTableModel::index(int row, int column, const QModelIndex &parent /* = QModelIndex()*/) const
 {
     Q_UNUSED(parent);
-    NameTableEntry *data = priv->index(row);
+    IdentityTableEntry *data = priv->index(row);
     if (data)
     {
         return createIndex(row, column, priv->index(row));
@@ -328,12 +328,12 @@ QModelIndex NameTableModel::index(int row, int column, const QModelIndex &parent
     }
 }
 
-void NameTableModel::updateEntry(const QString &name, const QString &value, const QString &address, int nHeight, int status, int *outNewRowIndex /* = NULL*/)
+void IdentityTableModel::updateEntry(const QString &name, const QString &value, const QString &address, int nHeight, int status, int *outNewRowIndex /* = NULL*/)
 {
     priv->updateEntry(name, value, address, nHeight, status, outNewRowIndex);
 }
 
-void NameTableModel::emitDataChanged(int idx)
+void IdentityTableModel::emitDataChanged(int idx)
 {
     Q_EMIT dataChanged(index(idx, 0), index(idx, columns.length()-1));
 }

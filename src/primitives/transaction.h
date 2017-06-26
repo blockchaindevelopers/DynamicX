@@ -17,12 +17,14 @@
 // DNS standard information released in 1987.
 // https://tools.ietf.org/html/rfc1035
 // Our Current implementation is missing Type, Class, and TTL (cache time)
-static const int NAMECOIN_TX_VERSION = 0x1030; //0x1035 is rfc1035, our initial version is 1030.
-typedef std::vector<unsigned char> CNameVal;
-struct NameTxInfo
+
+static const int DYNAMIC_TX_VERSION = 0x1030; //0x1035 is rfc1035, our initial version is 1030.
+typedef std::vector<unsigned char> CIdentityVal;
+
+struct IdentityTxInfo
 { 
-    CNameVal name;
-    CNameVal value;
+    CIdentityVal name;
+    CIdentityVal value;
     int nRentalDays;
     int op;
     int nOut;
@@ -35,8 +37,8 @@ struct NameTxInfo
     //used only by GetNameList()
     int nExpiresAt;
 
-    NameTxInfo(): nRentalDays(-1), op(-1), nOut(-1), fIsMine(false), nExpiresAt(-1) {}
-    NameTxInfo(CNameVal name, CNameVal value, int nRentalDays, int op, int nOut, std::string err_msg):
+    IdentityTxInfo(): nRentalDays(-1), op(-1), nOut(-1), fIsMine(false), nExpiresAt(-1) {}
+    IdentityTxInfo(CIdentityVal name, CIdentityVal value, int nRentalDays, int op, int nOut, std::string err_msg):
         name(name), value(value), nRentalDays(nRentalDays), op(op), nOut(nOut), err_msg(err_msg), fIsMine(false), nExpiresAt(-1) {}
 };
 

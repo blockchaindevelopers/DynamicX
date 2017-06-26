@@ -1309,25 +1309,25 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, unsigne
 
 // ddns stuff
 
-bool checkNameValues(NameTxInfo& ret)
+bool checkNameValues(IdentityTxInfo& ret)
 {
     ret.err_msg = "";
-    if (ret.name.size() > MAX_NAME_LENGTH)
+    if (ret.name.size() > MAX_IDENTITY_LENGTH)
         ret.err_msg.append("name is too long.\n");
 
     if (ret.value.size() > MAX_VALUE_LENGTH)
         ret.err_msg.append("value is too long.\n");
 
-    if (ret.op == OP_NAME_NEW && ret.nRentalDays < 1)
+    if (ret.op == OP_IDENTITY_NEW && ret.nRentalDays < 1)
         ret.err_msg.append("rental days must be greater than 0.\n");
 
-    if (ret.op == OP_NAME_UPDATE && ret.nRentalDays < 0)
+    if (ret.op == OP_IDENTITY_UPDATE && ret.nRentalDays < 0)
         ret.err_msg.append("rental days must be greater or equal 0.\n");
 
     if (ret.nRentalDays > MAX_RENTAL_DAYS)
         ret.err_msg.append("rental days value is too large.\n");
 
-    if (ret.op == OP_NAME_MULTISIG && !(AddressMatchesPubKey(ret.name, ret.value, ret.err_msg)))
+    if (ret.op == OP_IDENTITY_MULTISIG && !(AddressMatchesPubKey(ret.name, ret.value, ret.err_msg)))
         ret.err_msg.append("invalid multisig name or value.\n");
 
     if (ret.err_msg != "")
@@ -1336,7 +1336,7 @@ bool checkNameValues(NameTxInfo& ret)
     return true;
 }
 
-bool AddressMatchesPubKey(const CNameVal& name, const CNameVal& value, std::string& strError)
+bool AddressMatchesPubKey(const CIdentityVal& name, const CIdentityVal& value, std::string& strError)
 {
     /*std::string strAddress = stringFromNameVal(name);
 
@@ -1362,12 +1362,12 @@ bool AddressMatchesPubKey(const CNameVal& name, const CNameVal& value, std::stri
 
 // read name script and extract name, value and rentalDays
 // returns true/false if script is correct/incorrect
-bool DecodeNameScript(const CScript& script, NameTxInfo& ret, CScript::const_iterator& pc)
+bool DecodeNameScript(const CScript& script, IdentityTxInfo& ret, CScript::const_iterator& pc)
 {
     // script structure:
-    // (name_new | name_update) << OP_DROP << name << days << OP_2DROP << val1 << val2 << .. << valn << OP_DROP2 << OP_DROP2 << ..<< (OP_DROP2 | OP_DROP) << paytoscripthash
+    // (identity_new | identity_update) << OP_DROP << name << days << OP_2DROP << val1 << val2 << .. << valn << OP_DROP2 << OP_DROP2 << ..<< (OP_DROP2 | OP_DROP) << paytoscripthash
     // or
-    // name_delete << OP_DROP << name << OP_DROP << paytoscripthash
+    // identity_delete << OP_DROP << name << OP_DROP << paytoscripthash
 
     // NOTE: script structure is strict - it must not contain anything else in the midle of it to be a valid name script. It can, however, contain anything else after the correct structure have been read.
 
@@ -1380,7 +1380,7 @@ bool DecodeNameScript(const CScript& script, NameTxInfo& ret, CScript::const_ite
         return false;
     ret.op = opcode - OP_1 + 1;
 
-    if (ret.op != OP_NAME_NEW && ret.op != OP_NAME_UPDATE && ret.op != OP_NAME_DELETE && ret.op != OP_NAME_MULTISIG)
+    if (ret.op != OP_IDENTITY_NEW && ret.op != OP_IDENTITY_UPDATE && ret.op != OP_IDENTITY_DELETE && ret.op != OP_IDENTITY_MULTISIG)
         return false;
 
     ret.err_msg = "failed to read OP_DROP after op_type";
@@ -1399,10 +1399,10 @@ bool DecodeNameScript(const CScript& script, NameTxInfo& ret, CScript::const_ite
         return false;
     ret.name = vch;
 
-    // if name_delete - read OP_DROP after name and exit.
-    if (ret.op == OP_NAME_DELETE)
+    // if identity_delete - read OP_DROP after name and exit.
+    if (ret.op == OP_IDENTITY_DELETE)
     {
-        ret.err_msg = "failed to read OP2_DROP in name_delete";
+        ret.err_msg = "failed to read OP2_DROP in identity_delete";
         if (!script.GetOp(pc, opcode))
             return false;
         if (opcode != OP_DROP)
@@ -1468,7 +1468,7 @@ bool DecodeNameScript(const CScript& script, NameTxInfo& ret, CScript::const_ite
     return true;
 }
 
-bool DecodeNameScript(const CScript& script, NameTxInfo& ret)
+bool DecodeNameScript(const CScript& script, IdentityTxInfo& ret)
 {
     CScript::const_iterator pc = script.begin();
     return DecodeNameScript(script, ret, pc);
@@ -1476,7 +1476,7 @@ bool DecodeNameScript(const CScript& script, NameTxInfo& ret)
 
 bool RemoveNameScriptPrefix(const CScript& scriptIn, CScript& scriptOut)
 {
-    NameTxInfo nti;
+    IdentityTxInfo nti;
     CScript::const_iterator pc = scriptIn.begin();
 
     if (!DecodeNameScript(scriptIn, nti, pc))
@@ -1486,9 +1486,9 @@ bool RemoveNameScriptPrefix(const CScript& scriptIn, CScript& scriptOut)
     return true;
 }
 
-std::string stringFromNameVal(const CNameVal& nameVal) {
+std::string stringFromNameVal(const CIdentityVal& nameVal) {
     std::string res;
-    CNameVal::const_iterator vi = nameVal.begin();
+    CIdentityVal::const_iterator vi = nameVal.begin();
     while (vi != nameVal.end()) {
         res += (char)(*vi);
         vi++;
