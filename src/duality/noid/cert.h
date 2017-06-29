@@ -48,13 +48,16 @@ public:
     unsigned char safetyLevel;
     bool safeSearch;
     bool bTransferViewOnly;
+    
     CCert() {
         SetNull();
     }
+    
     CCert(const CTransaction &tx) {
         SetNull();
         UnserializeFromTx(tx);
     }
+    
     void ClearCert()
     {
         vchData.clear();
@@ -62,6 +65,7 @@ public:
         vchTitle.clear();
         sCategory.clear();
     }
+    
     ADD_SERIALIZE_METHODS;
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
@@ -78,6 +82,7 @@ public:
         READWRITE(sCategory);
         READWRITE(vchAlias);
     }
+    
     friend bool operator==(const CCert &a, const CCert &b) {
         return (
                    a.vchTitle == b.vchTitle
@@ -114,6 +119,7 @@ public:
     friend bool operator!=(const CCert &a, const CCert &b) {
         return !(a == b);
     }
+    
     bool GetCertFromList(std::vector<CCert> &certList) {
         if(certList.size() == 0) return false;
         CCert myCert = certList.front();
@@ -135,6 +141,7 @@ public:
         *this = myCert;
         return true;
     }
+    
     void SetNull() {
         bTransferViewOnly = false;
         vchLinkAlias.clear();
@@ -149,9 +156,11 @@ public:
         vchData.clear();
         vchPubData.clear();
     }
+    
     bool IsNull() const {
         return (bTransferViewOnly == false && vchLinkAlias.empty() && sCategory.empty() && vchCert.empty() && safetyLevel == 0 && safeSearch && txHash.IsNull() &&  nHeight == 0 && vchData.empty() && vchPubData.empty() && vchTitle.empty() && vchAlias.empty());
     }
+    
     bool UnserializeFromTx(const CTransaction &tx);
     bool UnserializeFromData(const std::vector<unsigned char> &vchData, const std::vector<unsigned char> &vchHash);
     void Serialize(std::vector<unsigned char>& vchData);

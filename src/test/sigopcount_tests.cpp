@@ -46,7 +46,7 @@ BOOST_AUTO_TEST_CASE(GetSigOpCount)
     for (int i = 0; i < 3; i++)
     {
         CKey k;
-        k.MakeNewKey(true);
+        k.MakeNewKey();
         keys.push_back(k.GetPubKey());
     }
     CScript s2 = GetScriptForMultisig(1, keys);

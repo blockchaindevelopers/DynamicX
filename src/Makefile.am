@@ -119,7 +119,11 @@ DYNAMIC_CORE_H = \
 	duality/dynode/dynodeman.h \
 	duality/fluid/broadcast.h \
 	duality/fluid/fluidtoken.h \
-        duality/fluid/fluidkeys.h \
+    duality/fluid/fluidkeys.h \
+	duality/noid/alias.h \
+	duality/noid/cert.h \
+	duality/noid/message.h \
+    duality/noid/messagecrypter.h \
 	duality/governance/governance-classes.h \
 	duality/governance/governance-exceptions.h \
 	duality/governance/governance-object.h \
@@ -232,6 +236,10 @@ libdynamic_server_a_SOURCES = \
 	duality/fluid/fluidtoken.cpp \
 	duality/fluid/issuebroadcasts.cpp \
 	duality/fluid/rpcfluid.cpp \
+	duality/noid/alias.cpp \
+	duality/noid/cert.cpp \
+	duality/noid/message.cpp \
+    duality/noid/messagecrypter.cpp \
 	duality/governance/governance-classes.cpp \
 	duality/governance/governance-object.cpp \
 	duality/governance/governance-vote.cpp \

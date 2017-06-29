@@ -341,7 +341,7 @@ UniValue dynode(const UniValue& params, bool fHelp)
     if (strCommand == "genkey")
     {
         CKey secret;
-        secret.MakeNewKey(false);
+        secret.MakeNewKey();
 
         return CDynamicSecret(secret).ToString();
     }

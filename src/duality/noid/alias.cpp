@@ -4,11 +4,10 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "alias.h"
-#include "offer.h"
-#include "escrow.h"
+// #include "escrow.h"
 #include "message.h"
 #include "cert.h"
-#include "offer.h"
+// #include "offer.h"
 #include "init.h"
 #include "main.h"
 #include "util.h"
@@ -36,10 +35,11 @@
 using namespace std;
 
 CAliasDB *paliasdb = NULL;
-COfferDB *pofferdb = NULL;
 CCertDB *pcertdb = NULL;
-CEscrowDB *pescrowdb = NULL;
 CMessageDB *pmessagedb = NULL;
+
+// COfferDB *pofferdb = NULL;
+// CEscrowDB *pescrowdb = NULL;
 
 extern CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
 extern void SendMoneyDynamic(const vector<CRecipient> &vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CWalletTx* wtxInAlias=NULL, int nTxOutAlias = 0, bool dynamicMultiSigTx=false, const CCoinControl* coinControl=NULL, const CWalletTx* wtxInLinkAlias=NULL,  int nTxOutLinkAlias = 0);
@@ -64,6 +64,7 @@ bool GetDynamicTransaction(int nHeight, const uint256 &hash, CTransaction &txOut
     }
     return false;
 }
+
 bool GetTimeToPrune(const CScript& scriptPubKey, uint64_t &nTime)
 {
     vector<unsigned char> vchData;
@@ -73,9 +74,9 @@ bool GetTimeToPrune(const CScript& scriptPubKey, uint64_t &nTime)
     if(!chainActive.Tip())
         return false;
     CAliasIndex alias;
-    COffer offer;
+    // COffer offer;
     CMessage message;
-    CEscrow escrow;
+    // CEscrow escrow;
     CCert cert;
     nTime = 0;
     if(alias.UnserializeFromData(vchData, vchHash))
@@ -107,21 +108,21 @@ bool GetTimeToPrune(const CScript& scriptPubKey, uint64_t &nTime)
             return true;
         }
     }
-    else if(offer.UnserializeFromData(vchData, vchHash))
+    /* else if(offer.UnserializeFromData(vchData, vchHash))
     {
         nTime = GetOfferExpiration(offer);
         return true;
-    }
+    } */
     else if(cert.UnserializeFromData(vchData, vchHash))
     {
         nTime = GetCertExpiration(cert);
         return true;
-    }
+    } /*
     else if(escrow.UnserializeFromData(vchData, vchHash))
     {
         nTime = GetEscrowExpiration(escrow);
         return true;
-    }
+    } */
     else if(message.UnserializeFromData(vchData, vchHash))
     {
         nTime = GetMessageExpiration(message);
@@ -130,6 +131,7 @@ bool GetTimeToPrune(const CScript& scriptPubKey, uint64_t &nTime)
 
     return false;
 }
+
 bool IsSysServiceExpired(const uint64_t &nTime)
 {
     if(!chainActive.Tip() || fTxIndex)
@@ -141,26 +143,27 @@ bool IsDynamicScript(const CScript& scriptPubKey, int &op, vector<vector<unsigne
 {
     if (DecodeAliasScript(scriptPubKey, op, vvchArgs))
         return true;
-    else if(DecodeOfferScript(scriptPubKey, op, vvchArgs))
-        return true;
+    // else if(DecodeOfferScript(scriptPubKey, op, vvchArgs))
+    //    return true;
     else if(DecodeCertScript(scriptPubKey, op, vvchArgs))
         return true;
     else if(DecodeMessageScript(scriptPubKey, op, vvchArgs))
         return true;
-    else if(DecodeEscrowScript(scriptPubKey, op, vvchArgs))
-        return true;
+    // else if(DecodeEscrowScript(scriptPubKey, op, vvchArgs))
+    //    return true;
     return false;
 }
 void RemoveDynamicScript(const CScript& scriptPubKeyIn, CScript& scriptPubKeyOut)
 {
     if (!RemoveAliasScriptPrefix(scriptPubKeyIn, scriptPubKeyOut))
-        if(!RemoveOfferScriptPrefix(scriptPubKeyIn, scriptPubKeyOut))
+        // if(!RemoveOfferScriptPrefix(scriptPubKeyIn, scriptPubKeyOut))
             if(!RemoveCertScriptPrefix(scriptPubKeyIn, scriptPubKeyOut))
-                if(!RemoveEscrowScriptPrefix(scriptPubKeyIn, scriptPubKeyOut))
+        //        if(!RemoveEscrowScriptPrefix(scriptPubKeyIn, scriptPubKeyOut))
                     RemoveMessageScriptPrefix(scriptPubKeyIn, scriptPubKeyOut);
 }
 
 // how much is 1.1 BTC in dynamic? 1 BTC = 110000 SYS for example, nPrice would be 1.1, sysPrice would be 110000
+/* 
 CAmount convertCurrencyCodeToDynamic(const vector<unsigned char> &vchAliasPeg, const vector<unsigned char> &vchCurrencyCode, const double &nPrice, const unsigned int &nHeight, int &precision)
 {
     CAmount sysPrice = 0;
@@ -192,7 +195,7 @@ CAmount convertCurrencyCodeToDynamic(const vector<unsigned char> &vchAliasPeg, c
     if(precision > 8)
         sysPrice = 0;
     return sysPrice;
-}
+} 
 
 float getEscrowFee(const std::vector<unsigned char> &vchAliasPeg, const std::vector<unsigned char> &vchCurrencyCode, const unsigned int &nHeight, int &precision)
 {
@@ -369,6 +372,7 @@ string getCurrencyToSYSFromAlias(const vector<unsigned char> &vchAliasPeg, const
     return "";
 
 }
+*/
 
 void getCategoryListFromValue(vector<string>& categoryList,const UniValue& outerValue)
 {
@@ -382,12 +386,13 @@ void getCategoryListFromValue(vector<string>& categoryList,const UniValue& outer
         categoryList.push_back(categoryValue.get_str());
     }
 }
-bool getBanListFromValue(map<string, unsigned char>& banAliasList,  map<string, unsigned char>& banCertList,  map<string, unsigned char>& banOfferList,const UniValue& outerValue)
+
+bool getBanListFromValue(map<string, unsigned char>& banAliasList,  map<string, unsigned char>& banCertList /* , map<string, unsigned char>& banOfferList */ , const UniValue& outerValue)
 {
     try
     {
         UniValue outerObj = outerValue.get_obj();
-        UniValue objOfferValue = find_value(outerObj, "offers");
+        /* UniValue objOfferValue = find_value(outerObj, "offers");
         if (objOfferValue.isArray())
         {
             UniValue codes = objOfferValue.get_array();
@@ -403,7 +408,7 @@ bool getBanListFromValue(map<string, unsigned char>& banAliasList,  map<string, 
                     banOfferList.insert(make_pair(idStr, severityNum));
                 }
             }
-        }
+        } */
 
         UniValue objCertValue = find_value(outerObj, "certs");
         if (objCertValue.isArray())
@@ -460,7 +465,7 @@ bool getBanList(const vector<unsigned char>& banData, map<string, unsigned char>
     bool read = outerValue.read(value);
     if (read)
     {
-        return getBanListFromValue(banAliasList, banCertList, banOfferList, outerValue);
+        return getBanListFromValue(banAliasList, banCertList, /* banOfferList, */ outerValue);
     }
     else
     {
@@ -579,14 +584,14 @@ bool IsDynamicTxMine(const CTransaction& tx, const string &type) {
     vector<vector<unsigned char> > vvch;
     if ((type == "alias" || type == "any"))
         myNout = IndexOfAliasOutput(tx);
-    else if ((type == "offer" || type == "any"))
-        myNout = IndexOfOfferOutput(tx);
+    // else if ((type == "offer" || type == "any"))
+    //    myNout = IndexOfOfferOutput(tx);
     else if ((type == "cert" || type == "any"))
         myNout = IndexOfCertOutput(tx);
     else if ((type == "message" || type == "any"))
         myNout = IndexOfMessageOutput(tx);
-    else if ((type == "escrow" || type == "any"))
-        myNout = IndexOfEscrowOutput(tx);
+    // else if ((type == "escrow" || type == "any"))
+    //    myNout = IndexOfEscrowOutput(tx);
     else
         return false;
     return myNout >= 0;
@@ -595,8 +600,8 @@ void updateBans(const vector<unsigned char> &banData)
 {
     map<string, unsigned char> banAliasList;
     map<string, unsigned char> banCertList;
-    map<string, unsigned char> banOfferList;
-    if(getBanList(banData, banAliasList, banCertList, banOfferList))
+    // map<string, unsigned char> banOfferList;
+    if(getBanList(banData, banAliasList, banCertList/* ,banOfferList */))
     {
         // update alias bans
         for (map<string, unsigned char>::iterator it = banAliasList.begin(); it != banAliasList.end(); it++) {
@@ -633,7 +638,7 @@ void updateBans(const vector<unsigned char> &banData)
             }
         }
         // update offer bans
-        for (map<string, unsigned char>::iterator it = banOfferList.begin(); it != banOfferList.end(); it++) {
+        /* for (map<string, unsigned char>::iterator it = banOfferList.begin(); it != banOfferList.end(); it++) {
             vector<unsigned char> vchGUID = vchFromString((*it).first);
             unsigned char severity = (*it).second;
             if(pofferdb->ExistsOffer(vchGUID))
@@ -647,7 +652,7 @@ void updateBans(const vector<unsigned char> &banData)
                     pofferdb->WriteOffer(vchGUID, vtxOfferPos);
                 }
             }
-        }
+        } */
     }
 }
 bool CheckAliasInputs(const CTransaction &tx, int op, int nOut, const vector<vector<unsigned char> > &vvchArgs, const CCoinsViewCache &inputs, bool fJustCheck, int nHeight, string &errorMessage, bool dontaddtodb) {
@@ -924,13 +929,13 @@ bool CheckAliasInputs(const CTransaction &tx, int op, int nOut, const vector<vec
                         pwChange = true;
                     // user can't update safety level or rating after creation
                     theAlias.safetyLevel = dbAlias.safetyLevel;
-                    theAlias.nRatingAsBuyer = dbAlias.nRatingAsBuyer;
+                    /* theAlias.nRatingAsBuyer = dbAlias.nRatingAsBuyer;
                     theAlias.nRatingCountAsBuyer = dbAlias.nRatingCountAsBuyer;
                     theAlias.nRatingAsSeller = dbAlias.nRatingAsSeller;
                     theAlias.nRatingCountAsSeller = dbAlias.nRatingCountAsSeller;
                     theAlias.nRatingAsArbiter = dbAlias.nRatingAsArbiter;
                     theAlias.nRatingCountAsArbiter= dbAlias.nRatingCountAsArbiter;
-                    theAlias.vchGUID = dbAlias.vchGUID;
+                    */theAlias.vchGUID = dbAlias.vchGUID;
                     theAlias.vchAlias = dbAlias.vchAlias;
                     if(!theAlias.multiSigInfo.IsNull())
                     {
@@ -1001,12 +1006,13 @@ bool CheckAliasInputs(const CTransaction &tx, int op, int nOut, const vector<vec
                 errorMessage = "DYNAMIC_ALIAS_CONSENSUS_ERROR: ERRCODE: 5028 - " + _("Trying to renew an alias that isn't expired");
                 return true;
             }
-            theAlias.nRatingAsBuyer = 0;
+            /* theAlias.nRatingAsBuyer = 0;
             theAlias.nRatingCountAsBuyer = 0;
             theAlias.nRatingAsSeller = 0;
             theAlias.nRatingCountAsSeller = 0;
             theAlias.nRatingAsArbiter = 0;
             theAlias.nRatingCountAsArbiter = 0;
+            */
             if(theAlias.multiSigInfo.vchAliases.size() > 0)
             {
                 if(theAlias.multiSigInfo.vchAliases.size() > 5 || theAlias.multiSigInfo.nRequiredSigs > 5)
@@ -1335,10 +1341,10 @@ bool CAliasDB::CleanupDatabase(int &servicesCleaned)
 }
 void CleanupDynamicServiceDatabases(int &numServicesCleaned)
 {
-    if(pofferdb != NULL)
-        pofferdb->CleanupDatabase(numServicesCleaned);
-    if(pescrowdb!= NULL)
-        pescrowdb->CleanupDatabase(numServicesCleaned);
+    // if(pofferdb != NULL)
+    //    pofferdb->CleanupDatabase(numServicesCleaned);
+    // if(pescrowdb!= NULL)
+    //    pescrowdb->CleanupDatabase(numServicesCleaned);
     if(pmessagedb!= NULL)
         pmessagedb->CleanupDatabase(numServicesCleaned);
     if(pcertdb!= NULL)
@@ -1352,13 +1358,13 @@ void CleanupDynamicServiceDatabases(int &numServicesCleaned)
         delete paliasdb;
         paliasdb = NULL;
     }
-    if(pofferdb != NULL)
+    /* if(pofferdb != NULL)
     {
         if (!pofferdb->Flush())
             LogPrintf("Failed to write to offer database!");
         delete pofferdb;
         pofferdb = NULL;
-    }
+    } */
     if(pcertdb != NULL)
     {
         if (!pcertdb->Flush())
@@ -1366,13 +1372,13 @@ void CleanupDynamicServiceDatabases(int &numServicesCleaned)
         delete pcertdb;
         pcertdb = NULL;
     }
-    if(pescrowdb != NULL)
+    /* if(pescrowdb != NULL)
     {
         if (!pescrowdb->Flush())
             LogPrintf("Failed to write to escrow database!");
         delete pescrowdb;
         pescrowdb = NULL;
-    }
+    } */
     if(pmessagedb != NULL)
     {
         if (!pmessagedb->Flush())
@@ -1534,8 +1540,8 @@ bool DecodeAndParseDynamicTx(const CTransaction& tx, int& op, int& nOut,
 {
     return DecodeAndParseAliasTx(tx, op, nOut, vvch)
            || DecodeAndParseCertTx(tx, op, nOut, vvch)
-           || DecodeAndParseOfferTx(tx, op, nOut, vvch)
-           || DecodeAndParseEscrowTx(tx, op, nOut, vvch)
+           // || DecodeAndParseOfferTx(tx, op, nOut, vvch)
+           // || DecodeAndParseEscrowTx(tx, op, nOut, vvch)
            || DecodeAndParseMessageTx(tx, op, nOut, vvch);
 }
 bool DecodeAndParseAliasTx(const CTransaction& tx, int& op, int& nOut,
@@ -2371,10 +2377,10 @@ void SysTxToJSON(const int op, const vector<unsigned char> &vchData, const vecto
         CertTxToJSON(op, vchData, vchHash, entry);
     if(IsMessageOp(op))
         MessageTxToJSON(op,vchData, vchHash, entry);
-    if(IsEscrowOp(op))
-        EscrowTxToJSON(op, vchData, vchHash, entry);
-    if(IsOfferOp(op))
-        OfferTxToJSON(op, vchData, vchHash, entry);
+    // if(IsEscrowOp(op))
+    //    EscrowTxToJSON(op, vchData, vchHash, entry);
+    // if(IsOfferOp(op))
+    //    OfferTxToJSON(op, vchData, vchHash, entry);
 }
 void AliasTxToJSON(const int op, const vector<unsigned char> &vchData, const vector<unsigned char> &vchHash, UniValue &entry)
 {
@@ -2627,7 +2633,7 @@ UniValue aliaslist(const UniValue& params, bool fHelp) {
     oRes.push_back(item.second);
     return oRes;
 }
-
+/* 
 UniValue aliasaffiliates(const UniValue& params, bool fHelp) {
     if (fHelp || 1 < params.size())
         throw runtime_error("aliasaffiliates \n"
@@ -2706,6 +2712,7 @@ UniValue aliasaffiliates(const UniValue& params, bool fHelp) {
 
     return oRes;
 }
+*/
 string GenerateDynamicGuid()
 {
     int64_t rand = GetRand(std::numeric_limits<int64_t>::max());
@@ -2896,7 +2903,7 @@ bool BuildAliasJson(const CAliasIndex& alias, const int pending, UniValue& oName
     oName.push_back(Pair("safesearch", alias.safeSearch ? "Yes" : "No"));
     oName.push_back(Pair("acceptcerttransfers", alias.acceptCertTransfers ? "Yes" : "No"));
     oName.push_back(Pair("safetylevel", alias.safetyLevel ));
-    float ratingAsBuyer = 0;
+    /* float ratingAsBuyer = 0;
     if(alias.nRatingCountAsBuyer > 0)
     {
         ratingAsBuyer = alias.nRatingAsBuyer/(float)alias.nRatingCountAsBuyer;
@@ -2923,6 +2930,7 @@ bool BuildAliasJson(const CAliasIndex& alias, const int pending, UniValue& oName
     oName.push_back(Pair("arbiter_rating", ratingAsArbiter));
     oName.push_back(Pair("arbiter_ratingcount", (int)alias.nRatingCountAsArbiter));
     oName.push_back(Pair("arbiter_rating_display", strprintf("%.1f/5 (%d %s)", ratingAsArbiter, alias.nRatingCountAsArbiter, _("Votes"))));
+    */
     string sTime;
     CBlockIndex *pindex = chainActive[alias.nHeight];
     if (pindex) {
@@ -2988,7 +2996,7 @@ UniValue aliashistory(const UniValue& params, bool fHelp) {
         if (!GetDynamicTransaction(txPos2.nHeight, txPos2.txHash, tx, Params().GetConsensus()))
             continue;
 
-        if(DecodeOfferTx(tx, op, nOut, vvch) )
+        /* if(DecodeOfferTx(tx, op, nOut, vvch) )
         {
             opName = offerFromOp(op);
             COffer offer(tx);
@@ -2997,10 +3005,10 @@ UniValue aliashistory(const UniValue& params, bool fHelp) {
             else if(!offer.accept.feedback.empty())
                 opName += "("+_("feedback")+")";
 
-        }
+        } */
         else if(DecodeMessageTx(tx, op, nOut, vvch) )
             opName = messageFromOp(op);
-        else if(DecodeEscrowTx(tx, op, nOut, vvch) )
+        /* else if(DecodeEscrowTx(tx, op, nOut, vvch) )
         {
             CEscrow escrow(tx);
             opName = escrowFromOp(escrow.op);
@@ -3008,7 +3016,7 @@ UniValue aliashistory(const UniValue& params, bool fHelp) {
                 opName += "("+_("acknowledged")+")";
             else if(!escrow.feedback.empty())
                 opName += "("+_("feedback")+")";
-        }
+        } */
         else if(DecodeCertTx(tx, op, nOut, vvch) )
             opName = certFromOp(op);
         else if(DecodeAliasTx(tx, op, nOut, vvch) )
