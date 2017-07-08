@@ -56,7 +56,7 @@ static CScript failedOperation = OP_FAILURE;
 extern bool EnsureWalletIsAvailable(bool avoidException);
 extern void SendMintTransaction(CScript generatedScript, CWalletTx& wtxNew);
 
-int64_t DeriveSupplyPercentage(int64_t percentage) {
+CAmount DeriveSupplyPercentage(int64_t percentage) {
 	return chainActive.Tip()->nMoneySupply * percentage / 100;
 }
 	
@@ -91,8 +91,8 @@ std::string HexToString(std::string in) {
 	return output;
 }
 
-static const int64_t fluidMintingMinimum = 100 * COIN;
-static const int64_t fluidMintingMaximum = DeriveSupplyPercentage(10); // Maximum 10%
+static const CAmount fluidMintingMinimum = 100 * COIN;
+static const CAmount fluidMintingMaximum = DeriveSupplyPercentage(10); // Maximum 10%
 
 void ConvertToHex(std::string &input) { std::string output = StringToHex(input); input = output; }
 void ConvertToString(std::string &input) { std::string output = HexToString(input); input = output; }
@@ -288,7 +288,7 @@ UniValue generatefluidissuetoken(const UniValue& params, bool fHelp)
 
 #include <boost/lexical_cast.hpp>
 
-bool ParseMintKey(int64_t nTime, CDynamicAddress &destination, int64_t &coinAmount, std::string uniqueIdentifier) {
+bool ParseMintKey(int64_t nTime, CDynamicAddress &destination, CAmount &coinAmount, std::string uniqueIdentifier) {
 	int64_t issuanceTime;
 	
 	// Step 0: Check if token is even valid
@@ -323,7 +323,7 @@ bool ParseMintKey(int64_t nTime, CDynamicAddress &destination, int64_t &coinAmou
 	std::string ls = ptrs.at(2); std::string::iterator end_posX = std::remove(ls.begin(), ls.end(), ' '); ls.erase(end_posX, ls.end());
 	
 	try {
-		coinAmount			 	= boost::lexical_cast<int64_t>(lr);
+		coinAmount			 	= boost::lexical_cast<uint64_t>(lr);
 		issuanceTime 			= boost::lexical_cast<int64_t>(ls);
 	}
 	catch( boost::bad_lexical_cast const& ) {
