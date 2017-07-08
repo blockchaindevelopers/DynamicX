@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 Everybody and Nobody Inc.
+ * Copyright 2017 Everybody and Nobody (Empinel/Plaxton)
  * 
  * Permission is hereby granted, free of charge, to any person 
  * obtaining a copy of this software and associated documentation files 
@@ -8,7 +8,7 @@
  * distribute, sublicense, and/or sell copies of the Software, and to 
  * permit persons to whom the Software is furnished to do so, subject 
  * to the following conditions:
-1 *
+ *
  * The above copyright notice and this permission notice shall be included in 
  * all copies or substantial portions of the Software.
  * 
@@ -20,84 +20,30 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "base58.h"
-#include "amount.h"
-#include "chain.h"
 #include "core_io.h"
+#include "wallet/wallet.h"
+#include "wallet/walletdb.h"
+#include "init.h"
+#include "keepass.h"
+#include "net.h"
+#include "netbase.h"
+#include "rpcserver.h"
+#include "timedata.h"
 #include "util.h"
 #include "utilmoneystr.h"
 #include "utilstrencodings.h"
-#include "wallet/wallet.h"
-#include "wallet/walletdb.h"
-#include "script/script.h"
-#include "main.h"
-#include "init.h"
-#include "keepass.h"
-#include "main.h"
-#include "net.h"
-#include "netbase.h"
-#include "policy/rbf.h"
-#include "rpcserver.h"
-#include "timedata.h"
-#include "amount.h"
 
 #include <univalue.h>
 
-#include <stdint.h>
-#include <algorithm>
-
+#include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
-
-static const int OP_FAILURE = 0x00;
-static const CAmount MIN_MINTING = 100 * COIN;
-
-static CScript failedOperation = OP_FAILURE;
 
 extern bool EnsureWalletIsAvailable(bool avoidException);
 extern void SendMintTransaction(CScript generatedScript, CWalletTx& wtxNew);
 
-CAmount DeriveSupplyPercentage(int64_t percentage) {
-	return chainActive.Tip()->nMoneySupply * percentage / 100;
-}
-	
-std::string StringToHex(std::string input) {
-	static const char* const lut = "0123456789ABCDEF";
-	size_t len = input.length();
-	std::string output;
-	output.reserve(2 * len);
-	for (size_t i = 0; i < len; ++i)
-	{
-		const unsigned char c = input[i];
-		output.push_back(lut[c >> 4]);
-		output.push_back(lut[c & 15]);
-	}
-	
-	return output;
-}
-	
-std::string HexToString(std::string in) {
-	std::string output;
-	if ((in.length() % 2) != 0) {
-		throw std::runtime_error("String is not valid length ...");
-	}
-		size_t cnt = in.length() / 2;
-		for (size_t i = 0; cnt > i; ++i) {
-			uint32_t s = 0;
-			std::stringstream ss;
-			ss << std::hex << in.substr(i * 2, 2);
-			ss >> s;
-				output.push_back(static_cast<unsigned char>(s));
-	}
-	return output;
-}
+Fluid fluid;
 
-static const CAmount fluidMintingMinimum = 100 * COIN;
-static const CAmount fluidMintingMaximum = DeriveSupplyPercentage(10); // Maximum 10%
-
-void ConvertToHex(std::string &input) { std::string output = StringToHex(input); input = output; }
-void ConvertToString(std::string &input) { std::string output = HexToString(input); input = output; }
-
-bool GenerateFluidToken(CDynamicAddress sendToward, 
+bool Fluid::GenerateFluidToken(CDynamicAddress sendToward, 
 						CAmount tokenMintAmt, std::string &issuanceString) {
 	CDynamicAddress sovreignAddress = "DDi79AEein1zEWsezqUKkFvLUjnbeS1Gbg"; // MmPzujU4zmjBzZpTxBr952Zyh6PETFhca1MPT5gGN8JrUeW3BuzJ
 	
@@ -140,14 +86,7 @@ bool GenerateFluidToken(CDynamicAddress sendToward,
     return true;
 }
 
-CScript AssimilateMintingScript(CDynamicAddress reciever, CAmount howMuch) {
-	std::string issuanceString;
-	if(!GenerateFluidToken(reciever, howMuch, issuanceString))
-		return CScript() << OP_RETURN;
-	else return CScript() << OP_MINT << ParseHex(issuanceString);
-}
-
-bool VerifyInstruction(std::string uniqueIdentifier)
+bool Fluid::VerifyInstruction(std::string uniqueIdentifier)
 {
 	CDynamicAddress sovreignAddress = "DDi79AEein1zEWsezqUKkFvLUjnbeS1Gbg";
 	
@@ -200,7 +139,7 @@ bool VerifyInstruction(std::string uniqueIdentifier)
 }
 
 /** Checks if scriptPubKey is that of the hardcoded addresses */
-bool IsItHardcoded(std::string givenScriptPubKey) {
+bool Fluid::IsItHardcoded(std::string givenScriptPubKey) {
 	CDynamicAddress sovreignAddress = "DDi79AEein1zEWsezqUKkFvLUjnbeS1Gbg";
 	
 #ifdef ENABLE_WALLET /// Assume that address is valid
@@ -216,7 +155,7 @@ bool IsItHardcoded(std::string givenScriptPubKey) {
 }
 
 /** Does client instance own address for engaging in processes - required for RPC (PS: NEEDS wallet) */
-bool InitiateFluidVerify(CDynamicAddress dynamicAddress) {
+bool Fluid::InitiateFluidVerify(CDynamicAddress dynamicAddress) {
 #ifdef ENABLE_WALLET
     LOCK2(cs_main, pwalletMain ? &pwalletMain->cs_wallet : NULL);
 	CDynamicAddress address(dynamicAddress);
@@ -237,6 +176,114 @@ bool InitiateFluidVerify(CDynamicAddress dynamicAddress) {
 	// Wallet cannot be accessed, cannot continue ahead!
     return false;
 #endif
+}
+
+bool Fluid::ParseMintKey(int64_t nTime, CDynamicAddress &destination, CAmount &coinAmount, std::string uniqueIdentifier) {
+	int64_t issuanceTime;
+	
+	// Step 0: Check if token is even valid
+	if (!VerifyInstruction(uniqueIdentifier)) {
+		LogPrintf("FluidMinting (ParseMintKey): VerifyInstruction FAILED! Cannot continue!, identifier: %s\n", uniqueIdentifier);
+		return false;
+	} else {
+		LogPrintf("FluidMinting (ParseMintKey): VerifyInstruction SUCCEEDED! Will continue!, identifier: %s\n", uniqueIdentifier);
+	}
+	
+	// Step 1: Make sense out of ASM ScriptKey, split OP_MINT from Hex
+	std::vector<std::string> transverser;
+	boost::split(transverser, uniqueIdentifier, boost::is_any_of(" "));
+	uniqueIdentifier = transverser.at(1);
+	LogPrintf("FluidMinting (ParseMintKey): Derived unique identifier as %s\n", uniqueIdentifier);
+	
+	// Step 1.2: Convert new Hex Data to dehexed token
+	std::string dehexString = HexToString(uniqueIdentifier);
+	uniqueIdentifier = dehexString;
+	LogPrintf("FluidMinting (ParseMintKey): Dehexed string as %s\n", uniqueIdentifier);
+	
+	// Step 2: Convert the Dehexed Token to sense
+	std::vector<std::string> strs, ptrs;
+	std::string::size_type size, sizeX;
+	boost::split(strs, dehexString, boost::is_any_of(" "));
+	boost::split(ptrs, strs.at(0), boost::is_any_of("::"));
+	
+	LogPrintf("FluidMinting (ParseMintKey): Attempt to derive information is as such, coinAmount: %s, issuanceTime: %s, recipientAddress: %s\n", ptrs.at(0), ptrs.at(2), ptrs.at(4));
+	
+	// Step 3: Convert the token to our variables
+	std::string lr = ptrs.at(0); std::string::iterator end_pos = std::remove(lr.begin(), lr.end(), ' '); lr.erase(end_pos, lr.end());
+	std::string ls = ptrs.at(2); std::string::iterator end_posX = std::remove(ls.begin(), ls.end(), ' '); ls.erase(end_posX, ls.end());
+	
+	try {
+		coinAmount			 	= boost::lexical_cast<int64_t>(lr);
+		issuanceTime 			= boost::lexical_cast<int64_t>(ls);
+	}
+	catch( boost::bad_lexical_cast const& ) {
+		LogPrintf("FluidMinting (ParseMintKey): Either amount string or issuance time string are incorrect! Parsing cannot continue!\n");
+		return false;
+	}
+
+	std::string recipientAddress = ptrs.at(4);
+	destination.SetString(recipientAddress);
+	LogPrintf("FluidMinting (ParseMintKey): Derived information is as such, coinAmount: %s, issuanceTime: %s, recipientAddress: %s\n", coinAmount, issuanceTime, recipientAddress);
+	
+	// if (GetTime() + 15 * 60 < issuanceTime || GetTime() - 15 * 60 > issuanceTime)
+	//	return 0 * COIN;
+		
+	if(!destination.IsValid() || coinAmount < fluidMintingMinimum || coinAmount > fluidMintingMaximum)
+		return false;
+	
+	return true;
+}
+
+bool Fluid::GetMintingInstructions(const CBlock& block, CValidationState& state, CDynamicAddress &toMintAddress, CAmount &mintAmount) {
+    BOOST_FOREACH(const CTransaction& tx, block.vtx) {
+		LogPrintf("FluidMinting (GetMintingInstructions): Starting process of verification! %s\n", "STARTED!");
+        if (!CheckTransaction(tx, state))
+			LogPrintf("FluidMinting (GetMintingInstructions): Failed preliminary transaction verification!\n");
+		else {
+			BOOST_FOREACH(const CTxOut& txout, tx.vout) {
+				LogPrintf("FluidMinting (GetMintingInstructions): Successfully passed preliminary transaction verification!\n");
+				if (txout.scriptPubKey.IsMintInstruction()) {
+					LogPrintf("FluidMinting (GetMintingInstructions): We have found minting instruction, Script: %s\n", ScriptToAsmStr(txout.scriptPubKey)); 
+					if (!VerifyInstruction(ScriptToAsmStr(txout.scriptPubKey)))
+						LogPrintf("FluidMinting (GetMintingInstructions): FAILED instruction verification!\n");
+					else {
+						LogPrintf("FluidMinting (GetMintingInstructions): Successfully verified instruction, Script: %s\n", ScriptToAsmStr(txout.scriptPubKey));
+						if (!ParseMintKey(GetTime(), toMintAddress, mintAmount, ScriptToAsmStr(txout.scriptPubKey)))
+							LogPrintf("FluidMinting (GetMintingInstructions): Failed in parsing key as, Address: %s, Amount: %s, Script: %s\n", toMintAddress.ToString(), mintAmount, ScriptToAsmStr(txout.scriptPubKey));
+						else { 
+							LogPrintf("FluidMinting (GetMintingInstructions): Successfully parsed key as, Address: %s, Amount: %s, Script: %s\n", toMintAddress.ToString(), mintAmount, ScriptToAsmStr(txout.scriptPubKey)); 
+							return true; // Sweet, sweet minting!
+						}
+					} 
+				} else { LogPrintf("FluidMinting (GetMintingInstructions): No minting instruction, Script: %s\n", ScriptToAsmStr(txout.scriptPubKey)); }
+			 }
+		}
+	}
+	LogPrintf("FluidMinting (GetMintingInstructions): FAILED! Unknown Reason\n");
+	return false;
+}
+
+bool Fluid::DerivePreviousBlockInformation(CBlock &block, CBlockIndex* fromDerive) {
+    uint256 hash = fromDerive->GetBlockHash();
+    LogPrintf("FluidMinting (DerivePreviousBlockInformation): Starting to extract block from hash: %s\n", hash.ToString());
+    
+    if (mapBlockIndex.count(hash) == 0) {
+      	LogPrintf("FluidMinting (DerivePreviousBlockInformation): Failed in extracting block - block does not exist!, hash: %s\n", hash.ToString());
+        return false;
+    }
+    
+    CBlockIndex* pblockindex = mapBlockIndex[hash];
+
+    if (fHavePruned && !(pblockindex->nStatus & BLOCK_HAVE_DATA) && pblockindex->nTx > 0) {
+		LogPrintf("FluidMinting (DerivePreviousBlockInformation): Failed in extracting block due to pruning, hash: %s\n", hash.ToString());
+        return false;
+	}
+    
+    if(!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus())) {
+		LogPrintf("FluidMinting (DerivePreviousBlockInformation): Failed in extracting block - unable to read database, hash: %s\n", hash.ToString());
+        return false;
+	}
+    return true;
 }
 
 UniValue generatefluidissuetoken(const UniValue& params, bool fHelp)
@@ -286,115 +333,3 @@ UniValue generatefluidissuetoken(const UniValue& params, bool fHelp)
     return wtx.GetHash().GetHex();
 }
 
-#include <boost/lexical_cast.hpp>
-
-bool ParseMintKey(int64_t nTime, CDynamicAddress &destination, CAmount &coinAmount, std::string uniqueIdentifier) {
-	int64_t issuanceTime;
-	
-	// Step 0: Check if token is even valid
-	if (!VerifyInstruction(uniqueIdentifier)) {
-		LogPrintf("FluidMinting (ParseMintKey): VerifyInstruction FAILED! Cannot continue!, identifier: %s\n", uniqueIdentifier);
-		return false;
-	} else {
-		LogPrintf("FluidMinting (ParseMintKey): VerifyInstruction SUCCEEDED! Will continue!, identifier: %s\n", uniqueIdentifier);
-	}
-	
-	// Step 1: Make sense out of ASM ScriptKey, split OP_MINT from Hex
-	std::vector<std::string> transverser;
-	boost::split(transverser, uniqueIdentifier, boost::is_any_of(" "));
-	uniqueIdentifier = transverser.at(1);
-	LogPrintf("FluidMinting (ParseMintKey): Derived unique identifier as %s\n", uniqueIdentifier);
-	
-	// Step 1.2: Convert new Hex Data to dehexed token
-	std::string dehexString = HexToString(uniqueIdentifier);
-	uniqueIdentifier = dehexString;
-	LogPrintf("FluidMinting (ParseMintKey): Dehexed string as %s\n", uniqueIdentifier);
-	
-	// Step 2: Convert the Dehexed Token to sense
-	std::vector<std::string> strs, ptrs;
-	std::string::size_type size, sizeX;
-	boost::split(strs, dehexString, boost::is_any_of(" "));
-	boost::split(ptrs, strs.at(0), boost::is_any_of("::"));
-	
-	LogPrintf("FluidMinting (ParseMintKey): Attempt to derive information is as such, coinAmount: %s, issuanceTime: %s, recipientAddress: %s\n", ptrs.at(0), ptrs.at(2), ptrs.at(4));
-	
-	// Step 3: Convert the token to our variables
-	std::string lr = ptrs.at(0); std::string::iterator end_pos = std::remove(lr.begin(), lr.end(), ' '); lr.erase(end_pos, lr.end());
-	std::string ls = ptrs.at(2); std::string::iterator end_posX = std::remove(ls.begin(), ls.end(), ' '); ls.erase(end_posX, ls.end());
-	
-	try {
-		coinAmount			 	= boost::lexical_cast<uint64_t>(lr);
-		issuanceTime 			= boost::lexical_cast<int64_t>(ls);
-	}
-	catch( boost::bad_lexical_cast const& ) {
-		LogPrintf("FluidMinting (ParseMintKey): Either amount string or issuance time string are incorrect! Parsing cannot continue!\n");
-		return false;
-	}
-
-	std::string recipientAddress = ptrs.at(4);
-	destination.SetString(recipientAddress);
-	LogPrintf("FluidMinting (ParseMintKey): Derived information is as such, coinAmount: %s, issuanceTime: %s, recipientAddress: %s\n", coinAmount, issuanceTime, recipientAddress);
-	
-	// if (GetTime() + 15 * 60 < issuanceTime || GetTime() - 15 * 60 > issuanceTime)
-	//	return 0 * COIN;
-		
-	if(!destination.IsValid() || coinAmount < fluidMintingMinimum || coinAmount > fluidMintingMaximum)
-		return false;
-	
-	return true;
-}
-
-//
-// CScript scriptCheck = CScript() << OP_MINT << ParseHex("3130303030303030303030303a3a313439393336353333363a3a445148697036443655376d46335761795a32747337794478737a71687779367a5a6a20494f42447a55716777382b41426a39536b62656a6b47754773536a69556c6b6c616832514b314a676258525642613379515a33785a586b5249632f6633526951526458794552724a36595979764c306b787945786573733d");
-//
-bool GetMintingInstructions(const CBlock& block, CValidationState& state, CDynamicAddress &toMintAddress, CAmount &mintAmount) {
-    BOOST_FOREACH(const CTransaction& tx, block.vtx) {
-		LogPrintf("FluidMinting (GetMintingInstructions): Starting process of verification! %s\n", "STARTED!");
-        if (!CheckTransaction(tx, state))
-			LogPrintf("FluidMinting (GetMintingInstructions): Failed preliminary transaction verification!\n");
-		else {
-			BOOST_FOREACH(const CTxOut& txout, tx.vout) {
-				LogPrintf("FluidMinting (GetMintingInstructions): Successfully passed preliminary transaction verification!\n");
-				if (txout.scriptPubKey.IsMintInstruction()) {
-					LogPrintf("FluidMinting (GetMintingInstructions): We have found minting instruction, Script: %s\n", ScriptToAsmStr(txout.scriptPubKey)); 
-					if (!VerifyInstruction(ScriptToAsmStr(txout.scriptPubKey)))
-						LogPrintf("FluidMinting (GetMintingInstructions): FAILED instruction verification!\n");
-					else {
-						LogPrintf("FluidMinting (GetMintingInstructions): Successfully verified instruction, Script: %s\n", ScriptToAsmStr(txout.scriptPubKey));
-						if (!ParseMintKey(GetTime(), toMintAddress, mintAmount, ScriptToAsmStr(txout.scriptPubKey)))
-							LogPrintf("FluidMinting (GetMintingInstructions): Failed in parsing key as, Address: %s, Amount: %s, Script: %s\n", toMintAddress.ToString(), mintAmount, ScriptToAsmStr(txout.scriptPubKey));
-						else { 
-							LogPrintf("FluidMinting (GetMintingInstructions): Successfully parsed key as, Address: %s, Amount: %s, Script: %s\n", toMintAddress.ToString(), mintAmount, ScriptToAsmStr(txout.scriptPubKey)); 
-							return true; // Sweet, sweet minting!
-						}
-					} 
-				} else { LogPrintf("FluidMinting (GetMintingInstructions): No minting instruction, Script: %s\n", ScriptToAsmStr(txout.scriptPubKey)); }
-			 }
-		}
-	}
-	LogPrintf("FluidMinting (GetMintingInstructions): FAILED! Unknown Reason\n");
-	return false;
-}
-
-bool DerivePreviousBlockInformation(CBlock &block, CBlockIndex* fromDerive) {
-    uint256 hash = fromDerive->GetBlockHash();
-    LogPrintf("FluidMinting (DerivePreviousBlockInformation): Starting to extract block from hash: %s\n", hash.ToString());
-    
-    if (mapBlockIndex.count(hash) == 0) {
-      	LogPrintf("FluidMinting (DerivePreviousBlockInformation): Failed in extracting block - block does not exist!, hash: %s\n", hash.ToString());
-        return false;
-    }
-    
-    CBlockIndex* pblockindex = mapBlockIndex[hash];
-
-    if (fHavePruned && !(pblockindex->nStatus & BLOCK_HAVE_DATA) && pblockindex->nTx > 0) {
-		LogPrintf("FluidMinting (DerivePreviousBlockInformation): Failed in extracting block due to pruning, hash: %s\n", hash.ToString());
-        return false;
-	}
-    
-    if(!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus())) {
-		LogPrintf("FluidMinting (DerivePreviousBlockInformation): Failed in extracting block - unable to read database, hash: %s\n", hash.ToString());
-        return false;
-	}
-    return true;
-}
