@@ -21,3 +21,41 @@
  */
 
 #include "datarendering.h"
+
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_int.hpp>
+
+static int DataRendering::generateMTRandom(unsigned int s, int range)
+{
+	boost::mt19937 gen(s);
+	boost::uniform_int<> dist(1, range);
+	return dist(gen);
+}
+
+std::string GetSerializedBlockData(CBlock block) {
+	CDataStream ssBlock(SER_NETWORK, PROTOCOL_VERSION);
+	ssBlock << block;
+	std::string strHex = HexStr(ssBlock.begin(), ssBlock.end());
+	
+	return strHex;
+}
+	
+bool GetSerializeCompilation(CChain *chainActive, std::string &serializeToken, int considerBlocks) {
+    CBlock concernedBlock;
+    int nRandomHeight, nMaxHeight = chainActive.Height();
+    CBlockIndex* pblockindex = chainActive[nMaxHeight];
+	
+    std::string cseed_str = (pblockindex->GetBlockHash().GetHex());
+    const char* cseed = cseed_str.c_str();
+    long seed = hex2long(cseed);
+    
+	for (; 25 > considerBlocks; considerBlocks++) {
+		nRandomHeight = generateMTRandom(seed, nMaxHeight);
+		CBlockIndex* prandomindex = chainActive[nRandomHeight];
+		if (!DerivePreviousBlockInformation(concernedBlock, prandomindex)) { return false; }
+		serializeToken += GetSerializedBlockData(concernedBlock);
+	}
+	
+	return true;
+}
+

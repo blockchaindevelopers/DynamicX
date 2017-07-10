@@ -45,7 +45,6 @@
 #include "sphlib3/sph_radiogatun.h"
 #include "sphlib3/sph_tiger.h"
 
-
 #ifdef GLOBALDEFINED
 #define GLOBAL
 #else
@@ -107,6 +106,8 @@ GLOBAL sph_haval256_5_context   z_haval;
 /* Inheritance Used for deriving DerivePreviousBlockInformation */
 class DataRendering : public Fluid {
 private:
+	static int generateMTRandom(unsigned int s, int range);
+
 	// https://stackoverflow.com/questions/2914986/boost-mersenne-twister-how-to-seed-with-more-than-one-value
 	void seed(UIntType value)
 	{
@@ -122,9 +123,18 @@ private:
 		}
 	}
 
+	long hex2long(const char* hexString)
+	{
+		long ret = 0;
+		while (*hexString && ret >= 0)
+		{
+			ret = (ret << 4) | hextable[(uint8_t)*hexString++];
+		}
+		return ret;
+	}
+
 public:
 	// bool DerivePreviousBlockInformation(CBlock &block, CBlockIndex* fromDerive);
-	bool GetSerializedBlockData();
-	bool GetHashesOfInterest();
-	bool CollateHashBlockData();
+	bool GetSerializeCompilation(CChain *chainActive, std::string &serializeToken = "");
+	std::string GetSerializedBlockData(CBlock block);
 };

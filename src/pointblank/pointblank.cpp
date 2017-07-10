@@ -47,7 +47,7 @@ uint256 PointBlank::RandomHashSelection(const T1 pbegin, const T1 pend, int algo
     
 	uint512 hash;
 	
-			 if (CheckEntry(1, algorithmEntry)) {
+	if (CheckEntry(1, algorithmEntry)) {
 				 
 		sph_blake512_init(&ctx_blake);
 		sph_blake512 (&ctx_blake, (pbegin == pend ? pblank : static_cast<const void*>(&pbegin[0])), (pend - pbegin) * sizeof(pbegin[0]));
@@ -241,4 +241,6 @@ uint256 PointBlank::RandomHashSelection(const T1 pbegin, const T1 pend, int algo
 template<typename T1>
 uint256 PointBlank::PointBlankHashing(const T1 pbegin, const T1 pend) {
 
+
+	
 }
