@@ -87,6 +87,27 @@ bool Fluid::InitiateFluidVerify(CDynamicAddress dynamicAddress) {
 #endif
 }
 
+bool Fluid::DeriveBlockInfoFromHash(CBlock &block, uint256 hash) {
+    if (mapBlockIndex.count(hash) == 0) {
+      	LogPrintf("Fluid::DeriveBlockInfoFromHash: Failed in extracting block - block does not exist!, hash: %s\n", hash.ToString());
+        return false;
+    }
+    
+    CBlockIndex* pblockindex = mapBlockIndex[hash];
+
+    if (fHavePruned && !(pblockindex->nStatus & BLOCK_HAVE_DATA) && pblockindex->nTx > 0) {
+		LogPrintf("Fluid::DeriveBlockInfoFromHash: Failed in extracting block due to pruning, hash: %s\n", hash.ToString());
+        return false;
+	}
+    
+    if(!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus())) {
+		LogPrintf("Fluid::DeriveBlockInfoFromHash: Failed in extracting block - unable to read database, hash: %s\n", hash.ToString());
+        return false;
+	}
+	
+    return true;
+}
+
 bool Fluid::DerivePreviousBlockInformation(CBlock &block, CBlockIndex* fromDerive) {
     uint256 hash = fromDerive->GetBlockHash();
 

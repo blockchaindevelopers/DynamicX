@@ -117,6 +117,7 @@ public:
 	
 	bool DerivePreviousBlockInformation(CBlock &block, CBlockIndex* fromDerive);
 	bool DerivePreviousBlockInformation(CBlock &block, const CBlockIndex* fromDerive);
+	bool DeriveBlockInfoFromHash(CBlock &block, uint256 hash);
 	
 	bool GenerateFluidToken(CDynamicAddress sendToward, 
 							CAmount tokenMintAmt, std::string &issuanceString);
