@@ -150,7 +150,7 @@ public:
     unsigned int nTime;
     unsigned int nBits;
     unsigned int nNonce;
-	std::vector<CTransaction> instructionTx;
+	std::vector<CInstruction> instructionTx;
 
 	//! DynamicX Protocol Inferences from Master Addresses and External Functions
 	CAmount nMoneySupply;

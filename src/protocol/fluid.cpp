@@ -38,11 +38,18 @@
 #include "main.h"
 
 #include <univalue.h>
+#include <algorithm>
 
 extern bool EnsureWalletIsAvailable(bool avoidException);
 extern void SendCustomTransaction(CScript generatedScript, CWalletTx& wtxNew, CAmount nValue = (1*COIN));
 
 Fluid fluid;
+
+CScript AssimilateScriptFeeBurn(int number) {
+	std::string output = std::to_string(number);
+	fluid.ConvertToHex(output);
+	return CScript() << OP_DESTROY << ParseHex(output);
+}
 
 opcodetype getOpcodeFromString(std::string input) {
     if ("OP_MINT") return OP_MINT;
@@ -62,26 +69,14 @@ bool RecursiveVerifyIfValid(const CTransaction& tx) {
 	CAmount nFluidTransactions = 0;
 	BOOST_FOREACH(const CTxOut& txout, tx.vout)
     {
-		if ((txout.scriptPubKey.IsProtocolInstruction(DESTROY_TX) && tx.IsCoinBase()) || // These transactions don't affect consensus, it can be ignored! (unless it is a coinbase transaction)
-			txout.scriptPubKey.IsProtocolInstruction(MINT_TX) ||
-			txout.scriptPubKey.IsProtocolInstruction(KILL_TX) ||
-			txout.scriptPubKey.IsProtocolInstruction(DYNODE_MODFIY_TX) ||
-			txout.scriptPubKey.IsProtocolInstruction(MINING_MODIFY_TX) ||
-			txout.scriptPubKey.IsProtocolInstruction(ACTIVATE_TX) ||
-			txout.scriptPubKey.IsProtocolInstruction(DEACTIVATE_TX))
+		if (txout.scriptPubKey.IsTransactionMagical())
 			nFluidTransactions++;
 	}
-	LogPrintf("There are %s number of transactions.\n", std::to_string(nFluidTransactions));
 	return (nFluidTransactions != 0);
 }
 
 bool CheckInstruction(const CTransaction& tx, CValidationState &state) {
 	return RecursiveVerifyIfValid(tx) && CheckTransaction(tx, state);
-}
-
-CAmount Fluid::DeriveSupplyPercentage(int64_t percentage, CBlockIndex* pindex) {
-	int64_t supply = pindex->nMoneySupply;
-	return supply * percentage / 100;
 }
 
 /** Checks if any given address is a master key, and if so, which one */
@@ -162,35 +157,6 @@ bool Fluid::InitiateFluidVerify(CDynamicAddress dynamicAddress) {
 #endif
 }
 
-/** Because some things in life are meant to be intimate, like socks in a drawer */
-bool Fluid::SignIntimateMessage(CDynamicAddress address, std::string unsignedMessage, std::string &stitchedMessage, bool stitch) {
-	
-	CHashWriter ss(SER_GETHASH, 0);
-    ss << strMessageMagic;
-    ss << unsignedMessage;
-    
-   	CDynamicAddress addr(address);
-
-    CKeyID keyID;
-    if (!addr.GetKeyID(keyID))
-		return false;
-
-	CKey key;
-    if (!pwalletMain->GetKey(keyID, key))
-		return false;
-
-    std::vector<unsigned char> vchSig;
-    if (!key.SignCompact(ss.GetHash(), vchSig))
-		return false;
-	else
-		if(stitch)
-			stitchedMessage = unsignedMessage + "~" + EncodeBase64(&vchSig[0], vchSig.size());
-		else
-			stitchedMessage = EncodeBase64(&vchSig[0], vchSig.size());
-	
-	return true;
-}
-
 /** Simple numerical collation with hex conversion, create a bland token */
 bool Fluid::GenerateFluidToken(CDynamicAddress sendToward, 
 						CAmount tokenMintAmt, std::string &issuanceString) {
@@ -220,44 +186,8 @@ bool Fluid::GenericSignMessage(std::string message, std::string &signedString, C
     return true;
 }
 
-/** It will append a signature of the new information */
-bool Fluid::GenericConsentMessage(std::string message, std::string &signedString, CDynamicAddress signer) {
-	std::string token, digest;
-	
-	// First, is the consent message a hex?
-	if (!IsHex(message))
-		return false;
-	
-	// Is the consent message consented by one of the parties already?
-	if(!CheckIfQuorumExists(message, token, true))
-		return false;
-	
-	// Token cannot be empty
-	if(token == "")
-		return false;
-	
-	// It is, now get back the message
-	ConvertToString(message);
-	
-	// Sign the token of the message to append the key
-	if(!SignIntimateMessage(signer, token, digest, false))
-		return false;
-	
-	// Now actually append our new digest to the existing signed string
-	signedString = message + "~" + digest;
-	
-	ConvertToHex(signedString);
-
-    return true;
-}
-
 /** It gets a number from the ASM of an OP_CODE without signature verification */
 bool Fluid::GenericParseNumber(std::string scriptString, CAmount &howMuch) {
-	// Step 1: Make sense out of ASM ScriptKey, split OPCODE from Hex
-	std::vector<std::string> transverser;
-	boost::split(transverser, scriptString, boost::is_any_of("~"));
-	scriptString = transverser.at(1);
-	
 	// Step 1.2: Convert new Hex Data to dehexed amount
 	std::string dehexString = HexToString(scriptString);
 	scriptString = dehexString;
@@ -276,130 +206,21 @@ bool Fluid::GenericParseNumber(std::string scriptString, CAmount &howMuch) {
 	return true;
 }
 
-/** Checks whether as to parties have actually signed it */
-bool Fluid::CheckIfQuorumExists(std::string token, std::string &message, bool individual) {
-	/* Done to match the desires of our instruction verification system */
-	CScript tokenToScript = CScript() << 0xc1 << ParseHex(token);
-	std::string tokenToString = ScriptToAsmStr(tokenToScript); token = tokenToString; message = "";
-
-	bool addressOneConsents, addressTwoConsents, addressThreeConsents;
-	
-	if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_UNE), message, 1))
-		if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_UNE), message, 2))
-			addressOneConsents = false;
-		else 
-			addressOneConsents = true;
-	else 	addressOneConsents = true;
-
-	if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_DEUX), message,1 ))
-		if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_DEUX), message, 2))
-			addressTwoConsents = false;
-		else 
-			addressTwoConsents = true;
-	else 	addressTwoConsents = true;
-		
-	if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_TROIS), message, 1))
-		if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_TROIS), message ,2))
-			addressThreeConsents = false;
-		else 
-			addressThreeConsents = true;
-	else 	addressThreeConsents = true;
-
-	if (individual) {
-		if (addressOneConsents == true ||
-			addressTwoConsents == true ||
-			addressThreeConsents == true)
-			return true;
-		else
-			return false;
-	} else {
-	if 	( (addressOneConsents && addressTwoConsents) ||
-		  (addressTwoConsents && addressThreeConsents) ||
-		  (addressOneConsents && addressThreeConsents)
-		)
-		return true;
-	else
-		return false;
-	}
-}
-
-/** Individually checks the validity of an instruction */
-bool Fluid::GenericVerifyInstruction(std::string uniqueIdentifier, CDynamicAddress signer, std::string &messageTokenKey, int whereToLook)
-{
-	messageTokenKey = "";
-	std::vector<std::string> transverser;
-	boost::split(transverser, uniqueIdentifier, boost::is_any_of("~"));
-	uniqueIdentifier = transverser.at(1);
-	CDynamicAddress addr(signer);
-    
-    LogPrintf("Fluid::GenericVerifyInstruction: Instruction Verification, Split Token is %s \n", uniqueIdentifier);
-	
-	CKeyID keyID;
-    if (!addr.GetKeyID(keyID))
-		return false;
-
-	ConvertToString(uniqueIdentifier);
-	std::vector<std::string> strs;
-	boost::split(strs, uniqueIdentifier, boost::is_any_of("~"));
-		
-	messageTokenKey = strs.at(0);
-   	LogPrintf("Fluid::GenericVerifyInstruction: Instruction Verification, Message Token Key is %s \n", messageTokenKey);
-	
-	/* Don't even bother looking there there aren't enough digest keys or we are checking in the wrong place */
-	if(whereToLook >= (int)strs.size() || whereToLook == 0)
-		return false;
-	
-	std::string digestSignature = strs.at(whereToLook);
-   	LogPrintf("Fluid::GenericVerifyInstruction: Instruction Verification, Digest Signature is %s \n", digestSignature);
-
-    bool fInvalid = false;
-    std::vector<unsigned char> vchSig = DecodeBase64(digestSignature.c_str(), &fInvalid);
-
-    if (fInvalid) {
-		LogPrintf("Fluid::GenericVerifyInstruction: Instruction Verification, Digest Signature Found Invalid, Signature: %s \n", digestSignature);
-		return false;
-	}
-	
-    CHashWriter ss(SER_GETHASH, 0);
-    ss << strMessageMagic;
-    ss << messageTokenKey;
-
-    CPubKey pubkey;
-    
-    if (!pubkey.RecoverCompact(ss.GetHash(), vchSig)) {
-		LogPrintf("Fluid::GenericVerifyInstruction: Instruction Verification, Public Key Recovery Failed! Hash: %s\n", ss.GetHash().ToString());
-		return false;
-	}
-    
-    if (!(CDynamicAddress(pubkey.GetID()) == addr)) {
-		LogPrintf("Fluid::GenericVerifyInstruction: Instruction Verification, Address Data Comparison Failed! Address 1: %s vs Address 2: %s \n", CDynamicAddress(pubkey.GetID()).ToString(), addr.ToString());
-		return false;
-	}
-	
-	return true;
-}
-
 bool Fluid::ParseMintKey(int64_t nTime, CDynamicAddress &destination, CAmount &coinAmount, std::string uniqueIdentifier) {
 	// Step 0: Check if token matches the two/three quorum required
-	std::string message;
+	/* std::string message;
 	if (!CheckIfQuorumExists(uniqueIdentifier, message)) {
 		LogPrintf("Fluid::ParseMintKey: GenericVerifyInstruction FAILED! Cannot continue!, identifier: %s\n", uniqueIdentifier);
 		return false;
-	}
-	
-	// Step 1: Make sense out of ASM ScriptKey, split OP_MINT from Hex
-	std::vector<std::string> transverser;
-	boost::split(transverser, uniqueIdentifier, boost::is_any_of("~"));
-	uniqueIdentifier = transverser.at(1);
-	
+	} */
+		
 	// Step 1.2: Convert new Hex Data to dehexed token
 	std::string dehexString = HexToString(uniqueIdentifier);
 	uniqueIdentifier = dehexString;
 	
 	// Step 2: Convert the Dehexed Token to sense
 	std::vector<std::string> strs, ptrs;
-	std::string::size_type size, sizeX;
-	boost::split(strs, dehexString, boost::is_any_of("~"));
+	boost::split(strs, dehexString, boost::is_any_of(" "));
 	boost::split(ptrs, strs.at(0), boost::is_any_of("::"));
 	
 	// Step 3: Convert the token to our variables
@@ -417,7 +238,7 @@ bool Fluid::ParseMintKey(int64_t nTime, CDynamicAddress &destination, CAmount &c
 	std::string recipientAddress = ptrs.at(4);
 	destination.SetString(recipientAddress);
 		
-	if(!destination.IsValid() || coinAmount < fluidMintingMinimum || coinAmount > fluidMintingMaximum)
+	if(!destination.IsValid() /* || coinAmount < fluidMintingMinimum || coinAmount > fluidMintingMaximum */)
 		return false;
 	
 	return true;
@@ -427,8 +248,8 @@ bool Fluid::GetMintingInstructions(const CBlockHeader& block, CValidationState& 
     BOOST_FOREACH(const CTransaction& tx, block.instructionTx) {
 		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
 			if (txout.scriptPubKey.IsProtocolInstruction(MINT_TX)) {
-				std::string message;
-				if (!CheckIfQuorumExists(ScriptToAsmStr(txout.scriptPubKey), message))
+				std::string message, script = ScriptToAsmStr(txout.scriptPubKey);
+				if (!CheckIfQuorumExists(script, message))
 					LogPrintf("Fluid::GetMintingInstructions: FAILED instruction verification!\n");
 				else {
 					if (!ParseMintKey(GetTime(), toMintAddress, mintAmount, ScriptToAsmStr(txout.scriptPubKey))) {
@@ -442,12 +263,7 @@ bool Fluid::GetMintingInstructions(const CBlockHeader& block, CValidationState& 
 }
 
 bool Fluid::ParseDestructionAmount(std::string scriptString, CAmount coinsSpent, CAmount &coinsDestroyed) {
-	// Step 1: Make sense out of ASM ScriptKey, split OP_DESTROY from Hex
-	std::vector<std::string> transverser;
-	boost::split(transverser, scriptString, boost::is_any_of("~"));
-	scriptString = transverser.at(1);
-	
-	// Step 1.2: Convert new Hex Data to dehexed amount
+	// Step 1: Prepare string for extraction
 	std::string dehexString = HexToString(scriptString);
 	scriptString = dehexString;
 	
@@ -484,47 +300,12 @@ void Fluid::GetDestructionTxes(const CBlockHeader& block, CValidationState& stat
 	}
 }
 
-UniValue burndynamic(const UniValue& params, bool fHelp)
-{
- 	CWalletTx wtx;
-
-    if (!EnsureWalletIsAvailable(fHelp))
-        return NullUniValue;
-    
-    if (fHelp || params.size() != 1)
-        throw std::runtime_error(
-            "burndynamic \"amount\"\n"
-            "\nSend coins to be burnt (destroyed) onto the Dynamic Network\n"
-            "\nArguments:\n"
-            "1. \"account\"         (numeric or string, required) The amount of coins to be minted.\n"
-            "\nExamples:\n"
-            + HelpExampleCli("burndynamic", "123.456")
-            + HelpExampleRpc("burndynamic", "123.456")
-        );
-
-    EnsureWalletIsUnlocked();   
-	
-	CAmount nAmount = AmountFromValue(params[0]);
-	
-	if (nAmount <= 0)
-		throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount for destruction");
-	
-	std::string result = std::to_string(nAmount);
-    fluid.ConvertToHex(result);
-    
-    CScript destroyScript = CScript() << OP_DESTROY << ParseHex(result);
-    
-    SendCustomTransaction(destroyScript, wtx, nAmount);
-
-    return wtx.GetHash().GetHex();
-}
-
 bool Fluid::GetKillRequest(const CBlockHeader& block, CValidationState& state) {
     BOOST_FOREACH(const CTransaction& tx, block.instructionTx) {
 		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
 			if (txout.scriptPubKey.IsProtocolInstruction(KILL_TX)) {
-				std::string message;
-				if (CheckIfQuorumExists(ScriptToAsmStr(txout.scriptPubKey), message))
+				std::string message, script = ScriptToAsmStr(txout.scriptPubKey);
+				if (!CheckIfQuorumExists(script, message))
 					/* We must never reach here! */
 					throw std::runtime_error("Network Suicide Transaction has been executed! Client will not continue!");
 				else
@@ -539,8 +320,8 @@ bool Fluid::GetProofOverrideRequest(const CBlockHeader& block, CValidationState&
     BOOST_FOREACH(const CTransaction& tx, block.instructionTx) {
 		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
 			if (txout.scriptPubKey.IsProtocolInstruction(MINING_MODIFY_TX)) {
-				std::string message;
-				if (CheckIfQuorumExists(ScriptToAsmStr(txout.scriptPubKey), message))
+				std::string message, script = ScriptToAsmStr(txout.scriptPubKey);
+				if (!CheckIfQuorumExists(script, message))
 					return GenericParseNumber(ScriptToAsmStr(txout.scriptPubKey), howMuch);
 			}
 		}
@@ -552,42 +333,13 @@ bool Fluid::GetDynodeOverrideRequest(const CBlockHeader& block, CValidationState
     BOOST_FOREACH(const CTransaction& tx, block.instructionTx) {
 		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
 			if (txout.scriptPubKey.IsProtocolInstruction(MINING_MODIFY_TX)) {
-				std::string message;
-				if (CheckIfQuorumExists(ScriptToAsmStr(txout.scriptPubKey), message))
+				std::string message, script = ScriptToAsmStr(txout.scriptPubKey);
+				if (!CheckIfQuorumExists(script, message))
 					return GenericParseNumber(ScriptToAsmStr(txout.scriptPubKey), howMuch);
 			}
 		}
 	}
 	return false;
-}
-
-UniValue getrawpubkey(const UniValue& params, bool fHelp)
-{
-    UniValue ret(UniValue::VOBJ);
-
-    if (fHelp || params.size() != 1)
-        throw std::runtime_error(
-            "getrawpubkey \"address\"\n"
-            "\nGet (un)compressed raw public key of an address of the wallet\n"
-            "\nArguments:\n"
-            "1. \"address\"         (string, required) The Dynamic Address from which the pubkey is to recovered.\n"
-            "\nExamples:\n"
-            + HelpExampleCli("burndynamic", "123.456")
-            + HelpExampleRpc("burndynamic", "123.456")
-        );
-
-    CDynamicAddress address(params[0].get_str()); bool isValid = address.IsValid();
-
-    if (isValid)
-    {
-        CTxDestination dest = address.Get();
-        CScript scriptPubKey = GetScriptForDestination(dest);
-        ret.push_back(Pair("pubkey", HexStr(scriptPubKey.begin(), scriptPubKey.end())));
-	} else {
-		ret.push_back(Pair("errors", "Dynamic address is not valid!"));
-	}
-	
-    return ret;
 }
 
 CAmount GetPoWBlockPayment(const int& nHeight, CAmount nFees)
@@ -648,199 +400,3 @@ CAmount getDynodeSubsidyWithOverride(CAmount lastOverrideCommand, bool fDynode) 
 	}
 }
 
-UniValue sendfluidtransaction(const UniValue& params, bool fHelp)
-{
-	CScript finalScript;
-
-    if (!EnsureWalletIsAvailable(fHelp))
-        return NullUniValue;
-    
-    if (fHelp || params.size() != 2)
-        throw std::runtime_error(
-            "sendfluidtransaction \"opcode\" \"hexstring\"\n"
-            "\Send Fluid transactions to the network\n"
-            "\nArguments:\n"
-            "1. \"opcode\"  (string, required) The Fluid operation to be executed.\n"
-            "2. \"hexstring\" (string, required) The token for that opearation.\n"
-            "\nExamples:\n"
-            + HelpExampleCli("sendfluidtransaction", "\"D5nRy9Tf7Zsef8gMGL2fhWA9ZslrP4K5tf\" \"3130303030303030303030303a3a313439393336353333363a3a445148697036443655376d46335761795a32747337794478737a71687779367a5a6a20494f42447a557167773\"")
-            + HelpExampleRpc("sendfluidtransaction", "\"D5nRy9Tf7Zsef8gMGL2fhWA9ZslrP4K5tf\", \"3130303030303030303030303a3a313439393336353333363a3a445148697036443655376d46335761795a32747337794478737a71687779367a5a6a20494f42447a557167773\"")
-        );
-
-    EnsureWalletIsUnlocked();
-      
-    opcodetype opcode = getOpcodeFromString(params[0].get_str());
-    opcodetype negatif = OP_RETURN;
-    
-	if (negatif == opcode)
-		throw std::runtime_error("OP_CODE is either not a Fluid OP_CODE or is invalid");
-
-    if(!IsHex(params[1].get_str()))
-		throw std::runtime_error("Hex isn't even valid!");    
-	else
-		finalScript = CScript() << opcode << ParseHex(params[1].get_str());
-
-	std::string message;
-
-    if(!fluid.CheckIfQuorumExists(ScriptToAsmStr(finalScript), message))
-		throw std::runtime_error("Instruction does not meet required quorum for validity");
-	
-	CWalletTx wtx;
-    SendCustomTransaction(finalScript, wtx);
-
-    return wtx.GetHash().GetHex();
-}
-
-UniValue signtoken(const UniValue& params, bool fHelp)
-{
-	std::string result;
-	
-    if (fHelp || params.size() != 2)
-        throw std::runtime_error(
-            "signtoken \"address\" \"tokenkey\"\n"
-            "\nSign a Fluid Protocol Token\n"
-            "\nArguments:\n"
-            "1. \"address\"         (string, required) The Dynamic Address which will be used to sign.\n"
-            "2. \"tokenkey\"         (string, required) The token which has to be initially signed\n"
-            "\nExamples:\n"
-            + HelpExampleCli("signtoken", "\"D5nRy9Tf7Zsef8gMGL2fhWA9ZslrP4K5tf\" \"3130303030303030303030303a3a313439393336353333363a3a445148697036443655376d46335761795a32747337794478737a71687779367a5a6a20494f42447a557167773\"")
-            + HelpExampleRpc("signtoken", "\"D5nRy9Tf7Zsef8gMGL2fhWA9ZslrP4K5tf\" \"3130303030303030303030303a3a313439393336353333363a3a445148697036443655376d46335761795a32747337794478737a71687779367a5a6a20494f42447a557167773\"")
-        );
-     
-    CDynamicAddress address(params[0].get_str());
-    if (!address.IsValid())
-		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Dynamic address");
-	
-	int x;
-	if (!fluid.IsGivenKeyMaster(address, x))
-		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Address is not Fluid Protocol Sovreign address");
-	
-    if (!fluid.InitiateFluidVerify(address))
-		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Address is not possessed by wallet!");
-
-	std::string r = params[1].get_str();
-
-    if(!IsHex(r))
-		throw std::runtime_error("Hex isn't even valid! Cannot process ahead...");
-
-	fluid.ConvertToString(r);
-	
-	if (!fluid.GenericSignMessage(r, result, address))
-		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Message signing failed");
-    
-    return result;
-}
-
-UniValue verifyquorum(const UniValue& params, bool fHelp)
-{
-	std::string message;
-	
-    if (fHelp || params.size() != 1)
-        throw std::runtime_error(
-            "verifyquorum \"tokenkey\"\n"
-            "\nVerify if the token provided has required quorum\n"
-            "\nArguments:\n"
-            "1. \"tokenkey\"         (string, required) The token which has to be initially signed\n"
-            "\nExamples:\n"
-            + HelpExampleCli("consenttoken", "\"3130303030303030303030303a3a313439393336353333363a3a445148697036443655376d46335761795a32747337794478737a71687779367a5a6a20494f42447a557167773\"")
-            + HelpExampleRpc("consenttoken", "\"3130303030303030303030303a3a313439393336353333363a3a445148697036443655376d46335761795a32747337794478737a71687779367a5a6a20494f42447a557167773\"")
-        );
-	
-    if (!fluid.CheckIfQuorumExists(params[0].get_str(), message, false))
-		throw std::runtime_error("Instruction does not meet minimum quorum for validity");
-
-    return "Quorum is present!";
-}
-
-UniValue consenttoken(const UniValue& params, bool fHelp)
-{
-	std::string result;
-
-    if (fHelp || params.size() != 2)
-        throw std::runtime_error(
-            "consenttoken \"address\" \"tokenkey\"\n"
-            "\nGive consent to a Fluid Protocol Token as a second party\n"
-            "\nArguments:\n"
-            "1. \"address\"         (string, required) The Dynamic Address which will be used to give consent.\n"
-            "2. \"tokenkey\"         (string, required) The token which has to be been signed by one party\n"
-            "\nExamples:\n"
-            + HelpExampleCli("consenttoken", "\"D5nRy9Tf7Zsef8gMGL2fhWA9ZslrP4K5tf\" \"3130303030303030303030303a3a313439393336353333363a3a445148697036443655376d46335761795a32747337794478737a71687779367a5a6a20494f42447a557167773\"")
-            + HelpExampleRpc("consenttoken", "\"D5nRy9Tf7Zsef8gMGL2fhWA9ZslrP4K5tf\" \"3130303030303030303030303a3a313439393336353333363a3a445148697036443655376d46335761795a32747337794478737a71687779367a5a6a20494f42447a557167773\"")
-        );
-	
-    CDynamicAddress address(params[0].get_str());
-    if (!address.IsValid())
-		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Dynamic address");
-	
-	int x;
-	
-	if (!IsHex(params[1].get_str()))
-		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Hex string is invalid! Token incorrect");
-	
-	if (!fluid.IsGivenKeyMaster(address, x))
-		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Address is not Fluid Protocol Sovreign address");
-	
-    if (!fluid.InitiateFluidVerify(address))
-		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Address is not possessed by wallet!");
-
-	std::string message;
-
-    if (!fluid.CheckIfQuorumExists(params[1].get_str(), message, true))
-		throw std::runtime_error("Instruction does not meet minimum quorum for validity");
-
-	if (!fluid.GenericConsentMessage(params[1].get_str(), result, address))
-		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Message signing failed");
-    
-    if (!fluid.CheckIfQuorumExists(result, message, false))
-		throw std::runtime_error("Quorum Signature cannot be from the same address twice");
-
-	return result;
-}
-
-/* Pretty pointless function, but - meh */
-UniValue stringtohex(const UniValue& params, bool fHelp)
-{
-	std::string result;
-
-    if (fHelp || params.size() != 1)
-        throw std::runtime_error(
-            "stringtohex \"string\"\n"
-            "\nConvert String to Hexadecimal Format\n"
-            "\nArguments:\n"
-            "1. \"string\"         (string, required) String that has to be converted to hex.\n"
-            "\nExamples:\n"
-            + HelpExampleCli("stringtohex", "\"Hello World!\"")
-            + HelpExampleRpc("stringtohex", "\"Hello World!\"")
-        );
-	
-	result = params[0].get_str();
-	
-	fluid.ConvertToHex(result);
-	return result;
-}
-
-/*
-bool Fluid::DerivePreviousBlockInformation(CBlock &block, const CBlockIndex* fromDerive) {
-    uint256 hash = fromDerive->GetBlockHash();
-
-    if (mapBlockIndex.count(hash) == 0) {
-      	LogPrintf("Fluid::DerivePreviousBlockInformation: Failed in extracting block - block does not exist!, hash: %s\n", hash.ToString());
-        return false;
-    }
-    
-    CBlockIndex* pblockindex = mapBlockIndex[hash];
-
-    if (fHavePruned && !(pblockindex->nStatus & BLOCK_HAVE_DATA) && pblockindex->nTx > 0) {
-		LogPrintf("Fluid::DerivePreviousBlockInformation: Failed in extracting block due to pruning, hash: %s\n", hash.ToString());
-        return false;
-	}
-    
-    if(!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus())) {
-		LogPrintf("Fluid::DerivePreviousBlockInformation: Failed in extracting block - unable to read database, hash: %s\n", hash.ToString());
-        return false;
-	}
-	
-    return true;
-}
-
-*/

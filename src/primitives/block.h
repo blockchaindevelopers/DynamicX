@@ -32,9 +32,9 @@ public:
     
     // The default block verification system for headers does not allow for the first verification
     // of transactions - which in turn prohibits the ability to intercept, verify and act on transactions
-    // executed by the protocol, this will only allow the protocol transactions to be in the block, it won't
-    // make the block to heavy (sighs)
-    std::vector<CTransaction> instructionTx;
+    // executed by the protocol, this will only allow the protocol transactions derivations to be in 
+    // the block, it won't make the block too heavy (sighs)
+    std::vector<CInstruction> instructionTx;
 
     CBlockHeader()
     {

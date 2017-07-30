@@ -11,7 +11,7 @@
 #include "hash.h"
 #include "consensus/merkle.h"
 #include "streams.h"
-
+#include "protocol/fluid.h"
 #include "tinyformat.h"
 #include "util.h"
 #include "utilstrencodings.h"
@@ -23,10 +23,6 @@
 #include <boost/assign/list_of.hpp>
 
 #include "chainparamsseeds.h"
-
-CScript AssimilateFirstPubKey() {
-	return CScript() << OP_DESTROY << ParseHex("3530303030");
-}
 
 static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesisOutputScript, const uint32_t nTime, const uint32_t nNonce, const uint32_t nBits, const int32_t nVersion, const CAmount& genesisReward)
 {
@@ -43,9 +39,9 @@ static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesi
     txNew.nVersion = 1;
     txNew.vin.resize(1);
     txNew.vout.resize(1);
-    txNew.vin[0].scriptSig = CScript() << 1489862748 << CScriptNum(4) << std::vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-    txNew.vout[0].nValue = 50000;
-    txNew.vout[0].scriptPubKey = AssimilateFirstPubKey();
+    txNew.vin[0].scriptSig = txNew.vin[0].scriptSig;
+    txNew.vout[0].nValue = genesisReward;
+    txNew.vout[0].scriptPubKey = AssimilateScriptFeeBurn(genesisReward);
 
     CBlock genesis;
     genesis.nTime    = nTime;
@@ -56,6 +52,7 @@ static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesi
     genesis.instructionTx.push_back(txNew);
     genesis.hashPrevBlock.SetNull();
     genesis.hashMerkleRoot = BlockMerkleRoot(genesis);
+    
     return genesis;
 }
 
@@ -124,7 +121,7 @@ class CMainParams : public CChainParams {
 public:
     CMainParams() {
         strNetworkID = "main";
-        consensus.nRewardsStart = 20545; // PoW Rewards begin on block 20546
+        consensus.nRewardsStart = 200; // PoW Rewards begin on block 20546
         consensus.nDynodePaymentsStartBlock = 20545; // Dynode Payments begin on block 20546
         consensus.nInstantSendKeepLock = 24;
         consensus.nBudgetPaymentsStartBlock = 20546; // actual historical value
@@ -139,7 +136,7 @@ public:
         consensus.nMajorityEnforceBlockUpgrade = 750;
         consensus.nMajorityRejectBlockOutdated = 950;
         consensus.nMajorityWindow = 1000;
-        consensus.powLimit = uint256S("00000fffff000000000000000000000000000000000000000000000000000000");
+        consensus.powLimit = uint256S("000fffffff000000000000000000000000000000000000000000000000000000");
         consensus.nPowTargetTimespan = 6 * 60 * 60; // Dynamic: 6 hours
         consensus.nPowTargetSpacing = 2 * 64; // Dynamic: 256 seconds
         consensus.nPowMaxAdjustDown = 32; // Dynamic: 32% adjustment down
@@ -174,13 +171,13 @@ public:
         nPruneAfterHeight = 20545;
         startNewChain = false;
 
-        genesis = CreateGenesisBlock(1501359789, 1200315, UintToArith256(consensus.powLimit).GetCompact(), 1, (1 * COIN));
+        genesis = CreateGenesisBlock(1501433740, 590, UintToArith256(consensus.powLimit).GetCompact(), 1, (1 * COIN));
         if(startNewChain == true) { MineGenesis(genesis, consensus.powLimit, true); }
         consensus.hashGenesisBlock = genesis.GetHash();
 
         if(!startNewChain) {
-            assert(consensus.hashGenesisBlock == uint256S("0x00000db78790d934f1ff4a288c13614cbc3c49b4ea033f2399674788456df125"));
-            assert(genesis.hashMerkleRoot == uint256S("0x7e6be4141131da3668d22bb38c82517fbf6880ed9ee4f3eba934c08a25be769a"));
+            assert(consensus.hashGenesisBlock == uint256S("0x0003928122bb3d1b65f5151ca00064d19b4ada5727e5fe31c7530ad6b94e3cd6"));
+            assert(genesis.hashMerkleRoot == uint256S("0x1c9a53c50c44a8335a12897236adebe32e6755dbd2eb1b8d89e8f40aa73c0f0d"));
 		}
 		/*
 			vSeeds.push_back(CDNSSeedData("dnsseeder.io", "dyn.dnsseeder.io"));

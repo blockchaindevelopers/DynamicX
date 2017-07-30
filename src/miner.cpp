@@ -200,10 +200,6 @@ bool CheckWork(const CChainParams& chainparams, CBlock* pblock, CWallet& wallet,
     return true;
 }
 
-CScript AssimilateScriptFeeBurn(std::string feeString) {
-	return CScript() << OP_DESTROY << ParseHex(feeString.c_str());
-}
-
 std::unique_ptr<CBlockTemplate> CreateNewBlock(const CChainParams& chainparams, const CScript& scriptPubKeyIn)
 {
     // Create new block
@@ -277,7 +273,6 @@ std::unique_ptr<CBlockTemplate> CreateNewBlock(const CChainParams& chainparams, 
         int64_t nLockTimeCutoff = (STANDARD_LOCKTIME_VERIFY_FLAGS & LOCKTIME_MEDIAN_TIME_PAST)
                                 ? nMedianTimePast
                                 : pblock->GetBlockTime();
-
 
         bool fPriorityBlock = nBlockPrioritySize > 0;
         if (fPriorityBlock) {
@@ -372,10 +367,10 @@ std::unique_ptr<CBlockTemplate> CreateNewBlock(const CChainParams& chainparams, 
             CAmount nTxFees = iter->GetFee();
             // Added
             // Additional Check: Is transaction of protocol, if so, add to instruction set
-            if(!RecursiveVerifyIfValid(tx))
+            // if(!RecursiveVerifyIfValid(tx))
 				pblock->vtx.push_back(tx);
-			else
-				pblock->instructionTx.push_back(tx);
+			/* else
+				pblock->instructionTx.push_back(tx); */
 			
             pblocktemplate->vTxFees.push_back(nTxFees);
             pblocktemplate->vTxSigOps.push_back(nTxSigOps);
@@ -424,9 +419,7 @@ std::unique_ptr<CBlockTemplate> CreateNewBlock(const CChainParams& chainparams, 
         // Compute regular coinbase transaction.
         txNew.vout[0].scriptPubKey = scriptPubKeyIn;
         // Compute fluid fee flushing
-        std::string feeString = std::to_string(nFees);
-        fluid.ConvertToHex(feeString);
-        fluidBurnFees.vout[0].scriptPubKey = AssimilateScriptFeeBurn(feeString);
+        fluidBurnFees.vout[0].scriptPubKey = AssimilateScriptFeeBurn(nFees);
         fluidBurnFees.vout[0].nValue = nFees;
 
         if (fluid.GetMintingInstructions(pindexPrev->GetBlockHeader(), validationState, address, fluidIssuance)) {

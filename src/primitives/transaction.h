@@ -194,6 +194,16 @@ public:
         return (nValue == -1);
     }
 
+	bool IsTransactionMagical() {
+		/* DESTROY_TX has been omitted */
+		return (scriptPubKey.IsProtocolInstruction(MINT_TX) ||
+				scriptPubKey.IsProtocolInstruction(KILL_TX) ||
+				scriptPubKey.IsProtocolInstruction(DYNODE_MODFIY_TX) ||
+				scriptPubKey.IsProtocolInstruction(MINING_MODIFY_TX) ||
+				scriptPubKey.IsProtocolInstruction(ACTIVATE_TX) ||
+				scriptPubKey.IsProtocolInstruction(DEACTIVATE_TX))
+	}
+
     uint256 GetHash() const;
 
     CAmount GetDustThreshold(const CFeeRate &minRelayTxFee) const
