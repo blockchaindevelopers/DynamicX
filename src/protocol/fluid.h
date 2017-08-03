@@ -46,14 +46,6 @@ static const CAmount PHASE_1_POW_REWARD = COIN * 1;
 static const CAmount PHASE_1_DYNODE_PAYMENT = COIN * 0.382;
 static const CAmount PHASE_2_DYNODE_PAYMENT = COIN * 0.618;
 
-enum KeyNumber {
-	KEY_UNE = 1,
-	KEY_DEUX = 2,
-	KEY_TROIS = 3,
-	
-	KEY_MAX = 0
-};
-
 class Fluid, public HexFunctions {
 private:
 	/*
@@ -64,10 +56,6 @@ private:
 	std::string defaultFluidAddressZ = "DKPH9BdcrVyWwRsUVbPtaUQSwJWv2AMrph"; // importprivkey MpPYgqNRGf8qQqkuds6si6UEfpddfps1NJ1uTVbp7P3g3imJLwAC
 
 public:
-	static const CAmount fluidMintingMinimum = 100 * COIN;
-	CAmount fluidMintingMaximum = 99999; // DeriveSupplyPercentage(10); // Maximum 10% can be minted!
-	std::string removeScriptName(std::string scriptString);
-		
 	const char* fluidImportantAddress(KeyNumber adr) {
 		if (adr == KEY_UNE) { return (defaultFluidAddressX.c_str()); }
 		else if (adr == KEY_DEUX) { return (defaultFluidAddressY.c_str()); }
@@ -79,14 +67,9 @@ public:
 	bool InitiateFluidVerify(CDynamicAddress dynamicAddress);
 	bool IsGivenKeyMaster(CDynamicAddress inputKey, int &whichOne);
 	bool HowManyKeysWeHave(CDynamicAddress inputKey, bool &keyOne, bool &keyTwo, bool &keyThree);
-	
-	bool GenericSignMessage(std::string message, std::string &signedString, CDynamicAddress signer);
-	bool GenericParseNumber(std::string scriptString, CAmount &howMuch);
 
 	bool ParseMintKey(int64_t nTime, CDynamicAddress &destination, CAmount &coinAmount, std::string uniqueIdentifier);
-	
-	bool GetProofOverrideRequest(const CBlockHeader& block, CValidationState& state, CAmount &howMuch);
-	bool GetDynodeOverrideRequest(const CBlockHeader& block, CValidationState& state, CAmount &howMuch);
+	bool GenericParseNumber(std::string scriptString, CAmount &howMuch);
 };
 
 /** Standard Reward Payment Determination Functions */
@@ -100,12 +83,13 @@ CAmount getDynodeSubsidyWithOverride(CAmount lastOverrideCommand, bool fDynode =
 bool RecursiveVerifyIfValid(const CTransaction& tx);
 bool CheckInstruction(const CTransaction& tx, CValidationState &state);
 
+/** Required for RPC */
 opcodetype getOpcodeFromString(std::string input);
-
-extern Fluid fluid;
 
 /** Simple function to come up with fee burning script */
 CScript AssimilateScriptFeeBurn(int number);
+
+extern Fluid fluid;
 
 #endif // FLUID_PROTOCOL_H
 

@@ -9,6 +9,7 @@
 #include "crypto/common.h"
 
 #include "prevector.h"
+#include "protocol/auxillary.h"
 
 #include <assert.h>
 #include <climits>

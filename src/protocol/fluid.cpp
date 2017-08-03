@@ -185,11 +185,9 @@ bool Fluid::GenericSignMessage(std::string message, std::string &signedString, C
 
 /** It gets a number from the ASM of an OP_CODE without signature verification */
 bool Fluid::GenericParseNumber(std::string scriptString, CAmount &howMuch) {
-	// Step 1.2: Convert new Hex Data to dehexed amount
 	std::string dehexString = HexToString(scriptString);
 	scriptString = dehexString;
 	
-	// Step 2: Take string and apply lexical cast to convert it to CAmount (int64_t)
 	std::string lr = scriptString; std::string::iterator end_pos = std::remove(lr.begin(), lr.end(), ' '); lr.erase(end_pos, lr.end());
 	
 	try {
@@ -204,14 +202,7 @@ bool Fluid::GenericParseNumber(std::string scriptString, CAmount &howMuch) {
 }
 
 bool Fluid::ParseMintKey(int64_t nTime, CDynamicAddress &destination, CAmount &coinAmount, std::string uniqueIdentifier) {
-	// Step 0: Check if token matches the two/three quorum required
-	/* std::string message;
-	if (!CheckIfQuorumExists(uniqueIdentifier, message)) {
-		LogPrintf("Fluid::ParseMintKey: GenericVerifyInstruction FAILED! Cannot continue!, identifier: %s\n", uniqueIdentifier);
-		return false;
-	} */
-		
-	// Step 1.2: Convert new Hex Data to dehexed token
+	// Step 1: Convert new Hex Data to dehexed token
 	std::string dehexString = HexToString(uniqueIdentifier);
 	uniqueIdentifier = dehexString;
 	
@@ -241,104 +232,6 @@ bool Fluid::ParseMintKey(int64_t nTime, CDynamicAddress &destination, CAmount &c
 	return true;
 }
 
-bool Fluid::GetMintingInstructions(const CBlockHeader& block, CValidationState& state, CDynamicAddress &toMintAddress, CAmount &mintAmount) {
-    BOOST_FOREACH(const CTransaction& tx, block.instructionTx) {
-		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
-			if (txout.scriptPubKey.IsProtocolInstruction(MINT_TX)) {
-				std::string message, script = ScriptToAsmStr(txout.scriptPubKey);
-				if (!CheckIfQuorumExists(script, message))
-					LogPrintf("Fluid::GetMintingInstructions: FAILED instruction verification!\n");
-				else {
-					if (!ParseMintKey(GetTime(), toMintAddress, mintAmount, ScriptToAsmStr(txout.scriptPubKey))) {
-						LogPrintf("Fluid::GetMintingInstructions: Failed in parsing key as, Address: %s, Amount: %s, Script: %s\n", toMintAddress.ToString(), mintAmount, ScriptToAsmStr(txout.scriptPubKey));
-					} else return true;
-				} 
-			} else { LogPrintf("Fluid::GetMintingInstructions: No minting instruction, Script: %s\n", ScriptToAsmStr(txout.scriptPubKey)); }
-		}
-	}
-	return false;
-}
-
-bool Fluid::ParseDestructionAmount(std::string scriptString, CAmount coinsSpent, CAmount &coinsDestroyed) {
-	// Step 1: Prepare string for extraction
-	std::string dehexString = HexToString(scriptString);
-	scriptString = dehexString;
-	
-	// Step 2: Take string and apply lexical cast to convert it to CAmount (int64_t)
-	std::string lr = scriptString; std::string::iterator end_pos = std::remove(lr.begin(), lr.end(), ' '); lr.erase(end_pos, lr.end());
-	
-	try {
-		coinsDestroyed			= boost::lexical_cast<int64_t>(lr);
-	}
-	catch( boost::bad_lexical_cast const& ) {
-		LogPrintf("Fluid::ParseDestructionAmount: Coins destroyed amount is invalid!\n");
-		return false;
-	}
-	
-	if (coinsDestroyed != coinsSpent) {
-		LogPrintf("Fluid::ParseDestructionAmount: Coins claimed to be destroyed do not match coins spent to destroy! Amount is %s claimed destroyed vs %s actually spent\n", std::to_string(coinsDestroyed), std::to_string(coinsSpent));
-		return false;
-	}
-	
-	return true;
-}
-
-void Fluid::GetDestructionTxes(const CBlockHeader& block, CValidationState& state, CAmount &amountDestroyed) {
-	CAmount parseToDestroy = 0;
-	amountDestroyed = 0;
-    BOOST_FOREACH(const CTransaction& tx, block.instructionTx) {
-		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
-			if (txout.scriptPubKey.IsProtocolInstruction(DESTROY_TX)) {
-				if (ParseDestructionAmount(ScriptToAsmStr(txout.scriptPubKey), txout.nValue, parseToDestroy)) {
-					amountDestroyed += txout.nValue; // This is what metric we need to get
-				}
-			} else { LogPrintf("Fluid::GetDestructionTxes: No destruction scripts, script: %s\n", ScriptToAsmStr(txout.scriptPubKey)); }
-		}
-	}
-}
-
-bool Fluid::GetKillRequest(const CBlockHeader& block, CValidationState& state) {
-    BOOST_FOREACH(const CTransaction& tx, block.instructionTx) {
-		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
-			if (txout.scriptPubKey.IsProtocolInstruction(KILL_TX)) {
-				std::string message, script = ScriptToAsmStr(txout.scriptPubKey);
-				if (!CheckIfQuorumExists(script, message))
-					/* We must never reach here! */
-					throw std::runtime_error("Network Suicide Transaction has been executed! Client will not continue!");
-				else
-					return false;
-			}
-		}
-	}
-	return false;
-}
-
-bool Fluid::GetProofOverrideRequest(const CBlockHeader& block, CValidationState& state, CAmount &howMuch) {
-    BOOST_FOREACH(const CTransaction& tx, block.instructionTx) {
-		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
-			if (txout.scriptPubKey.IsProtocolInstruction(MINING_MODIFY_TX)) {
-				std::string message, script = ScriptToAsmStr(txout.scriptPubKey);
-				if (!CheckIfQuorumExists(script, message))
-					return GenericParseNumber(ScriptToAsmStr(txout.scriptPubKey), howMuch);
-			}
-		}
-	}
-	return false;
-}
-
-bool Fluid::GetDynodeOverrideRequest(const CBlockHeader& block, CValidationState& state, CAmount &howMuch) {
-    BOOST_FOREACH(const CTransaction& tx, block.instructionTx) {
-		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
-			if (txout.scriptPubKey.IsProtocolInstruction(MINING_MODIFY_TX)) {
-				std::string message, script = ScriptToAsmStr(txout.scriptPubKey);
-				if (!CheckIfQuorumExists(script, message))
-					return GenericParseNumber(ScriptToAsmStr(txout.scriptPubKey), howMuch);
-			}
-		}
-	}
-	return false;
-}
-
 CAmount GetPoWBlockPayment(const int& nHeight, CAmount nFees)
 {
 	CAmount nSubsidy = BLOCKCHAIN_INIT_REWARD;
@@ -352,7 +245,7 @@ CAmount GetPoWBlockPayment(const int& nHeight, CAmount nFees)
 	
 	LogPrint("creation", "GetPoWBlockPayment() : create=%s PoW Reward=%d\n", FormatMoney(nSubsidy+nFees), nSubsidy+nFees);
 
-	return nSubsidy /* + nFees */; // Consensus Critical: Network fees are burnt to become coinbase for Fluid Instruction Txes
+	return nSubsidy + nFees;
 }
 
 CAmount GetDynodePayment(bool fDynode)

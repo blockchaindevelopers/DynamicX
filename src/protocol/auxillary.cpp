@@ -23,9 +23,11 @@
  */
 
 /* String Manipulation */
-void ScrubString(std::string &input) {
+void ScrubString(std::string &input. bool forInteger) {
 	input.erase(std::remove(input.begin(), input.end(), TransactionDelimiter), input.end());
 	input.erase(std::remove(input.begin(), input.end(), SubDelimiter), input.end());
+	if (forInteger)
+		input.erase(std::remove(input.begin(), input.end(), " "), input.end());
 }
 
 void SeperateString(std::string input, std::vector<std::string> output, bool subDelimiter = false) {
@@ -51,6 +53,11 @@ std::string StitchString(std::string stringOne, std::string stringTwo, std::stri
 		return stringOne + SubDelimiter + stringTwo + SubDelimiter + stringThree;
 	else 
 		return stringOne + TransactionDelimiter + stringTwo + TransactionDelimiter + stringThree;
+}
+
+int64_t stringToInteger(std::string input) {
+	ScrubString(input, true);
+	return stoi(input);
 }
 
 /*

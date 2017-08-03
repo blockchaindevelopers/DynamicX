@@ -22,19 +22,8 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-enum ProtocolCodes {
-	MINT_TX = 1,
-	DESTROY_TX = 2,
-	KILL_TX = 3,
-	DYNODE_MODFIY_TX = 4,
-	MINING_MODIFY_TX = 5,
-	ACTIVATE_TX = 6,
-	DEACTIVATE_TX = 7,
-	
-	NO_TX = 0
-};
-
-typedef std::string ProtocolToken;
+#ifndef INSTRUCTION_PROTOCOL_H
+#define INSTRUCTION_PROTOCOL_H
 
 class CAuthorise : public Fluid {
 public:
@@ -99,3 +88,6 @@ public:
 		mintTowardsWhom = toWhom;
 	}
 };
+
+#endif // INSTRUCTION_PROTOCOL_H
+

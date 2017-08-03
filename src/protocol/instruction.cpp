@@ -171,8 +171,6 @@ bool CAuthorise::GenericVerifyInstruction(ProtocolToken uniqueIdentifier, CDynam
 	return true;
 }
 
-bool FetchCommandKey
-
 bool CInstruction::checkCreateTransaction(CTransaction transaction, CInstruction& instruction) {
 	CValidationState state;
 	ProtocolToken AssimilatedToken;
@@ -199,7 +197,7 @@ bool CInstruction::checkCreateTransaction(CTransaction transaction, CInstruction
 			return false;
 	}
 	
-	/* Can our new assimiliated parameters valid? */
+	/* Is our new assimiliated parameters valid? */
 	if(!instruction.CheckValid())
 		return false;
 	

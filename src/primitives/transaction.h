@@ -201,7 +201,7 @@ public:
 				scriptPubKey.IsProtocolInstruction(DYNODE_MODFIY_TX) ||
 				scriptPubKey.IsProtocolInstruction(MINING_MODIFY_TX) ||
 				scriptPubKey.IsProtocolInstruction(ACTIVATE_TX) ||
-				scriptPubKey.IsProtocolInstruction(DEACTIVATE_TX))
+				scriptPubKey.IsProtocolInstruction(DEACTIVATE_TX));
 	}
 
     uint256 GetHash() const;
