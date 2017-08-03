@@ -25,6 +25,11 @@
 #ifndef AUXILLARY_PROTOCOL_H
 #define AUXILLARY_PROTOCOL_H
 
+#include <algorithm>
+#include <iostream>
+#include <string>
+#include <vector>
+
 #define PrimaryDelimiter "~"
 #define SubDelimiter "||"
 #define SignatureDelimiter " "
@@ -74,7 +79,7 @@ public:
 };
 
 class HexFunctions {
-private:
+public:
 	// C++98 guarantees that '0', '1', ... '9' are consecutive.
 	// It only guarantees that 'a' ... 'f' and 'A' ... 'F' are
 	// in increasing order, but the only two alternative encodings
@@ -123,16 +128,15 @@ private:
 		return out;
 	}
 	
-public:
 	void ConvertToHex(std::string &input) { std::string output = StringToHex(input); input = output; }
 	void ConvertToString(std::string &input) { std::string output = HexToString(input); input = output; }
 };
 
 /* String Manipulation Functions */
 void ScrubString(std::string &input, bool forInteger = false);
-void SeperateString(std::string input, std::vector<std::string> output);
-std::string StitchString(std::string stringOne, std::string stringTwo);
-std::string StitchString(std::string stringOne, std::string stringTwo, std::string stringThree);
+void SeperateString(std::string input, std::vector<std::string> output, bool subDelimiter = false);
+std::string StitchString(std::string stringOne, std::string stringTwo, bool subDelimiter = false);
+std::string StitchString(std::string stringOne, std::string stringTwo, std::string stringThree, bool subDelimiter = false);
 int64_t stringToInteger(std::string input);
 
 #endif // AUXILLARY_PROTOCOL_H

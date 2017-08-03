@@ -225,6 +225,9 @@ libdynamic_server_a_SOURCES = \
   protocol/messagecrypter.cpp \
   protocol/offer.cpp \
   protocol/fluid.cpp \
+  protocol/auxillary.cpp \
+  protocol/instruction.cpp \
+  protocol/rpcprotocol.cpp \
   protocol/duality.cpp \
   addrman.cpp \
   alert.cpp \

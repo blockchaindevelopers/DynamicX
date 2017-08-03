@@ -25,7 +25,11 @@
 #ifndef INSTRUCTION_PROTOCOL_H
 #define INSTRUCTION_PROTOCOL_H
 
-class CAuthorise : public Fluid {
+#include "auxillary.h"
+
+class CDynamicAddress;
+
+class CAuthorise : public HexFunctions, public Base64Functions {
 public:
 	bool SignIntimateMessage(CDynamicAddress address, ProtocolToken unsignedMessage, ProtocolToken &stitchedMessage, bool stitch = true);
 	bool CheckIfQuorumExists(ProtocolToken token, ProtocolToken &message, bool individual = false);
@@ -49,10 +53,15 @@ public:
 	ProtocolToken digestKeys;
 	
 	/* Minting specific instruction statement */
-	CDynamicAddress mintTowardsWhom;
+	ProtocolToken mintTowardsWhom;
 
-	void InitNullInstruction() {
-		iCode = Nothing;
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion);
+
+	void SetNull() {
+		iCode = NO_TX;
 		instructionTime = 0;
 		valueOfInstruction = 0;
 		hexCommand = "";
@@ -65,28 +74,14 @@ public:
 		return (iCode == NO_TX ||
 			instructionTime == 0 ||
 			valueOfInstruction == 0 ||
-			hexCommand = "" ||
-			digestKeys = "" ||
+			hexCommand == "" ||
+			digestKeys == "" ||
 			transactionHash.IsNull() ||
 			prevBlockHash.IsNull());
 	}
 
-	bool IsMintSpecified() {
-		return (iCode == MINT_TX &&
-				mintTowardsWhom.IsValid());
-	}
-	
+	bool IsMintSpecified();
 	bool CheckValid();
-
-	CInstruction(ProtocolCodes inst, int64_t time, CAmount howMuch, std::string Command, 
-				 std::string Keys, CDynamicAddress toWhom = "") {
-		iCode = inst;
-		instructionTime = time;
-		valueOfInstruction = howMuch;
-		hexCommand = Command;
-		digestKeys = Keys;
-		mintTowardsWhom = toWhom;
-	}
 };
 
 #endif // INSTRUCTION_PROTOCOL_H

@@ -22,6 +22,10 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include "auxillary.h"
+
+#include <boost/algorithm/string.hpp>
+
 /* String Manipulation */
 void ScrubString(std::string &input. bool forInteger) {
 	input.erase(std::remove(input.begin(), input.end(), TransactionDelimiter), input.end());
@@ -30,14 +34,14 @@ void ScrubString(std::string &input. bool forInteger) {
 		input.erase(std::remove(input.begin(), input.end(), " "), input.end());
 }
 
-void SeperateString(std::string input, std::vector<std::string> output, bool subDelimiter = false) {
+void SeperateString(std::string input, std::vector<std::string> output, bool subDelimiter) {
 	if(subDelimiter)
 		boost::split(output, input, boost::is_any_of(TransactionDelimiter));
 	else
 		boost::split(output, input, boost::is_any_of(SubDelimiter));
 };
 
-std::string StitchString(std::string stringOne, std::string stringTwo, bool subDelimiter = false) {
+std::string StitchString(std::string stringOne, std::string stringTwo, bool subDelimiter) {
 	ScrubString(stringOne); ScrubString(stringTwo);
 	
 	if(subDelimiter)
@@ -46,7 +50,7 @@ std::string StitchString(std::string stringOne, std::string stringTwo, bool subD
 		return stringOne + TransactionDelimiter + stringTwo;
 }
 
-std::string StitchString(std::string stringOne, std::string stringTwo, std::string stringThree, bool subDelimiter = false) {
+std::string StitchString(std::string stringOne, std::string stringTwo, std::string stringThree, bool subDelimiter) {
 	ScrubString(stringOne); ScrubString(stringTwo);
 	
 	if(subDelimiter)

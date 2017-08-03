@@ -22,8 +22,33 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <univalue.h>
+#include "fluid.h"
+
+#include "main.h"
+#include "init.h"
+#include "rpcserver.h"
+#include "keepass.h"
+#include "net.h"
+#include "netbase.h"
+#include "timedata.h"
+
 extern bool EnsureWalletIsAvailable(bool avoidException);
 extern void SendCustomTransaction(CScript generatedScript, CWalletTx& wtxNew, CAmount nValue = (1*COIN));
+
+opcodetype getOpcodeFromString(std::string input) {
+    if ("OP_MINT") return OP_MINT;
+	else if ("OP_DESTROY") return OP_DESTROY;
+	else if ("OP_DROPLET") return OP_DROPLET;
+	else if ("OP_REWARD_DYNODE") return OP_REWARD_DYNODE;
+	else if ("OP_REWARD_MINING") return OP_REWARD_MINING;
+	else if ("OP_STERILIZE") return OP_STERILIZE;
+	else if ("OP_KILL") return OP_KILL;
+	else if ("OP_FLUID_DEACTIVATE") return OP_FLUID_DEACTIVATE;
+	else if ("OP_FLUID_REACTIVATE") return OP_FLUID_REACTIVATE;
+	
+	return OP_RETURN;
+};
 
 UniValue stringtohex(const UniValue& params, bool fHelp)
 {

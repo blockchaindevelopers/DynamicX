@@ -30,13 +30,13 @@
 #include "chain.h"
 #include "script/script.h"
 #include "consensus/validation.h"
+#include "instruction.h"
 
 #include <stdint.h>
 #include <string.h>
 #include <algorithm>
 
 #include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string.hpp>
 
 class CBlock;
 class CBlockTemplate;
@@ -46,7 +46,7 @@ static const CAmount PHASE_1_POW_REWARD = COIN * 1;
 static const CAmount PHASE_1_DYNODE_PAYMENT = COIN * 0.382;
 static const CAmount PHASE_2_DYNODE_PAYMENT = COIN * 0.618;
 
-class Fluid, public HexFunctions {
+class Fluid : public CAuthorise {
 private:
 	/*
 	 * The three keys controlling the multiple signature system

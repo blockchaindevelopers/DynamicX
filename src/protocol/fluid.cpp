@@ -22,23 +22,17 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include "fluid.h"
+
+#include "main.h"
 #include "core_io.h"
+
 #include "wallet/wallet.h"
 #include "wallet/walletdb.h"
-#include "init.h"
-#include "keepass.h"
-#include "net.h"
-#include "netbase.h"
-#include "rpcserver.h"
-#include "timedata.h"
+
 #include "util.h"
 #include "utilmoneystr.h"
 #include "utilstrencodings.h"
-#include "fluid.h"
-#include "main.h"
-
-#include <univalue.h>
-#include <algorithm>
 
 Fluid fluid;
 
@@ -48,27 +42,15 @@ CScript AssimilateScriptFeeBurn(int number) {
 	return CScript() << OP_DESTROY << ParseHex(output);
 }
 
-opcodetype getOpcodeFromString(std::string input) {
-    if ("OP_MINT") return OP_MINT;
-	else if ("OP_DESTROY") return OP_DESTROY;
-	else if ("OP_DROPLET") return OP_DROPLET;
-	else if ("OP_REWARD_DYNODE") return OP_REWARD_DYNODE;
-	else if ("OP_REWARD_MINING") return OP_REWARD_MINING;
-	else if ("OP_STERILIZE") return OP_STERILIZE;
-	else if ("OP_KILL") return OP_KILL;
-	else if ("OP_FLUID_DEACTIVATE") return OP_FLUID_DEACTIVATE;
-	else if ("OP_FLUID_REACTIVATE") return OP_FLUID_REACTIVATE;
-	
-	return OP_RETURN;
-};
-
 bool RecursiveVerifyIfValid(const CTransaction& tx) {
 	CAmount nFluidTransactions = 0;
+	
 	BOOST_FOREACH(const CTxOut& txout, tx.vout)
     {
 		if (txout.scriptPubKey.IsTransactionMagical())
 			nFluidTransactions++;
 	}
+	
 	return (nFluidTransactions != 0);
 }
 
@@ -108,10 +90,10 @@ bool Fluid::IsGivenKeyMaster(CDynamicAddress inputKey, int &whichOne) {
 
 /** Checks how many Fluid Keys the wallet owns */
 bool Fluid::HowManyKeysWeHave(CDynamicAddress inputKey, bool &keyOne, bool &keyTwo, bool &keyThree) {
-	keyOne = false, keyTwo = false, keyThree = false; // Assume first
 	int verifyNumber;
+	keyOne = false, keyTwo = false, keyThree = false;
 	
-	for (int x = 0; x <= 3; x++) {
+	for (int x = 0; x < 4; x++) {
 		if(IsGivenKeyMaster(inputKey, verifyNumber)) {
 			if(InitiateFluidVerify(inputKey)) {
 				if(verifyNumber == 1)
@@ -127,7 +109,7 @@ bool Fluid::HowManyKeysWeHave(CDynamicAddress inputKey, bool &keyOne, bool &keyT
 		}
 	}
 	
-	if (keyOne == true || keyTwo == true || keyThree == true)
+	if (keyOne || keyTwo || keyThree)
 		return true;
 	else
 		return false;
@@ -154,25 +136,6 @@ bool Fluid::InitiateFluidVerify(CDynamicAddress dynamicAddress) {
 #endif
 }
 
-/** Simple numerical collation with hex conversion, create a bland token */
-bool Fluid::GenerateFluidToken(CDynamicAddress sendToward, 
-						CAmount tokenMintAmt, std::string &issuanceString) {
-
-	if(!sendToward.IsValid())
-		return false;
-
-	if(tokenMintAmt < fluidMintingMinimum || tokenMintAmt > fluidMintingMaximum) {
-		LogPrintf("Fluid::GenerateFluidToken: Token Mint Quantity is either too big or too small, %s \n", tokenMintAmt);
-		return false;
-	}
-	
-	std::string r = std::to_string(tokenMintAmt) + "::" + std::to_string(GetTime()) + "::" + sendToward.ToString();
-	
-	ConvertToHex(r);
-
-    return true;
-}
-
 /** It will perform basic message signing functions */
 bool Fluid::GenericSignMessage(std::string message, std::string &signedString, CDynamicAddress signer) {
 	if(!SignIntimateMessage(signer, message, signedString, true))
@@ -183,50 +146,24 @@ bool Fluid::GenericSignMessage(std::string message, std::string &signedString, C
     return true;
 }
 
-/** It gets a number from the ASM of an OP_CODE without signature verification */
 bool Fluid::GenericParseNumber(std::string scriptString, CAmount &howMuch) {
-	std::string dehexString = HexToString(scriptString);
-	scriptString = dehexString;
-	
-	std::string lr = scriptString; std::string::iterator end_pos = std::remove(lr.begin(), lr.end(), ' '); lr.erase(end_pos, lr.end());
-	
-	try {
-		howMuch			= boost::lexical_cast<int64_t>(lr);
-	}
-	catch( boost::bad_lexical_cast const& ) {
-		LogPrintf("Fluid::ParseDestructionAmount: Variable is invalid!\n");
-		return false;
-	}
-
+	std::string dehexString = HexToString(scriptString); howMuch = stringToInteger(dehexString);
 	return true;
 }
 
 bool Fluid::ParseMintKey(int64_t nTime, CDynamicAddress &destination, CAmount &coinAmount, std::string uniqueIdentifier) {
-	// Step 1: Convert new Hex Data to dehexed token
-	std::string dehexString = HexToString(uniqueIdentifier);
+	std::string recipientAddress, dehexString = HexToString(uniqueIdentifier);
 	uniqueIdentifier = dehexString;
 	
-	// Step 2: Convert the Dehexed Token to sense
 	std::vector<std::string> strs, ptrs;
-	boost::split(strs, dehexString, boost::is_any_of(" "));
-	boost::split(ptrs, strs.at(0), boost::is_any_of("::"));
+	SeperateString(dehexString, strs, false);
+	SeperateString(strs.at(0), ptrs, true);
 	
-	// Step 3: Convert the token to our variables
-	std::string lr = ptrs.at(0); std::string::iterator end_pos = std::remove(lr.begin(), lr.end(), ' '); lr.erase(end_pos, lr.end());
-	std::string ls = ptrs.at(2); std::string::iterator end_posX = std::remove(ls.begin(), ls.end(), ' '); ls.erase(end_posX, ls.end());
-	
-	try {
-		coinAmount			 	= boost::lexical_cast<CAmount>(lr);
-	}
-	catch( boost::bad_lexical_cast const& ) {
-		LogPrintf("Fluid::ParseMintKey: Either amount string or issuance time string are incorrect! Parsing cannot continue!\n");
-		return false;
-	}
-
-	std::string recipientAddress = ptrs.at(4);
+	coinAmount = stringToInteger(ptrs.at(0));
+	recipientAddress = ptrs.at(4);
 	destination.SetString(recipientAddress);
-		
-	if(!destination.IsValid() /* || coinAmount < fluidMintingMinimum || coinAmount > fluidMintingMaximum */)
+
+	if(!destination.IsValid())
 		return false;
 	
 	return true;
@@ -289,4 +226,3 @@ CAmount getDynodeSubsidyWithOverride(CAmount lastOverrideCommand, bool fDynode) 
 		return GetDynodePayment(fDynode);
 	}
 }
-

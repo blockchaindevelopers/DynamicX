@@ -24,6 +24,20 @@
 
 #include "instruction.h"
 
+bool CInstruction::IsMintSpecified() {
+	return (iCode == MINT_TX &&
+			mintTowardsWhom != "");
+}
+
+void CInstruction::SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+	READWRITE(iCode);
+	READWRITE(instructionTime);
+	READWRITE(valueOfInstruction);
+	READWRITE(hexCommand);
+	READWRITE(digestKeys);
+	READWRITE(mintTowardsWhom);
+}
+
 /** Because some things in life are meant to be intimate, like socks in a drawer */
 bool CAuthorise::SignIntimateMessage(CDynamicAddress address, ProtocolToken unsignedMessage, 
 									 ProtocolToken &stitchedMessage, bool stitch) {
