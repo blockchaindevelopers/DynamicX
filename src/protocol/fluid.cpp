@@ -40,9 +40,6 @@
 #include <univalue.h>
 #include <algorithm>
 
-extern bool EnsureWalletIsAvailable(bool avoidException);
-extern void SendCustomTransaction(CScript generatedScript, CWalletTx& wtxNew, CAmount nValue = (1*COIN));
-
 Fluid fluid;
 
 CScript AssimilateScriptFeeBurn(int number) {

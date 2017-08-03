@@ -22,6 +22,9 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+extern bool EnsureWalletIsAvailable(bool avoidException);
+extern void SendCustomTransaction(CScript generatedScript, CWalletTx& wtxNew, CAmount nValue = (1*COIN));
+
 UniValue stringtohex(const UniValue& params, bool fHelp)
 {
 	std::string result;
