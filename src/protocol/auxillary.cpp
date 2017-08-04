@@ -26,19 +26,23 @@
 
 #include <boost/algorithm/string.hpp>
 
+ProtocolToken PrimaryDelimiter = "~";
+ProtocolToken SubDelimiter = "%";
+ProtocolToken SignatureDelimiter = " ";
+
 /* String Manipulation */
-void ScrubString(std::string &input. bool forInteger) {
-	input.erase(std::remove(input.begin(), input.end(), TransactionDelimiter), input.end());
-	input.erase(std::remove(input.begin(), input.end(), SubDelimiter), input.end());
+void ScrubString(std::string &input, bool forInteger) {
+	input.erase(std::remove(input.begin(), input.end(), '~'), input.end());
+	input.erase(std::remove(input.begin(), input.end(), '%'), input.end());
 	if (forInteger)
-		input.erase(std::remove(input.begin(), input.end(), " "), input.end());
+		input.erase(std::remove(input.begin(), input.end(), ' '), input.end());
 }
 
 void SeperateString(std::string input, std::vector<std::string> output, bool subDelimiter) {
 	if(subDelimiter)
-		boost::split(output, input, boost::is_any_of(TransactionDelimiter));
-	else
 		boost::split(output, input, boost::is_any_of(SubDelimiter));
+	else
+		boost::split(output, input, boost::is_any_of(PrimaryDelimiter));
 };
 
 std::string StitchString(std::string stringOne, std::string stringTwo, bool subDelimiter) {
@@ -47,7 +51,7 @@ std::string StitchString(std::string stringOne, std::string stringTwo, bool subD
 	if(subDelimiter)
 		return stringOne + SubDelimiter + stringTwo;
 	else 
-		return stringOne + TransactionDelimiter + stringTwo;
+		return stringOne + PrimaryDelimiter + stringTwo;
 }
 
 std::string StitchString(std::string stringOne, std::string stringTwo, std::string stringThree, bool subDelimiter) {
@@ -56,7 +60,7 @@ std::string StitchString(std::string stringOne, std::string stringTwo, std::stri
 	if(subDelimiter)
 		return stringOne + SubDelimiter + stringTwo + SubDelimiter + stringThree;
 	else 
-		return stringOne + TransactionDelimiter + stringTwo + TransactionDelimiter + stringThree;
+		return stringOne + PrimaryDelimiter + stringTwo + PrimaryDelimiter + stringThree;
 }
 
 int64_t stringToInteger(std::string input) {

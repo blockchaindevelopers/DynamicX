@@ -11,7 +11,6 @@
 #include "hash.h"
 #include "consensus/merkle.h"
 #include "streams.h"
-#include "protocol/fluid.h"
 #include "tinyformat.h"
 #include "util.h"
 #include "utilstrencodings.h"
@@ -34,22 +33,12 @@ static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesi
     txNew.vout[0].nValue = genesisReward;
     txNew.vout[0].scriptPubKey = genesisOutputScript;
 
-	/* Fluid Transaction must be present! */
-    CMutableTransaction txFluid;
-    txNew.nVersion = 1;
-    txNew.vin.resize(1);
-    txNew.vout.resize(1);
-    txNew.vin[0].scriptSig = txNew.vin[0].scriptSig;
-    txNew.vout[0].nValue = genesisReward;
-    txNew.vout[0].scriptPubKey = AssimilateScriptFeeBurn(genesisReward);
-
     CBlock genesis;
     genesis.nTime    = nTime;
     genesis.nBits    = nBits;
     genesis.nNonce   = nNonce;
     genesis.nVersion = nVersion;
     genesis.vtx.push_back(txNew);
-    genesis.instructionTx.push_back(txNew);
     genesis.hashPrevBlock.SetNull();
     genesis.hashMerkleRoot = BlockMerkleRoot(genesis);
     

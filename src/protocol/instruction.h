@@ -26,10 +26,32 @@
 #define INSTRUCTION_PROTOCOL_H
 
 #include "auxillary.h"
+#include "uint256.h"
+#include "serialize.h"
+#include "amount.h"
 
+class CTransaction;
 class CDynamicAddress;
 
-class CAuthorise : public HexFunctions, public Base64Functions {
+class CParameters {
+private:
+	/*
+	 * The three keys controlling the multiple signature system
+	 */
+	std::string defaultFluidAddressX = "DEmrYUjVeLQnuvLnZjqzCex9azDRAtPzUa"; // importprivkey MnjEkYWghQhBqSQSixDGVPpzrtYWrg1s1BZVuvznK3SF7s5dRmzd
+	std::string defaultFluidAddressY = "DM1sv8zT529d7rYPtGX5kKM2MjD8YrHg5D"; // importprivkey Mn64HNSDehPY4KKP8bZCMvcweYS7wrNszNWGvPHamcyPhjoZABSp
+	std::string defaultFluidAddressZ = "DKPH9BdcrVyWwRsUVbPtaUQSwJWv2AMrph"; // importprivkey MpPYgqNRGf8qQqkuds6si6UEfpddfps1NJ1uTVbp7P3g3imJLwAC
+
+public: 
+	const char* fluidImportantAddress(KeyNumber adr) {
+		if (adr == KEY_UNE) { return (defaultFluidAddressX.c_str()); }
+		else if (adr == KEY_DEUX) { return (defaultFluidAddressY.c_str()); }
+		else if (adr == KEY_TROIS) { return (defaultFluidAddressZ.c_str()); }
+		else { return "Invalid Address Requested"; }
+	}
+};
+
+class CAuthorise : public HexFunctions, public Base64Functions, public CParameters {
 public:
 	bool SignIntimateMessage(CDynamicAddress address, ProtocolToken unsignedMessage, ProtocolToken &stitchedMessage, bool stitch = true);
 	bool CheckIfQuorumExists(ProtocolToken token, ProtocolToken &message, bool individual = false);
@@ -46,7 +68,7 @@ public:
 	uint256 prevBlockHash;
 
 	/* Generic Statements that must be present in every instruction */
-	ProtocolCodes iCode;
+	int iCode;
 	int64_t instructionTime;
 	CAmount valueOfInstruction;
 	ProtocolToken hexCommand;
@@ -58,10 +80,17 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion);
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+		READWRITE(iCode);
+		READWRITE(instructionTime);
+		READWRITE(valueOfInstruction);
+		READWRITE(hexCommand);
+		READWRITE(digestKeys);
+		READWRITE(mintTowardsWhom);
+	}
 
 	void SetNull() {
-		iCode = NO_TX;
+		iCode = IDENTIFIER_NO_TX;
 		instructionTime = 0;
 		valueOfInstruction = 0;
 		hexCommand = "";
@@ -71,7 +100,7 @@ public:
 	}
 
 	bool IsNull() {
-		return (iCode == NO_TX ||
+		return (iCode == IDENTIFIER_NO_TX ||
 			instructionTime == 0 ||
 			valueOfInstruction == 0 ||
 			hexCommand == "" ||
@@ -80,8 +109,13 @@ public:
 			prevBlockHash.IsNull());
 	}
 
-	bool IsMintSpecified();
+	bool IsMintSpecified() {
+		return (iCode == IDENTIFIER_MINT_TX &&
+				mintTowardsWhom != "");
+	}
+
 	bool CheckValid();
+	bool checkCreateTransaction(CTransaction transaction, CInstruction& instruction);
 };
 
 #endif // INSTRUCTION_PROTOCOL_H

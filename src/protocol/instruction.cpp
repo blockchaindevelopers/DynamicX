@@ -24,19 +24,24 @@
 
 #include "instruction.h"
 
-bool CInstruction::IsMintSpecified() {
-	return (iCode == MINT_TX &&
-			mintTowardsWhom != "");
-}
+#include "key.h"
+#include "pubkey.h"
+#include "hash.h"
+#include "base58.h"
 
-void CInstruction::SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
-	READWRITE(iCode);
-	READWRITE(instructionTime);
-	READWRITE(valueOfInstruction);
-	READWRITE(hexCommand);
-	READWRITE(digestKeys);
-	READWRITE(mintTowardsWhom);
-}
+#include "wallet/wallet.h"
+#include "wallet/walletdb.h"
+#include "primitives/transaction.h"
+#include "consensus/validation.h"
+
+#include <boost/algorithm/string.hpp>
+
+extern CWallet* pwalletMain;
+extern const std::string strMessageMagic;
+
+extern bool CheckInstruction(const CTransaction& tx, CValidationState &state);
+extern bool FluidGenericParseNumber(std::string scriptString, CAmount &howMuch);
+extern bool FluidParseMintKey(int64_t nTime, CDynamicAddress &destination, CAmount &coinAmount, std::string uniqueIdentifier);
 
 /** Because some things in life are meant to be intimate, like socks in a drawer */
 bool CAuthorise::SignIntimateMessage(CDynamicAddress address, ProtocolToken unsignedMessage, 
@@ -197,19 +202,23 @@ bool CInstruction::checkCreateTransaction(CTransaction transaction, CInstruction
 		return false;
 	
 	/* Now start fetching keys and elements*/
-	if (!FetchCommandKey(transaction, instruction.hexCommand, instruction.digestKeys, instruction.iCode))
+	/* if (!FetchCommandKey(transaction, instruction.hexCommand, instruction.digestKeys, instruction.iCode))
 		return false;
-
+*/
 	AssimilatedToken = StitchString(instruction.hexCommand, instruction.digestKeys);
 	
 	/* Can we derive finacial and transporational (if any) parameters */
+	CDynamicAddress address = instruction.mintTowardsWhom.c_str();
+	
 	if(instruction.iCode == MINT_TX) {
-		if (!ParseMintKey(0, instruction.mintTowardsWhom, instruction.valueOfInstruction, AssimilatedToken))
+		if (!FluidParseMintKey(0, address, instruction.valueOfInstruction, AssimilatedToken))
 			return false;
 	} else {
-		if (!GenericParseNumber(AssimilatedToken, instruction.valueOfInstruction))
+		if (!FluidGenericParseNumber(AssimilatedToken, instruction.valueOfInstruction))
 			return false;
 	}
+	
+	instruction.mintTowardsWhom = address.ToString();
 	
 	/* Is our new assimiliated parameters valid? */
 	if(!instruction.CheckValid())
@@ -226,17 +235,17 @@ bool CInstruction::CheckValid() {
 	if (IsNull() || !IsMintSpecified())
 		return false;
 		
-	if(!CheckIfQuorumExists(AssimilatedToken, message)
+	if(!CheckIfQuorumExists(AssimilatedToken, message))
 		return false;
 	
 	if(!IsHex(message))
 		return false;
 	
 	if(iCode == MINT_TX) {
-		if (!ParseMintKey(dummyIntegerX, dummyAddressX, dummyIntegerY, AssimilatedToken))
+		if (!FluidParseMintKey(dummyIntegerX, dummyAddressX, dummyIntegerY, AssimilatedToken))
 			return false;
 	} else {
-		if (!GenericParseNumber(AssimilatedToken, dummyIntegerX))
+		if (!FluidGenericParseNumber(AssimilatedToken, dummyIntegerX))
 			return false;
 	}
 	

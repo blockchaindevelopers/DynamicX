@@ -30,11 +30,21 @@
 #include <string>
 #include <vector>
 
-#define PrimaryDelimiter "~"
-#define SubDelimiter "||"
-#define SignatureDelimiter " "
-
 typedef std::string ProtocolToken;
+
+extern ProtocolToken PrimaryDelimiter;
+extern ProtocolToken SubDelimiter;
+extern ProtocolToken SignatureDelimiter;
+
+/* Identification Codes */
+static const int IDENTIFIER_NO_TX = 0;
+static const int IDENTIFIER_MINT_TX = 1;
+static const int IDENTIFIER_DESTROY_TX = 2;
+static const int IDENTIFIER_KILL_TX = 3;
+static const int IDENTIFIER_DYNODE_MODFIY_TX = 4;
+static const int IDENTIFIER_MINING_MODIFY_TX = 5;
+static const int IDENTIFIER_ACTIVATE_TX = 6;
+static const int IDENTIFIER_DEACTIVATE_TX = 7;
 
 enum KeyNumber {
 	KEY_UNE = 1,
@@ -45,15 +55,15 @@ enum KeyNumber {
 };
 
 enum ProtocolCodes {
-	MINT_TX = 1,
-	DESTROY_TX = 2,
-	KILL_TX = 3,
-	DYNODE_MODFIY_TX = 4,
-	MINING_MODIFY_TX = 5,
-	ACTIVATE_TX = 6,
-	DEACTIVATE_TX = 7,
+	MINT_TX 			= IDENTIFIER_MINT_TX,
+	DESTROY_TX 			= IDENTIFIER_DESTROY_TX,
+	KILL_TX 			= IDENTIFIER_KILL_TX,
+	DYNODE_MODFIY_TX 	= IDENTIFIER_DYNODE_MODFIY_TX,
+	MINING_MODIFY_TX 	= IDENTIFIER_MINING_MODIFY_TX,
+	ACTIVATE_TX 		= IDENTIFIER_ACTIVATE_TX,
+	DEACTIVATE_TX 		= IDENTIFIER_DEACTIVATE_TX,
 	
-	NO_TX = 0
+	NO_TX = IDENTIFIER_NO_TX
 };
 
 static const unsigned char base64_table[65] =

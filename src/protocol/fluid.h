@@ -32,6 +32,9 @@
 #include "consensus/validation.h"
 #include "instruction.h"
 
+#include "wallet/wallet.h"
+#include "wallet/walletdb.h"
+
 #include <stdint.h>
 #include <string.h>
 #include <algorithm>
@@ -41,28 +44,15 @@
 class CBlock;
 class CBlockTemplate;
 
+extern CWallet* pwalletMain;
+
 static const CAmount BLOCKCHAIN_INIT_REWARD = COIN * 0;
 static const CAmount PHASE_1_POW_REWARD = COIN * 1;
 static const CAmount PHASE_1_DYNODE_PAYMENT = COIN * 0.382;
 static const CAmount PHASE_2_DYNODE_PAYMENT = COIN * 0.618;
 
 class Fluid : public CAuthorise {
-private:
-	/*
-	 * The three keys controlling the multiple signature system
-	 */
-	std::string defaultFluidAddressX = "DEmrYUjVeLQnuvLnZjqzCex9azDRAtPzUa"; // importprivkey MnjEkYWghQhBqSQSixDGVPpzrtYWrg1s1BZVuvznK3SF7s5dRmzd
-	std::string defaultFluidAddressY = "DM1sv8zT529d7rYPtGX5kKM2MjD8YrHg5D"; // importprivkey Mn64HNSDehPY4KKP8bZCMvcweYS7wrNszNWGvPHamcyPhjoZABSp
-	std::string defaultFluidAddressZ = "DKPH9BdcrVyWwRsUVbPtaUQSwJWv2AMrph"; // importprivkey MpPYgqNRGf8qQqkuds6si6UEfpddfps1NJ1uTVbp7P3g3imJLwAC
-
 public:
-	const char* fluidImportantAddress(KeyNumber adr) {
-		if (adr == KEY_UNE) { return (defaultFluidAddressX.c_str()); }
-		else if (adr == KEY_DEUX) { return (defaultFluidAddressY.c_str()); }
-		else if (adr == KEY_TROIS) { return (defaultFluidAddressZ.c_str()); }
-		else { return "Invalid Address Requested"; }
-	}
-	
 	bool IsItHardcoded(std::string givenScriptPubKey);
 	bool InitiateFluidVerify(CDynamicAddress dynamicAddress);
 	bool IsGivenKeyMaster(CDynamicAddress inputKey, int &whichOne);
@@ -70,7 +60,11 @@ public:
 
 	bool ParseMintKey(int64_t nTime, CDynamicAddress &destination, CAmount &coinAmount, std::string uniqueIdentifier);
 	bool GenericParseNumber(std::string scriptString, CAmount &howMuch);
+	bool GenericSignMessage(std::string message, std::string &signedString, CDynamicAddress signer);
 };
+
+bool FluidGenericParseNumber(std::string scriptString, CAmount &howMuch);
+bool FluidParseMintKey(int64_t nTime, CDynamicAddress &destination, CAmount &coinAmount, std::string uniqueIdentifier);
 
 /** Standard Reward Payment Determination Functions */
 CAmount GetPoWBlockPayment(const int& nHeight, CAmount nFees);

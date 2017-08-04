@@ -27,9 +27,6 @@
 #include "main.h"
 #include "core_io.h"
 
-#include "wallet/wallet.h"
-#include "wallet/walletdb.h"
-
 #include "util.h"
 #include "utilmoneystr.h"
 #include "utilstrencodings.h"
@@ -47,7 +44,12 @@ bool RecursiveVerifyIfValid(const CTransaction& tx) {
 	
 	BOOST_FOREACH(const CTxOut& txout, tx.vout)
     {
-		if (txout.scriptPubKey.IsTransactionMagical())
+		if (txout.scriptPubKey.IsProtocolInstruction(MINT_TX) ||
+			txout.scriptPubKey.IsProtocolInstruction(KILL_TX) ||
+			txout.scriptPubKey.IsProtocolInstruction(DYNODE_MODFIY_TX) ||
+			txout.scriptPubKey.IsProtocolInstruction(MINING_MODIFY_TX) ||
+			txout.scriptPubKey.IsProtocolInstruction(ACTIVATE_TX) ||
+			txout.scriptPubKey.IsProtocolInstruction(DEACTIVATE_TX))
 			nFluidTransactions++;
 	}
 	
@@ -225,4 +227,13 @@ CAmount getDynodeSubsidyWithOverride(CAmount lastOverrideCommand, bool fDynode) 
 	} else {
 		return GetDynodePayment(fDynode);
 	}
+}
+
+/** Fluid Passover Functions for Instruction Parsing Verification */
+bool FluidGenericParseNumber(std::string scriptString, CAmount &howMuch) {
+	return fluid.GenericParseNumber(scriptString, howMuch);
+}
+
+bool FluidParseMintKey(int64_t nTime, CDynamicAddress &destination, CAmount &coinAmount, std::string uniqueIdentifier) {
+	return fluid.ParseMintKey(nTime, destination, coinAmount, uniqueIdentifier);
 }

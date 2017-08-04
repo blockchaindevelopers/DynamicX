@@ -33,6 +33,14 @@
 #include "netbase.h"
 #include "timedata.h"
 
+#include "wallet/wallet.h"
+#include "wallet/walletdb.h"
+
+#include "script/script.h"
+#include "script/script_error.h"
+#include "script/sign.h"
+#include "script/standard.h"
+
 extern bool EnsureWalletIsAvailable(bool avoidException);
 extern void SendCustomTransaction(CScript generatedScript, CWalletTx& wtxNew, CAmount nValue = (1*COIN));
 
