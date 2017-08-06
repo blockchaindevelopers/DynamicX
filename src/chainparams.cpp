@@ -38,22 +38,12 @@ static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesi
     txNew.vout[0].nValue = genesisReward;
     txNew.vout[0].scriptPubKey = genesisOutputScript;
 
-	/* Fluid Transaction must be present! */
-    CMutableTransaction txFluid;
-    txNew.nVersion = 1;
-    txNew.vin.resize(1);
-    txNew.vout.resize(1);
-    txNew.vin[0].scriptSig = CScript() << 1489862748 << CScriptNum(4) << std::vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-    txNew.vout[0].nValue = 50000;
-    txNew.vout[0].scriptPubKey = AssimilateFirstPubKey();
-
     CBlock genesis;
     genesis.nTime    = nTime;
     genesis.nBits    = nBits;
     genesis.nNonce   = nNonce;
     genesis.nVersion = nVersion;
     genesis.vtx.push_back(txNew);
-    genesis.instructionTx.push_back(txNew);
     genesis.hashPrevBlock.SetNull();
     genesis.hashMerkleRoot = BlockMerkleRoot(genesis);
     return genesis;
@@ -174,13 +164,13 @@ public:
         nPruneAfterHeight = 20545;
         startNewChain = false;
 
-        genesis = CreateGenesisBlock(1501359789, 1200315, UintToArith256(consensus.powLimit).GetCompact(), 1, (1 * COIN));
+        genesis = CreateGenesisBlock(1502296619, 151932, UintToArith256(consensus.powLimit).GetCompact(), 1, (1 * COIN));
         if(startNewChain == true) { MineGenesis(genesis, consensus.powLimit, true); }
         consensus.hashGenesisBlock = genesis.GetHash();
 
         if(!startNewChain) {
-            assert(consensus.hashGenesisBlock == uint256S("0x00000db78790d934f1ff4a288c13614cbc3c49b4ea033f2399674788456df125"));
-            assert(genesis.hashMerkleRoot == uint256S("0x7e6be4141131da3668d22bb38c82517fbf6880ed9ee4f3eba934c08a25be769a"));
+            assert(consensus.hashGenesisBlock == uint256S("0x0000087e15e4b32e5815351f10267bb769cffdfe1d0f9acbb802be51b55f13b8"));
+            assert(genesis.hashMerkleRoot == uint256S("0x5ba0a842fae652d9e7a855619cafe34e94f1d5bfab1c32b8ee977db89d3fd754"));
 		}
 		/*
 			vSeeds.push_back(CDNSSeedData("dnsseeder.io", "dyn.dnsseeder.io"));

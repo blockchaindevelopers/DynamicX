@@ -150,13 +150,13 @@ public:
     unsigned int nTime;
     unsigned int nBits;
     unsigned int nNonce;
-	std::vector<CTransaction> instructionTx;
 
 	//! DynamicX Protocol Inferences from Master Addresses and External Functions
 	CAmount nMoneySupply;
 	CAmount nDynamicBurnt;
 	CAmount overridenBlockReward;
 	CAmount overridenDynodeReward;
+	std::vector<uint256> bannedAddresses;
 	
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
     uint32_t nSequenceId;
@@ -179,7 +179,7 @@ public:
 		nDynamicBurnt = 0;
 		overridenBlockReward = 0;
 		overridenDynodeReward = 0;
-		instructionTx.clear();
+		bannedAddresses.clear();
 		
         nVersion       = 0;
         hashMerkleRoot = uint256();
@@ -202,7 +202,6 @@ public:
         nTime          = block.nTime;
         nBits          = block.nBits;
         nNonce         = block.nNonce;
-        instructionTx  = block.instructionTx;
     }
 
     CDiskBlockPos GetBlockPos() const {
@@ -233,7 +232,6 @@ public:
         block.nTime          = nTime;
         block.nBits          = nBits;
         block.nNonce         = nNonce;
-        block.instructionTx  = instructionTx;
         return block;
     }
 
@@ -349,6 +347,7 @@ public:
 		READWRITE(nDynamicBurnt);
 		READWRITE(overridenBlockReward);
 		READWRITE(overridenDynodeReward);
+		READWRITE(bannedAddresses);
     }
 
     uint256 GetBlockHash() const
