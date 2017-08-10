@@ -47,23 +47,9 @@ static const CAmount PHASE_1_POW_REWARD = COIN * 1.5;
 static const CAmount PHASE_1_DYNODE_PAYMENT = COIN * 0.382;
 static const CAmount PHASE_2_DYNODE_PAYMENT = COIN * 0.618;
 
-class CParameters {
-private:
-	/*
-	 * The three keys controlling the multiple signature system
-	 */
-	std::string defaultFluidAddressX = "DEmrYUjVeLQnuvLnZjqzCex9azDRAtPzUa"; // importprivkey MnjEkYWghQhBqSQSixDGVPpzrtYWrg1s1BZVuvznK3SF7s5dRmzd
-	std::string defaultFluidAddressY = "DM1sv8zT529d7rYPtGX5kKM2MjD8YrHg5D"; // importprivkey Mn64HNSDehPY4KKP8bZCMvcweYS7wrNszNWGvPHamcyPhjoZABSp
-	std::string defaultFluidAddressZ = "DKPH9BdcrVyWwRsUVbPtaUQSwJWv2AMrph"; // importprivkey MpPYgqNRGf8qQqkuds6si6UEfpddfps1NJ1uTVbp7P3g3imJLwAC
-
-public: 
-	const char* fluidImportantAddress(KeyNumber adr) {
-		if (adr == KEY_UNE) { return (defaultFluidAddressX.c_str()); }
-		else if (adr == KEY_DEUX) { return (defaultFluidAddressY.c_str()); }
-		else if (adr == KEY_TROIS) { return (defaultFluidAddressZ.c_str()); }
-		else { return "Invalid Address Requested"; }
-	}
-};
+/** Maximum Fluid Transaction Request Validity Time */
+static const int64_t maximumFluidDistortionTime = 5 * 60;
+static const int minimumThresholdForBanning = 10;
 
 class Fluid : public CParameters, public HexFunctions {
 private:
@@ -75,7 +61,7 @@ private:
 
 public:
 	static const CAmount fluidMintingMinimum = 100 * COIN;
-	CAmount fluidMintingMaximum = 99999; // DeriveSupplyPercentage(10); // Maximum 10% can be minted!
+	static const CAmount fluidMintingMaximum = 100000 * COIN;
 	
 	bool IsGivenKeyMaster(CDynamicAddress inputKey, int &whichOne);
 	bool HowManyKeysWeHave(CDynamicAddress inputKey, bool &keyOne, bool &keyTwo, bool &keyThree);
@@ -88,11 +74,11 @@ public:
 	bool SignIntimateMessage(CDynamicAddress address, std::string unsignedMessage, std::string &stitchedMessage, bool stitch = true);
 	
 	bool GenericSignMessage(std::string message, std::string &signedString, CDynamicAddress signer);
-	bool GenericParseNumber(std::string scriptString, int64_t timeStamp, CAmount &howMuch);
-	bool GenericParseHash(std::string scriptString, int64_t timeStamp, uint256 &hash);
-	bool GenericVerifyInstruction(std::string uniqueIdentifier, CDynamicAddress signer, std::string &messageTokenKey /* Added so the token key can be intercepted */, int whereToLook=1);
+	bool GenericParseNumber(std::string scriptString, int64_t timeStamp, CAmount &howMuch, bool txCheckPurpose=false);
+	bool GenericParseHash(std::string scriptString, int64_t timeStamp, uint256 &hash, bool txCheckPurpose=false);
+	bool GenericVerifyInstruction(std::string uniqueIdentifier, CDynamicAddress signer, std::string &messageTokenKey, int whereToLook=1);
 	
-	bool ParseMintKey(int64_t nTime, CDynamicAddress &destination, CAmount &coinAmount, std::string uniqueIdentifier);
+	bool ParseMintKey(int64_t nTime, CDynamicAddress &destination, CAmount &coinAmount, std::string uniqueIdentifier, bool txCheckPurpose=false);
 	bool ParseDestructionAmount(std::string scriptString, CAmount coinsSpent, CAmount &coinsDestroyed);
 
 	bool GetMintingInstructions(const CBlockHeader& blockHeader, CValidationState& state, CDynamicAddress &toMintAddress, CAmount &mintAmount);
@@ -100,6 +86,17 @@ public:
 	
 	bool GetProofOverrideRequest(const CBlockHeader& blockHeader, CValidationState& state, CAmount &howMuch);
 	bool GetDynodeOverrideRequest(const CBlockHeader& blockHeader, CValidationState& state, CAmount &howMuch);
+	
+	void AddRemoveBanAddresses(const CBlockHeader& blockHeader, std::vector<uint256> &bannedList);
+	bool CheckIfAddressIsBlacklisted(CScript scriptPubKey);
+	bool ProcessBanEntry(std::string getBanInstruction, int64_t timestamp, std::vector<uint256> &bannedList);
+	bool RemoveEntry(std::string getBanInstruction, int64_t timestamp, std::vector<uint256> &bannedList);
+	
+	bool InsertTransactionToRecord(CScript fluidInstruction, std::vector<std::string> &transactionRecord);
+	bool CheckTransactionInRecord(CScript fluidInstruction);
+	void AddFluidTransactionsToRecord(const CBlockHeader& blockHeader, std::vector<std::string> &transactionRecord);
+	
+	bool ValidationProcesses(CValidationState& state, CScript txOut, CAmount txValue);
 };
 
 /** Standard Reward Payment Determination Functions */
@@ -110,14 +107,8 @@ CAmount GetDynodePayment(bool fDynode = true);
 CAmount getBlockSubsidyWithOverride(const int& nHeight, CAmount nFees, CAmount lastOverrideCommand);
 CAmount getDynodeSubsidyWithOverride(CAmount lastOverrideCommand, bool fDynode = true);
 
-/** Address banning system */
-void AddRemoveBanAddresses(const CBlockHeader& blockHeader, std::vector<uint256> &bannedList);
-/** Subfunctions */
-bool CheckIfAddressIsBlacklisted(CScript scriptPubKey);
-bool ProcessBanEntry(std::string getBanInstruction, int64_t timestamp, std::vector<uint256> &bannedList);
-bool RemoveEntry(std::string getBanInstruction, int64_t timestamp, std::vector<uint256> &bannedList);
-
-opcodetype getOpcodeFromString(std::string input);
+void BuildFluidInformationIndex(CBlockIndex* pindex, CAmount &nExpectedBlockValue, CAmount nFees, CAmount nValueIn, 
+								CAmount nValueOut, bool fDynodePaid);
 
 extern Fluid fluid;
 
