@@ -31,55 +31,11 @@
 class Fluid;
 class CValidationState;
 
-// Conversion Hextable
-static const long hextable[] =
-{
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // 10-19
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // 30-39
-	-1, -1, -1, -1, -1, -1, -1, -1,  0,  1,
-	 2,  3,  4,  5,  6,  7,  8,  9, -1, -1,         // 50-59
-	-1, -1, -1, -1, -1, 10, 11, 12, 13, 14,
-	15, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // 70-79
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1, -1, 10, 11, 12,         // 90-99
-	13, 14, 15, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // 110-109
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // 130-139
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // 150-159
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // 170-179
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // 190-199
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // 210-219
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // 230-239
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1
-};
-
 class BlackWater : public Fluid {
 private:
-	long hex2long(const char* hexString)
-	{
-		long ret = 0;
-		while (*hexString && ret >= 0)
-		{
-			ret = (ret << 4) | hextable[(uint8_t)*hexString++];
-		}
-		return ret;
-	}
-
 	bool compareNumber(int x, int y) {
 		return x == y;
 	}
-
-	int generateMTRandom(unsigned int s, int range);
-	uint256 CombineHashes(arith_uint256 hash1, arith_uint256 hash2);
 
 public:
 	std::string GetSerializedBlockData(CBlock block);
@@ -167,8 +123,65 @@ GLOBAL sph_haval256_5_context   z_haval;
 #define ZHAVAL (memcpy(&ctx_haval, &z_haval, sizeof(z_haval)))
 #define ZSHABAL256 (memcpy(&ctx_shabal, &z_shabal256, sizeof(z_shabal256)))
 
+
 template<typename T1>
-uint256 PointBlankRoulette(const T1 pbegin, const T1 pend, int algorithmID)
+inline uint256 AxiomRandMemoHash(const T1 pbegin, const T1 pend)
+{
+	/*  RandMemoHash(s, R, N)
+		(1) Set M[0] := s
+		(2) For i := 1 to N − 1 do set M[i] := H(M[i − 1])
+		(3) For r := 1 to R do
+			(a) For b := 0 to N − 1 do
+				(i) p := (b − 1 + N) mod N
+				(ii) q :=AsInteger(M[p]) mod (N − 1)
+				(iii) j := (b + q) mod N
+				(iv) M[b] :=H(M[p] || M[j])
+	*/
+	
+    int R = 2;
+    int N = 65536;
+
+    std::vector<uint256> M(N);
+    sph_shabal256_context ctx_shabal;
+    
+    static unsigned char pblank[1];
+    uint256 hash1;
+    
+    sph_shabal256_init(&ctx_shabal);
+    sph_shabal256 (&ctx_shabal, (pbegin == pend ? pblank : static_cast<const void*>(&pbegin[0])), (pend - pbegin) * sizeof(pbegin[0]));
+    sph_shabal256_close(&ctx_shabal, static_cast<void*>(&hash1));
+    M[0] = hash1;
+
+    for(int i = 1; i < N; i++)
+    {
+		sph_shabal256_init(&ctx_shabal);
+        sph_shabal256 (&ctx_shabal, (unsigned char*)&M[i - 1], sizeof(M[i - 1]));
+        sph_shabal256_close(&ctx_shabal, static_cast<void*>((unsigned char*)&M[i]));
+    }
+
+    for(int r = 1; r < R; r ++)
+    {
+		for(int b = 0; b < N; b++)
+		{	    
+			int p = (b - 1 + N) % N;
+			int q = UintToArith256(M[p]).GetInt() % (N - 1);
+			int j = (b + q) % N;
+			std::vector<uint256> pj(2);
+			
+			pj[0] = M[p];
+			pj[1] = M[j];
+
+			sph_shabal256_init(&ctx_shabal);
+			sph_shabal256 (&ctx_shabal, (unsigned char*)&pj[0], 2 * sizeof(pj[0]));
+			sph_shabal256_close(&ctx_shabal, static_cast<void*>((unsigned char*)&M[b]));
+		}
+    }
+
+    return M[N - 1];
+}
+
+template<typename T1>
+uint256 BlakeHashing(const T1 pbegin, const T1 pend)
 {
     sph_blake512_context      ctx_blake;
     sph_bmw512_context        ctx_bmw;

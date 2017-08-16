@@ -33,20 +33,10 @@
 #include "crypto/argon2d/argon2.h"
 #include "crypto/blake2/blake2.h"
 
-#include <boost/random/mersenne_twister.hpp>
-#include <boost/random/uniform_int.hpp>
-
 using namespace boost;
 using namespace std;
 
 BlackWater bWater;
-
-int BlackWater::generateMTRandom(unsigned int s, int range)
-{
-	boost::mt19937 gen(s);
-	boost::uniform_int<> dist(1, range);
-	return dist(gen);
-}
 
 std::string BlackWater::GetSerializedBlockData(CBlock block) {
 	CDataStream ssBlock(SER_NETWORK, PROTOCOL_VERSION);
@@ -54,81 +44,6 @@ std::string BlackWater::GetSerializedBlockData(CBlock block) {
 	std::string strHex = HexStr(ssBlock.begin(), ssBlock.end());
 	
 	return strHex;
-}
-
-template<typename T1>
-inline uint256 IntesiveHashGargling(const T1 pbegin, const T1 pend)
-{
-	/*  RandMemoHash(s, R, N)
-		(1) Set M[0] := s
-		(2) For i := 1 to N − 1 do set M[i] := H(M[i − 1])
-		(3) For r := 1 to R do
-			(a) For b := 0 to N − 1 do
-				(i) p := (b − 1 + N) mod N
-				(ii) q :=AsInteger(M[p]) mod (N − 1)
-				(iii) j := (b + q) mod N
-				(iv) M[b] :=H(M[p] || M[j])
-	*/
-	
-    int R = 2;
-    int N = 65536;
-
-    std::vector<uint256> M(N);
-    sph_shabal256_context ctx_shabal;
-    
-    static unsigned char pblank[1];
-    uint256 hash1;
-    
-    sph_shabal256_init(&ctx_shabal);
-    sph_shabal256 (&ctx_shabal, (pbegin == pend ? pblank : static_cast<const void*>(&pbegin[0])), (pend - pbegin) * sizeof(pbegin[0]));
-    sph_shabal256_close(&ctx_shabal, static_cast<void*>(&hash1));
-    M[0] = hash1;
-
-    for(int i = 1; i < N; i++)
-    {
-		sph_shabal256_init(&ctx_shabal);
-        sph_shabal256 (&ctx_shabal, (unsigned char*)&M[i - 1], sizeof(M[i - 1]));
-        sph_shabal256_close(&ctx_shabal, static_cast<void*>((unsigned char*)&M[i]));
-    }
-
-    for(int r = 1; r < R; r ++)
-    {
-		for(int b = 0; b < N; b++)
-		{	    
-			int p = (b - 1 + N) % N;
-			int q = UintToArith256(M[p]).GetInt() % (N - 1);
-			int j = (b + q) % N;
-			std::vector<uint256> pj(2);
-			
-			pj[0] = M[p];
-			pj[1] = M[j];
-
-			sph_shabal256_init(&ctx_shabal);
-			sph_shabal256 (&ctx_shabal, (unsigned char*)&pj[0], 2 * sizeof(pj[0]));
-			sph_shabal256_close(&ctx_shabal, static_cast<void*>((unsigned char*)&M[b]));
-		}
-    }
-
-    return M[N - 1];
-}
-
-uint256 BlackWater::CombineHashes(arith_uint256 hash1, arith_uint256 hash2)
-{
-    arith_uint256 mask = UintToArith256(uint256S("0x8000000000000000000000000000000000000000000000000000000000000000"));
-    arith_uint256 hash[2] = { hash1, hash2 };
-
-    /* Transpose first 128 bits of each hash into final */
-    arith_uint256 final = 0;
-    for (unsigned int i = 0; i < 128; i++) {
-        for (unsigned int j = 0; j < 2; j++) {
-            final <<= 1;
-            if ((hash[j] & mask) != 0)
-                final |= 1;
-        }
-        mask >>= 1;
-    }
-
-    return ArithToUint256(final);
 }
 
 // TODO: Come up and decide the derive level number according to height in the future!

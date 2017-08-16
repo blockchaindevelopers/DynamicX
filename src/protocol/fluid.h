@@ -92,7 +92,7 @@ public:
 	bool RemoveEntry(std::string getBanInstruction, int64_t timestamp, HashVector& bannedList);
 	
 	bool InsertTransactionToRecord(CScript fluidInstruction, StringVector& transactionRecord);
-	bool CheckTransactionInRecord(CScript fluidInstruction, const CBlockHeader& blockHeader);
+	bool CheckTransactionInRecord(CScript fluidInstruction);
 	void AddFluidTransactionsToRecord(const CBlockHeader& blockHeader, StringVector& transactionRecord);
 	
 	bool ValidationProcesses(CValidationState& state, CScript txOut, CAmount txValue);

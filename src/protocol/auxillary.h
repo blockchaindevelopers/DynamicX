@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "uint256.h"
+#include "arith_uint256.h"
 
 typedef std::vector<std::string> StringVector;
 typedef std::vector<uint256> HashVector;
@@ -86,7 +87,41 @@ static const int B64index[256] = { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 	0,  0,  0, 63,  0, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
 	41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 
 };
-	
+
+// Conversion Hextable
+static const long hextable[] =
+{
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // 10-19
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // 30-39
+	-1, -1, -1, -1, -1, -1, -1, -1,  0,  1,
+	 2,  3,  4,  5,  6,  7,  8,  9, -1, -1,         // 50-59
+	-1, -1, -1, -1, -1, 10, 11, 12, 13, 14,
+	15, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // 70-79
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, 10, 11, 12,         // 90-99
+	13, 14, 15, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // 110-109
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // 130-139
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // 150-159
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // 170-179
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // 190-199
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // 210-219
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // 230-239
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1
+};
+
+long hex2long(const char* hexString);
+int generateMTRandom(unsigned int s, int range);
+
 class Base64Functions {
 private:	
 	std::string Base64Decode(const void* data, const size_t len);
@@ -171,10 +206,13 @@ public:
 
 /* String Manipulation Functions */
 void ScrubString(std::string &input, bool forInteger = false);
-void SeperateString(std::string input, std::vector<std::string> &output, bool subDelimiter = false);
+void SeperateString(std::string input, StringVector &output, bool subDelimiter = false);
 std::string StitchString(std::string stringOne, std::string stringTwo, bool subDelimiter = false);
 std::string StitchString(std::string stringOne, std::string stringTwo, std::string stringThree, bool subDelimiter = false);
 int64_t stringToInteger(std::string input);
 std::string getRidOfScriptStatement(std::string input);
+
+/* Hash Manipulation Fuctions */
+uint256 CombineHashes(arith_uint256 hash1, arith_uint256 hash2);
 
 #endif // AUXILLARY_PROTOCOL_H

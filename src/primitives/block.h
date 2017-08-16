@@ -62,7 +62,7 @@ public:
     {
         return (nBits == 0);
     }
-    
+
     uint256 GetHash() const;
 #ifdef __AVX2__   
     uint256 GetHashWithCtx(void *Matrix) const;

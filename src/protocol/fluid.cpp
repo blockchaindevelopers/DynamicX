@@ -264,7 +264,7 @@ bool Fluid::ExtractCheckTimestamp(std::string scriptString, int64_t timeStamp) {
 	
 	std::string ls = ptrs.at(1); ScrubString(ls, true);
 	
-	if ((timeStamp > stringToInteger(ls) + maximumFluidDistortionTime || timeStamp < stringToInteger(ls) - maximumFluidDistortionTime) + maximumFluidDistortionTime)
+	if ((timeStamp > stringToInteger(ls) + maximumFluidDistortionTime || timeStamp < stringToInteger(ls) - maximumFluidDistortionTime))
 		return false;
 	
 	return true;
@@ -296,7 +296,7 @@ bool Fluid::GenericParseHash(std::string scriptString, int64_t timeStamp, uint25
 	std::string ls = ptrs.at(1); ScrubString(ls, true);
 	
 	// Step 4: Final steps of parsing, is the timestamp exceeding five minutes?
-	if ((timeStamp > stringToInteger(ls) + maximumFluidDistortionTime || timeStamp < stringToInteger(ls) - maximumFluidDistortionTime) + maximumFluidDistortionTime && !txCheckPurpose)
+	if ((timeStamp > stringToInteger(ls) + maximumFluidDistortionTime || timeStamp < stringToInteger(ls) - maximumFluidDistortionTime) && !txCheckPurpose)
 		return false;
 	
 	// Step 3: Get hash
@@ -569,7 +569,7 @@ bool Fluid::CheckIfAddressIsBlacklisted(CScript scriptPubKey) {
 	HashVector bannedDatabase;
 	if (chainActive.Height() <= minimumThresholdForBanning)
 		return false;
-	else { 	CBlockIndex* pindex = chainActive.Tip(); bannedDatabase = pindex->bannedAddresses; }
+	else bannedDatabase = chainActive.Tip()->bannedAddresses;
 	
 	CTxDestination source;
 	/* Step 2: Get destination */
@@ -709,7 +709,7 @@ bool Fluid::ValidationProcesses(CValidationState &state, CScript txOut, CAmount 
 			// Step 2: Check for block that has that stamp
 			// Step 3: Now, check the header
 			
-			if (CheckTransactionInRecord(txOut, chainActive.Tip()->GetBlockHeader())) {
+			if (CheckTransactionInRecord(txOut)) {
 					return state.DoS(500, false, REJECT_INVALID, "bad-txns-fluid-exists-already");
 			}
 	}
@@ -758,23 +758,26 @@ void BuildFluidInformationIndex(CBlockIndex* pindex, CAmount &nExpectedBlockValu
 	 		pindex->overridenDynodeReward = newDynodeReward;
 	}
 	
-	// Handle the ban address system and update the vector
-	std::vector<uint256> bannedAddresses;
-	bannedAddresses.insert(bannedAddresses.end(), prevIndex->pprev->bannedAddresses.begin(), prevIndex->pprev->bannedAddresses.end());	
-	fluid.AddRemoveBanAddresses(prevIndex->pprev->GetBlockHeader(), bannedAddresses);
-
-	std::set<uint256> set(bannedAddresses.begin(), bannedAddresses.end());
-	bannedAddresses.assign(set.begin(), set.end());
-	pindex->bannedAddresses = bannedAddresses;
+	HashVector bannedAddresses;
+	StringVector existingFluidTransactions;
 	
-	// Scan and add Fluid Transactions to the Database
-	std::vector<std::string> existingFluidTransactions;
-	existingFluidTransactions.insert(existingFluidTransactions.end(), prevIndex->pprev->existingFluidTransactions.begin(), prevIndex->pprev->existingFluidTransactions.end());
-	fluid.AddFluidTransactionsToRecord(prevIndex->pprev->GetBlockHeader(), existingFluidTransactions);
+	if (chainActive.Height() >= minimumThresholdForBanning) {
+		// Handle the ban address system and update the vector
+		bannedAddresses.insert(bannedAddresses.end(), prevIndex->pprev->bannedAddresses.begin(), prevIndex->pprev->bannedAddresses.end());	
+		fluid.AddRemoveBanAddresses(prevIndex->pprev->GetBlockHeader(), bannedAddresses);
 
-	std::set<std::string> setX(existingFluidTransactions.begin(), existingFluidTransactions.end());
-	existingFluidTransactions.assign(setX.begin(), setX.end());
-	pindex->existingFluidTransactions = existingFluidTransactions;
+		std::set<uint256> set(bannedAddresses.begin(), bannedAddresses.end());
+		bannedAddresses.assign(set.begin(), set.end());
+		pindex->bannedAddresses = bannedAddresses;
+		
+		// Scan and add Fluid Transactions to the Database
+		existingFluidTransactions.insert(existingFluidTransactions.end(), prevIndex->pprev->existingFluidTransactions.begin(), prevIndex->pprev->existingFluidTransactions.end());
+		fluid.AddFluidTransactionsToRecord(prevIndex->pprev->GetBlockHeader(), existingFluidTransactions);
+
+		std::set<std::string> setX(existingFluidTransactions.begin(), existingFluidTransactions.end());
+		existingFluidTransactions.assign(setX.begin(), setX.end());
+		pindex->existingFluidTransactions = existingFluidTransactions;
+	}
 }
 
 void Fluid::AddFluidTransactionsToRecord(const CBlockHeader& blockHeader, StringVector& transactionRecord) {
@@ -821,10 +824,12 @@ bool Fluid::InsertTransactionToRecord(CScript fluidInstruction, StringVector& tr
 }
 
 /* Check if transaction exists in record */
-bool Fluid::CheckTransactionInRecord(CScript fluidInstruction, const CBlockHeader& blockHeader) {
+bool Fluid::CheckTransactionInRecord(CScript fluidInstruction) {
 	std::string verificationString;
-	CBlockIndex* pindex = mapBlockIndex[blockHeader.GetHash()];
-	StringVector transactionRecord = pindex->existingFluidTransactions;
+	StringVector transactionRecord;
+	if (chainActive.Height() <= minimumThresholdForBanning)
+		return false;
+	else transactionRecord = chainActive.Tip()->existingFluidTransactions;
 	
 	if (IsTransactionFluid(fluidInstruction)) {
 			verificationString = ScriptToAsmStr(fluidInstruction);

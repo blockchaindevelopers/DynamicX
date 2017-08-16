@@ -24,7 +24,14 @@
 
 #include "auxillary.h"
 
+#include <stdint.h>
+#include <iostream>
+#include <sstream>
+#include <string>
+
 #include <boost/algorithm/string.hpp>
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_int.hpp>
 
 /**
  * Statements: 
@@ -84,8 +91,6 @@ void SeperateString(std::string input, std::vector<std::string> &output, bool su
 };
 
 std::string StitchString(std::string stringOne, std::string stringTwo, bool subDelimiter) {
-//	ScrubString(stringOne); ScrubString(stringTwo);
-	
 	if(subDelimiter)
 		return stringOne + SubDelimiter + stringTwo;
 	else 
@@ -93,17 +98,11 @@ std::string StitchString(std::string stringOne, std::string stringTwo, bool subD
 }
 
 std::string StitchString(std::string stringOne, std::string stringTwo, std::string stringThree, bool subDelimiter) {
-//	ScrubString(stringOne); ScrubString(stringTwo);
-	
 	if(subDelimiter)
 		return stringOne + SubDelimiter + stringTwo + SubDelimiter + stringThree;
 	else 
 		return stringOne + PrimaryDelimiter + stringTwo + PrimaryDelimiter + stringThree;
 }
-#include <stdint.h>
-
-#include <iostream>
-#include <sstream>
 
 int64_t stringToInteger(std::string input) {
 	int64_t result;
@@ -130,8 +129,6 @@ std::string getRidOfScriptStatement(std::string input) {
 * 2016-12-12 - Gaspard Petit : Slightly modified to return a std::string 
 * instead of a buffer allocated with malloc.
 */
-
-#include <string>
 
 std::string Base64Functions::Base64Encode(const unsigned char *src, size_t len)
 {
@@ -203,4 +200,42 @@ std::string Base64Functions::Base64Decode(const void* data, const size_t len)
         }
     }
     return str;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+int generateMTRandom(unsigned int s, int range)
+{
+	boost::mt19937 gen(s);
+	boost::uniform_int<> dist(1, range);
+	return dist(gen);
+}
+
+uint256 CombineHashes(arith_uint256 hash1, arith_uint256 hash2)
+{
+    arith_uint256 mask = UintToArith256(uint256S("0x8000000000000000000000000000000000000000000000000000000000000000"));
+    arith_uint256 hash[2] = { hash1, hash2 };
+
+    /* Transpose first 128 bits of each hash into final */
+    arith_uint256 final = 0;
+    for (unsigned int i = 0; i < 128; i++) {
+        for (unsigned int j = 0; j < 2; j++) {
+            final <<= 1;
+            if ((hash[j] & mask) != 0)
+                final |= 1;
+        }
+        mask >>= 1;
+    }
+
+    return ArithToUint256(final);
+}
+
+long hex2long(const char* hexString)
+{
+	long ret = 0;
+	while (*hexString && ret >= 0)
+	{
+		ret = (ret << 4) | hextable[(uint8_t)*hexString++];
+	}
+	return ret;
 }
