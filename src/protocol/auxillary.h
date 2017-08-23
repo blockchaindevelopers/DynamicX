@@ -30,11 +30,14 @@
 #include <string>
 #include <vector>
 
-typedef std::string ProtocolToken;
+#include "uint256.h"
 
-extern ProtocolToken PrimaryDelimiter;
-extern ProtocolToken SubDelimiter;
-extern ProtocolToken SignatureDelimiter;
+typedef std::vector<std::string> StringVector;
+typedef std::vector<uint256> HashVector;
+
+extern std::string PrimaryDelimiter;
+extern std::string SubDelimiter;
+extern std::string SignatureDelimiter;
 
 /* Identification Codes */
 static const int IDENTIFIER_NO_TX 					= 0;

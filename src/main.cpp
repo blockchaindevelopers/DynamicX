@@ -746,10 +746,36 @@ bool IsFinalTx(const CTransaction &tx, int nBlockHeight, int64_t nBlockTime)
         return true;
     if ((int64_t)tx.nLockTime < ((int64_t)tx.nLockTime < LOCKTIME_THRESHOLD ? (int64_t)nBlockHeight : nBlockTime))
         return true;
+        
     BOOST_FOREACH(const CTxIn& txin, tx.vin) {
         if (!(txin.nSequence == CTxIn::SEQUENCE_FINAL))
             return false;
     }
+    
+    BOOST_FOREACH(const CTxOut& txout, tx.vout)	{
+		CScript txOut = txout.scriptPubKey;
+		CDynamicAddress stubAddress;
+		int64_t stubVariable;
+		uint256 stubHash;
+		
+		if (txOut.IsProtocolInstruction(MINT_TX) &&
+			!fluid.ParseMintKey(nBlockTime, stubAddress, stubVariable, ScriptToAsmStr(txOut))) {
+				return false;
+		} 
+
+		if ((txOut.IsProtocolInstruction(STERILIZE_TX) ||
+			txOut.IsProtocolInstruction(REALLOW_TX)) &&
+			!fluid.GenericParseHash(ScriptToAsmStr(txOut), nBlockTime, stubHash)) {
+				return false;
+		}
+			
+		if ((txOut.IsProtocolInstruction(DYNODE_MODFIY_TX) ||
+			 txOut.IsProtocolInstruction(MINING_MODIFY_TX)) &&
+			 !fluid.GenericParseNumber(ScriptToAsmStr(txOut), nBlockTime, stubVariable)) {
+				return false;
+		}
+	}
+	
     return true;
 }
 
@@ -1215,6 +1241,34 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState &state, const C
     if (!CheckTransaction(tx, state))
         return false;
 
+	bool fluidTimestampCheck = true;
+	
+	BOOST_FOREACH(const CTxOut& txout, tx.vout)	{
+		CScript txOut = txout.scriptPubKey;
+		CDynamicAddress stubAddress;
+		int64_t stubVariable;
+		uint256 stubHash;
+		
+		if (txOut.IsProtocolInstruction(MINT_TX) &&
+			!fluid.ParseMintKey(GetTime(), stubAddress, stubVariable, ScriptToAsmStr(txOut))) {
+				fluidTimestampCheck = false;
+		} 
+
+		if ((txOut.IsProtocolInstruction(STERILIZE_TX) ||
+			txOut.IsProtocolInstruction(REALLOW_TX)) &&
+			!fluid.GenericParseHash(ScriptToAsmStr(txOut), GetTime(), stubHash)) {
+				fluidTimestampCheck = false;
+		}
+			
+		if ((txOut.IsProtocolInstruction(DYNODE_MODFIY_TX) ||
+			 txOut.IsProtocolInstruction(MINING_MODIFY_TX)) &&
+			 !fluid.GenericParseNumber(ScriptToAsmStr(txOut), GetTime(), stubVariable)) {
+				fluidTimestampCheck = false;
+		}
+	}
+
+	if(!fluidTimestampCheck)
+		return state.DoS(100, false, REJECT_INVALID, "fluid-tx-timestamp-error");
 
     // Coinbase is only valid in a block, not as a loose transaction
     if (tx.IsCoinBase())

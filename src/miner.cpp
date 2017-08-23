@@ -409,8 +409,8 @@ std::unique_ptr<CBlockTemplate> CreateNewBlock(const CChainParams& chainparams, 
 		CDynamicAddress address;
 		CValidationState validationState;
 		CAmount fluidIssuance;
-		bool areWeMinting = false;
 		CAmount blockReward = getBlockSubsidyWithOverride(nHeight, nFees, pindexPrev->overridenBlockReward);
+		bool areWeMinting = false;
 
         // Compute regular coinbase transaction.
         txNew.vout[0].scriptPubKey = scriptPubKeyIn;
@@ -418,11 +418,9 @@ std::unique_ptr<CBlockTemplate> CreateNewBlock(const CChainParams& chainparams, 
 
         if (fluid.GetMintingInstructions(pindexPrev->GetBlockHeader(), validationState, address, fluidIssuance)) {
 			txNew.vout[0].nValue = blockReward + fluidIssuance - nFees;
-			LogPrintf("FluidMinting: Previous block contains minting instructions. Minting: %s, Address: %s\n", fluidIssuance, address.ToString());
 			areWeMinting = true;
 		} else {
 			txNew.vout[0].nValue = blockReward - nFees;
-			LogPrintf("FluidMinting: Previous block does not contain any minting instructions, continuing with block creation\n");
 		}
 		
         txNew.vin[0].scriptSig = CScript() << nHeight << OP_0;

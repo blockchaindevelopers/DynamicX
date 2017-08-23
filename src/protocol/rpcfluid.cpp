@@ -50,6 +50,7 @@ opcodetype getOpcodeFromString(std::string input) {
 	else if (input == "OP_REWARD_DYNODE") return OP_REWARD_DYNODE;
 	else if (input == "OP_REWARD_MINING") return OP_REWARD_MINING;
 	else if (input == "OP_STERILIZE") return OP_STERILIZE;
+	else if (input == "OP_REALLOW") return OP_REALLOW;
 	else if (input == "OP_FLUID_DEACTIVATE") return OP_FLUID_DEACTIVATE;
 	else if (input == "OP_FLUID_REACTIVATE") return OP_FLUID_REACTIVATE;
 	else return OP_RETURN;
@@ -154,7 +155,7 @@ UniValue sendfluidtransaction(const UniValue& params, bool fHelp)
     
     if (fHelp || params.size() != 2)
         throw std::runtime_error(
-            "sendfluidtransaction \"opcode\" \"hexstring\"\n"
+            "sendfluidtransaction \"OP_MINT || OP_DESTROY || OP_DROPLET || OP_REWARD_DYNODE || OP_REWARD_MINING || OP_STERILIZE || OP_FLUID_DEACTIVATE || OP_FLUID_REACTIVATE\" \"hexstring\"\n"
             "\Send Fluid transactions to the network\n"
             "\nArguments:\n"
             "1. \"opcode\"  (string, required) The Fluid operation to be executed.\n"
@@ -290,4 +291,54 @@ UniValue consenttoken(const UniValue& params, bool fHelp)
 		throw std::runtime_error("Quorum Signature cannot be from the same address twice");
 	
 	return result;
+}
+
+
+/* Pretty pointless function, but - meh */
+UniValue stringtohash(const UniValue& params, bool fHelp)
+{
+	std::string result;
+
+    if (fHelp || params.size() != 1)
+        throw std::runtime_error(
+            "stringtohash \"string\"\n"
+            "\nHashes string to default hashing algorithm\n"
+            "\nArguments:\n"
+            "1. \"string\"         (string, required) String that has to be hashed.\n"
+            "\nExamples:\n"
+            + HelpExampleCli("stringtohex", "\"Hello World!\"")
+            + HelpExampleRpc("stringtohex", "\"Hello World!\"")
+        );
+	
+	result = params[0].get_str();
+	uint256 hashed = Hash(result.begin(), result.end());
+	return hashed.ToString();
+}
+
+UniValue fluidcommandshistory(const UniValue& params, bool fHelp) {
+	GetLastBlockIndex(chainActive.Tip());
+	CBlockIndex* pindex = chainActive.Tip();
+	StringVector transactionRecord = pindex->existingFluidTransactions;
+
+	UniValue obj(UniValue::VOBJ);
+
+    BOOST_FOREACH(const std::string& existingRecord, transactionRecord) {
+		obj.push_back(Pair("fluidCommand", existingRecord)); // We will make it a pair with timestamp later
+    }
+    
+	return obj;
+}
+
+UniValue sterilizeaddresslist(const UniValue& params, bool fHelp) {
+	GetLastBlockIndex(chainActive.Tip());
+	CBlockIndex* pindex = chainActive.Tip();
+	HashVector bannedDatabase = pindex->bannedAddresses;
+	
+	UniValue obj(UniValue::VOBJ);
+
+    BOOST_FOREACH(const uint256& offendingHash, bannedDatabase) {
+		obj.push_back(Pair("bannedAddress", offendingHash.ToString()));
+    }
+    
+	return obj;
 }

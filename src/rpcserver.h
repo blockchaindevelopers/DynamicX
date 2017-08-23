@@ -368,6 +368,9 @@ extern UniValue consenttoken(const UniValue& params, bool fHelp);
 extern UniValue getrawpubkey(const UniValue& params, bool fHelp);
 extern UniValue verifyquorum(const UniValue& params, bool fHelp);
 extern UniValue stringtohex(const UniValue& params, bool fHelp);
+extern UniValue stringtohash(const UniValue& params, bool fHelp);
+extern UniValue sterilizeaddresslist(const UniValue& params, bool fHelp);
+extern UniValue fluidcommandshistory(const UniValue& params, bool fHelp);
 
 bool StartRPC();
 void InterruptRPC();

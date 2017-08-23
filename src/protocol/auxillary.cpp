@@ -46,9 +46,9 @@
  * 
  **/
  
-ProtocolToken SignatureDelimiter = " ";
-ProtocolToken PrimaryDelimiter = "@";
-ProtocolToken SubDelimiter = "$";
+std::string SignatureDelimiter = " ";
+std::string PrimaryDelimiter = "@";
+std::string SubDelimiter = "$";
 
 /**
  * Fluid Protocol Commands, usage of only OP_FLUID OPCODE with Sub-Opcodes

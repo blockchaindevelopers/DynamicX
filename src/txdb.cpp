@@ -411,6 +411,7 @@ bool CBlockTreeDB::LoadBlockIndexGuts()
                 pindexNew->overridenDynodeReward   		= diskindex.overridenDynodeReward;
                 pindexNew->bannedAddresses 				= diskindex.bannedAddresses;
                 pindexNew->existingFluidTransactions 	= diskindex.existingFluidTransactions;
+                pindexNew->allowFluidTransactions		= diskindex.allowFluidTransactions;
                 
                 if (!CheckProofOfWork(pindexNew->GetBlockHash(), pindexNew->nBits, Params().GetConsensus()))
                     return error("LoadBlockIndex(): CheckProofOfWork failed: %s", pindexNew->ToString());

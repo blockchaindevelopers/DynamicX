@@ -48,8 +48,8 @@ static const CAmount PHASE_1_DYNODE_PAYMENT = COIN * 0.382;
 static const CAmount PHASE_2_DYNODE_PAYMENT = COIN * 0.618;
 
 /** Maximum Fluid Transaction Request Validity Time */
-static const int64_t maximumFluidDistortionTime = 5 * 60;
-static const int minimumThresholdForBanning = 10;
+static const int64_t 	maximumFluidDistortionTime 	= 5 * 60;
+static const int 		minimumThresholdForBanning 	= 10;
 
 class Fluid : public CParameters, public HexFunctions {
 private:
@@ -87,14 +87,14 @@ public:
 	bool GetProofOverrideRequest(const CBlockHeader& blockHeader, CValidationState& state, CAmount &howMuch);
 	bool GetDynodeOverrideRequest(const CBlockHeader& blockHeader, CValidationState& state, CAmount &howMuch);
 	
-	void AddRemoveBanAddresses(const CBlockHeader& blockHeader, std::vector<uint256> &bannedList);
+	void AddRemoveBanAddresses(const CBlockHeader& blockHeader, HashVector& bannedList);
 	bool CheckIfAddressIsBlacklisted(CScript scriptPubKey);
-	bool ProcessBanEntry(std::string getBanInstruction, int64_t timestamp, std::vector<uint256> &bannedList);
-	bool RemoveEntry(std::string getBanInstruction, int64_t timestamp, std::vector<uint256> &bannedList);
+	bool ProcessBanEntry(std::string getBanInstruction, int64_t timestamp, HashVector& bannedList);
+	bool RemoveEntry(std::string getBanInstruction, int64_t timestamp, HashVector& bannedList);
 	
-	bool InsertTransactionToRecord(CScript fluidInstruction, std::vector<std::string> &transactionRecord);
+	bool InsertTransactionToRecord(CScript fluidInstruction, StringVector& transactionRecord);
 	bool CheckTransactionInRecord(CScript fluidInstruction);
-	void AddFluidTransactionsToRecord(const CBlockHeader& blockHeader, std::vector<std::string> &transactionRecord);
+	void AddFluidTransactionsToRecord(const CBlockHeader& blockHeader, StringVector& transactionRecord);
 	
 	bool ValidationProcesses(CValidationState& state, CScript txOut, CAmount txValue);
 };
@@ -109,6 +109,7 @@ CAmount getDynodeSubsidyWithOverride(CAmount lastOverrideCommand, bool fDynode =
 
 void BuildFluidInformationIndex(CBlockIndex* pindex, CAmount &nExpectedBlockValue, CAmount nFees, CAmount nValueIn, 
 								CAmount nValueOut, bool fDynodePaid);
+bool IsTransactionFluid(CScript txOut);
 
 extern Fluid fluid;
 

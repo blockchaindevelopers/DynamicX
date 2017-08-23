@@ -414,7 +414,10 @@ static const CRPCCommand vRPCCommands[] =
     { "Protocol",           "ntptime",		  		  &ntptime,		   		   true  },
     { "Protocol",           "getrawpubkey",	 		  &getrawpubkey,		   true  },
     { "Protocol",           "verifyquorum",	 		  &verifyquorum,		   true  },
-    { "Protocol",           "stringtohex",	 		  &stringtohex,		   true  },
+    { "Protocol",           "stringtohex",	 		  &stringtohex,		  	   true  },
+    { "Protocol",           "stringtohash",	 		  &stringtohash,		   true  },
+    { "Protocol",           "sterilizeaddresslist",	  &sterilizeaddresslist,   true  },
+    { "Protocol",           "fluidcommandshistory",	  &fluidcommandshistory,   true  },
 
     /* Syscoin-ported DynamicX Protocol */
     { "Identity",           "identitynew",		  	  &identitynew,		  	  	true  },

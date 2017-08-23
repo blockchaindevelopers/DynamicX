@@ -30,7 +30,7 @@ std::string CBlock::ToString() const
 
 uint256 CBlockHeader::GetHash() const
 {
-	return (hash_Argon2d(UVOIDBEGIN(nVersion), 1));
+	return hash_Argon2d(BEGIN(nVersion), END(nNonce), 1);
 }
 
 #ifdef __AVX2__   

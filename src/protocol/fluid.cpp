@@ -59,6 +59,14 @@ bool getBlockFromHeader(const CBlockHeader& blockHeader, CBlock &block) {
 	return true;
 }
 
+bool IsTransactionFluid(CScript txOut) {
+	return (txOut.IsProtocolInstruction(MINT_TX) 
+		|| txOut.IsProtocolInstruction(DYNODE_MODFIY_TX)
+		|| txOut.IsProtocolInstruction(MINING_MODIFY_TX)
+		|| txOut.IsProtocolInstruction(REALLOW_TX)
+		|| txOut.IsProtocolInstruction(STERILIZE_TX));
+}
+
 /** Checks whether as to parties have actually signed it - please use this with ones **without** the OP_CODE */
 bool Fluid::CheckNonScriptQuorum(std::string token, std::string &message, bool individual) {
 	std::string result = "12345 " + token;
@@ -227,7 +235,7 @@ bool Fluid::GenericParseNumber(std::string scriptString, int64_t timeStamp, CAmo
 	scriptString = dehexString;
 
 	// Step 2: Convert the Dehexed Token to sense
-	std::vector<std::string> strs, ptrs; SeperateString(dehexString, strs, false); SeperateString(strs.at(0), ptrs, true);
+	StringVector strs, ptrs; SeperateString(dehexString, strs, false); SeperateString(strs.at(0), ptrs, true);
 	
 	if(1 >= (int)strs.size())
 		return false;
@@ -261,7 +269,7 @@ bool Fluid::GenericParseHash(std::string scriptString, int64_t timeStamp, uint25
 	scriptString = dehexString;
 	
 	// Step 2: Convert the Dehexed Token to sense
-	std::vector<std::string> strs, ptrs; SeperateString(dehexString, strs, false); SeperateString(strs.at(0), ptrs, true);
+	StringVector strs, ptrs; SeperateString(dehexString, strs, false); SeperateString(strs.at(0), ptrs, true);
 	
 	if(1 >= (int)strs.size())
 		return false;
@@ -276,6 +284,8 @@ bool Fluid::GenericParseHash(std::string scriptString, int64_t timeStamp, uint25
 	
 	// Step 3: Get hash
 	hash = uint256S(lr);
+	
+	LogPrintf("Processed UINT256 HASH: %s\n", hash.ToString());
 	
 	return true;
 }
@@ -326,7 +336,7 @@ bool Fluid::CheckIfQuorumExists(std::string token, std::string &message, bool in
 /** Individually checks the validity of an instruction */
 bool Fluid::GenericVerifyInstruction(std::string uniqueIdentifier, CDynamicAddress signer, std::string &messageTokenKey, int whereToLook)
 {	
-	std::string r = getRidOfScriptStatement(uniqueIdentifier); uniqueIdentifier = r; messageTokenKey = ""; 	std::vector<std::string> strs;
+	std::string r = getRidOfScriptStatement(uniqueIdentifier); uniqueIdentifier = r; messageTokenKey = ""; 	StringVector strs;
 	CDynamicAddress addr(signer);
 	CKeyID keyID;
     if (!addr.GetKeyID(keyID))
@@ -384,7 +394,7 @@ bool Fluid::ParseMintKey(int64_t nTime, CDynamicAddress &destination, CAmount &c
 	uniqueIdentifier = dehexString;
 	
 	// Step 2: Convert the Dehexed Token to sense
-	std::vector<std::string> strs, ptrs; SeperateString(dehexString, strs, false); SeperateString(strs.at(0), ptrs, true);
+	StringVector strs, ptrs; SeperateString(dehexString, strs, false); SeperateString(strs.at(0), ptrs, true);
 	
 	if(1 >= (int)strs.size() || 2 >= (int)ptrs.size())
 		return false;
@@ -562,10 +572,10 @@ CAmount getDynodeSubsidyWithOverride(CAmount lastOverrideCommand, bool fDynode) 
 
 bool Fluid::CheckIfAddressIsBlacklisted(CScript scriptPubKey) {
 	/* Step 1: Copy vector */
-	std::vector<uint256> bannedDatabase;
+	HashVector bannedDatabase;
 	if (chainActive.Height() <= minimumThresholdForBanning)
 		return false;
-	else bannedDatabase = chainActive.Tip()->bannedAddresses;
+	else { 	CBlockIndex* pindex = chainActive.Tip(); bannedDatabase = pindex->bannedAddresses; }
 	
 	CTxDestination source;
 	/* Step 2: Get destination */
@@ -588,13 +598,15 @@ bool Fluid::CheckIfAddressIsBlacklisted(CScript scriptPubKey) {
 	return false;
 }
 
-bool Fluid::ProcessBanEntry(std::string getBanInstruction, int64_t timestamp, std::vector<uint256> &bannedList) {
+bool Fluid::ProcessBanEntry(std::string getBanInstruction, int64_t timestamp, HashVector& bannedList) {
 	uint256 entry;
 	std::string one = fluidImportantAddress(KEY_UNE), two = fluidImportantAddress(KEY_DEUX), three = fluidImportantAddress(KEY_TROIS);
 	/* Can we get hash to insert? */
 	if (!GenericParseHash(getBanInstruction, timestamp, entry))
 		return false;
-		
+	
+	LogPrintf("ProcessBanEntry(): Address hash for banning: %s\n", entry.ToString());
+	
 	BOOST_FOREACH(const uint256& offendingHash, bannedList)
 	{
 		/* Is it already there? */
@@ -611,17 +623,21 @@ bool Fluid::ProcessBanEntry(std::string getBanInstruction, int64_t timestamp, st
 	/* Okay, it's not there, so it's fine */
 	bannedList.push_back(entry);
 	
+	LogPrintf("ProcessBanEntry(): Address hash has been banned: %s\n", entry.ToString());
+	
 	/* It's true */
 	return true;
 }
 
-bool Fluid::RemoveEntry(std::string getBanInstruction, int64_t timestamp, std::vector<uint256> &bannedList) {
+bool Fluid::RemoveEntry(std::string getBanInstruction, int64_t timestamp, HashVector& bannedList) {
 	uint256 entry;
 	
 	/* Can we get hash to insert? */
 	if (!GenericParseHash(getBanInstruction, timestamp, entry))
 		return false;
-	
+
+	LogPrintf("ProcessBanEntry(): Address hash for unbanning: %s\n", entry.ToString());
+
 	/* Is it already there? */
 	BOOST_FOREACH(const uint256& offendingHash, bannedList)
 	{
@@ -629,6 +645,7 @@ bool Fluid::RemoveEntry(std::string getBanInstruction, int64_t timestamp, std::v
 		if (offendingHash == entry) {
 			/* Wipe entry reference off the map */
 			bannedList.erase(std::remove(bannedList.begin(), bannedList.end(), entry), bannedList.end());
+			LogPrintf("ProcessBanEntry(): Successfully unbanned: %s", entry.ToString());
 			return true;
 		}
 	}
@@ -636,7 +653,7 @@ bool Fluid::RemoveEntry(std::string getBanInstruction, int64_t timestamp, std::v
 	return false;
 }
 
-void Fluid::AddRemoveBanAddresses(const CBlockHeader& blockHeader, std::vector<uint256> &bannedList) {
+void Fluid::AddRemoveBanAddresses(const CBlockHeader& blockHeader, HashVector& bannedList) {
 	/* Step One: Get the bloukz! */
 	CBlock block; 
 	std::string message;
@@ -676,14 +693,7 @@ bool Fluid::ValidationProcesses(CValidationState &state, CScript txOut, CAmount 
 			return state.DoS(100, false, REJECT_INVALID, "bad-txns-fluid-burn-parse-failure");
 
 	/* Block of Fluid Verification */
-	if (txOut.IsProtocolInstruction(MINT_TX) 
-		|| txOut.IsProtocolInstruction(DYNODE_MODFIY_TX)
-		|| txOut.IsProtocolInstruction(MINING_MODIFY_TX)
-		// || txOut.IsProtocolInstruction(ACTIVATE_TX)
-		// || txOut.IsProtocolInstruction(DEACTIVATE_TX)
-		|| txOut.IsProtocolInstruction(REALLOW_TX)
-		|| txOut.IsProtocolInstruction(STERILIZE_TX)
-		) {
+	if (IsTransactionFluid(txOut)) {
 			if (!CheckIfQuorumExists(ScriptToAsmStr(txOut), message)) {
 				return state.DoS(100, false, REJECT_INVALID, "bad-txns-fluid-auth-failure");
 			}
@@ -756,9 +766,12 @@ void BuildFluidInformationIndex(CBlockIndex* pindex, CAmount &nExpectedBlockValu
 	
 	// Scan and add Fluid Transactions to the Database
 	fluid.AddFluidTransactionsToRecord(pindex->pprev->GetBlockHeader(), pindex->existingFluidTransactions);
+
+	// Allow or disallow Fluid Transactions (TODO)
+	pindex->allowFluidTransactions = (pindex->pprev? pindex->pprev->allowFluidTransactions : true); // allowTransactions;
 }
 
-void Fluid::AddFluidTransactionsToRecord(const CBlockHeader& blockHeader, std::vector<std::string> &transactionRecord) {
+void Fluid::AddFluidTransactionsToRecord(const CBlockHeader& blockHeader, StringVector& transactionRecord) {
 	/* Step One: Get the bloukz! */
 	CBlock block; 
 	std::string message;
@@ -768,12 +781,7 @@ void Fluid::AddFluidTransactionsToRecord(const CBlockHeader& blockHeader, std::v
 	/* Step Two: Process transactions */
     BOOST_FOREACH(const CTransaction& tx, block.vtx) {
 		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
-			if (txout.scriptPubKey.IsProtocolInstruction(MINT_TX) 
-				|| txout.scriptPubKey.IsProtocolInstruction(DYNODE_MODFIY_TX)
-				|| txout.scriptPubKey.IsProtocolInstruction(MINING_MODIFY_TX)
-				|| txout.scriptPubKey.IsProtocolInstruction(REALLOW_TX)
-				|| txout.scriptPubKey.IsProtocolInstruction(STERILIZE_TX)
-				) {
+			if (IsTransactionFluid(txout.scriptPubKey)) {
 				if (!InsertTransactionToRecord(txout.scriptPubKey, transactionRecord)) {
 					LogPrintf("Script Public Key Database Entry: %s , FAILED!\n", ScriptToAsmStr(txout.scriptPubKey));
 				}
@@ -783,15 +791,10 @@ void Fluid::AddFluidTransactionsToRecord(const CBlockHeader& blockHeader, std::v
 }
 
 /* Insertion of transaction script to record */
-bool Fluid::InsertTransactionToRecord(CScript fluidInstruction, std::vector<std::string> &transactionRecord) {
+bool Fluid::InsertTransactionToRecord(CScript fluidInstruction, StringVector& transactionRecord) {
 	std::string verificationString;
 
-	if (fluidInstruction.IsProtocolInstruction(MINT_TX) 
-		|| fluidInstruction.IsProtocolInstruction(DYNODE_MODFIY_TX)
-		|| fluidInstruction.IsProtocolInstruction(MINING_MODIFY_TX)
-		|| fluidInstruction.IsProtocolInstruction(REALLOW_TX)
-		|| fluidInstruction.IsProtocolInstruction(STERILIZE_TX)
-		) {
+	if (IsTransactionFluid(fluidInstruction)) {
 			verificationString = ScriptToAsmStr(fluidInstruction);
 			
 			std::string message;
@@ -814,17 +817,12 @@ bool Fluid::InsertTransactionToRecord(CScript fluidInstruction, std::vector<std:
 /* Check if transaction exists in record */
 bool Fluid::CheckTransactionInRecord(CScript fluidInstruction) {
 	std::string verificationString;
-	std::vector<std::string> transactionRecord;
+	StringVector transactionRecord;
 	if (chainActive.Height() <= minimumThresholdForBanning)
 		return false;
-	else transactionRecord = chainActive.Tip()->existingFluidTransactions;
+	else  { CBlockIndex* pindex = chainActive.Tip(); transactionRecord = pindex->existingFluidTransactions; }
 	
-	if (fluidInstruction.IsProtocolInstruction(MINT_TX) 
-		|| fluidInstruction.IsProtocolInstruction(DYNODE_MODFIY_TX)
-		|| fluidInstruction.IsProtocolInstruction(MINING_MODIFY_TX)
-		|| fluidInstruction.IsProtocolInstruction(REALLOW_TX)
-		|| fluidInstruction.IsProtocolInstruction(STERILIZE_TX)
-		) {
+	if (IsTransactionFluid(fluidInstruction)) {
 			verificationString = ScriptToAsmStr(fluidInstruction);
 			
 			std::string message;
@@ -832,6 +830,7 @@ bool Fluid::CheckTransactionInRecord(CScript fluidInstruction) {
 				BOOST_FOREACH(const std::string& existingRecord, transactionRecord)
 				{
 					if (existingRecord == verificationString) {
+						LogPrintf("Attempt to repeat Fluid Transaction: %s", existingRecord);
 						return true;
 					}
 				}

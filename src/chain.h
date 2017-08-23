@@ -158,6 +158,7 @@ public:
 	CAmount overridenDynodeReward;
 	std::vector<uint256> bannedAddresses;
 	std::vector<std::string> existingFluidTransactions;
+	bool allowFluidTransactions;
 	
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
     uint32_t nSequenceId;
@@ -182,6 +183,7 @@ public:
 		overridenDynodeReward = 0;
 		bannedAddresses.clear();
 		existingFluidTransactions.clear();
+		allowFluidTransactions = true; // Must default to true
 		
         nVersion       = 0;
         hashMerkleRoot = uint256();
@@ -352,6 +354,7 @@ public:
 		READWRITE(overridenDynodeReward);
 		READWRITE(bannedAddresses);
 		READWRITE(existingFluidTransactions);
+		READWRITE(allowFluidTransactions);
     }
 
     uint256 GetBlockHash() const
