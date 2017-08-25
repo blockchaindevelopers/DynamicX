@@ -407,7 +407,6 @@ std::unique_ptr<CBlockTemplate> CreateNewBlock(const CChainParams& chainparams, 
         }
 
 		CDynamicAddress address;
-		CValidationState validationState;
 		CAmount fluidIssuance;
 		CAmount blockReward = getBlockSubsidyWithOverride(nHeight, nFees, pindexPrev->overridenBlockReward);
 		bool areWeMinting = false;
@@ -416,7 +415,7 @@ std::unique_ptr<CBlockTemplate> CreateNewBlock(const CChainParams& chainparams, 
         txNew.vout[0].scriptPubKey = scriptPubKeyIn;
         // Compute fluid fee flushing
 
-        if (fluid.GetMintingInstructions(pindexPrev->GetBlockHeader(), validationState, address, fluidIssuance)) {
+        if (fluid.GetMintingInstructions(pindexPrev->GetBlockHeader(), address, fluidIssuance)) {
 			txNew.vout[0].nValue = blockReward + fluidIssuance - nFees;
 			areWeMinting = true;
 		} else {

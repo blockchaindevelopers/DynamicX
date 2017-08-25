@@ -299,10 +299,9 @@ void CDynodePayments::FillBlockPayee(CMutableTransaction& txNew, CAmount nFees)
     }
 
     CAmount blockValue, dynodePayment, fluidIssuance;
-	CValidationState validationState;
 	CDynamicAddress addressX;
 	
-	if (fluid.GetMintingInstructions(chainActive.Tip()->pprev->GetBlockHeader(), validationState, addressX, fluidIssuance)) {
+	if (fluid.GetMintingInstructions(chainActive.Tip()->pprev->GetBlockHeader(), addressX, fluidIssuance)) {
 	    blockValue = 	getBlockSubsidyWithOverride(chainActive.Tip()->nHeight, nFees, chainActive.Tip()->overridenBlockReward) + 
 						fluidIssuance;
 	} else {

@@ -752,28 +752,9 @@ bool IsFinalTx(const CTransaction &tx, int nBlockHeight, int64_t nBlockTime)
             return false;
     }
     
-    BOOST_FOREACH(const CTxOut& txout, tx.vout)	{
-		CScript txOut = txout.scriptPubKey;
-		CDynamicAddress stubAddress;
-		int64_t stubVariable;
-		uint256 stubHash;
-		
-		if (txOut.IsProtocolInstruction(MINT_TX) &&
-			!fluid.ParseMintKey(nBlockTime, stubAddress, stubVariable, ScriptToAsmStr(txOut))) {
+    BOOST_FOREACH(const CTxOut& txout, tx.vout)	{	
+		if (IsTransactionFluid(txout.scriptPubKey) && !fluid.ExtractCheckTimestamp(ScriptToAsmStr(txout.scriptPubKey), nBlockTime))
 				return false;
-		} 
-
-		if ((txOut.IsProtocolInstruction(STERILIZE_TX) ||
-			txOut.IsProtocolInstruction(REALLOW_TX)) &&
-			!fluid.GenericParseHash(ScriptToAsmStr(txOut), nBlockTime, stubHash)) {
-				return false;
-		}
-			
-		if ((txOut.IsProtocolInstruction(DYNODE_MODFIY_TX) ||
-			 txOut.IsProtocolInstruction(MINING_MODIFY_TX)) &&
-			 !fluid.GenericParseNumber(ScriptToAsmStr(txOut), nBlockTime, stubVariable)) {
-				return false;
-		}
 	}
 	
     return true;
@@ -1243,32 +1224,10 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState &state, const C
 
 	bool fluidTimestampCheck = true;
 	
-	BOOST_FOREACH(const CTxOut& txout, tx.vout)	{
-		CScript txOut = txout.scriptPubKey;
-		CDynamicAddress stubAddress;
-		int64_t stubVariable;
-		uint256 stubHash;
-		
-		if (txOut.IsProtocolInstruction(MINT_TX) &&
-			!fluid.ParseMintKey(GetTime(), stubAddress, stubVariable, ScriptToAsmStr(txOut))) {
-				fluidTimestampCheck = false;
-		} 
-
-		if ((txOut.IsProtocolInstruction(STERILIZE_TX) ||
-			txOut.IsProtocolInstruction(REALLOW_TX)) &&
-			!fluid.GenericParseHash(ScriptToAsmStr(txOut), GetTime(), stubHash)) {
-				fluidTimestampCheck = false;
-		}
-			
-		if ((txOut.IsProtocolInstruction(DYNODE_MODFIY_TX) ||
-			 txOut.IsProtocolInstruction(MINING_MODIFY_TX)) &&
-			 !fluid.GenericParseNumber(ScriptToAsmStr(txOut), GetTime(), stubVariable)) {
-				fluidTimestampCheck = false;
-		}
+    BOOST_FOREACH(const CTxOut& txout, tx.vout)	{	
+		if (IsTransactionFluid(txout.scriptPubKey) && !fluid.ExtractCheckTimestamp(ScriptToAsmStr(txout.scriptPubKey), GetTime()))
+			return state.DoS(100, false, REJECT_INVALID, "fluid-tx-timestamp-error");
 	}
-
-	if(!fluidTimestampCheck)
-		return state.DoS(100, false, REJECT_INVALID, "fluid-tx-timestamp-error");
 
     // Coinbase is only valid in a block, not as a loose transaction
     if (tx.IsCoinBase())
@@ -1750,30 +1709,11 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, const CTransa
     bool res = AcceptToMemoryPoolWorker(pool, state, tx, fLimitFree, pfMissingInputs, fOverrideMempoolLimit, fRejectAbsurdFee, vHashTxToUncache, fDryRun);
     bool fluidTimestampCheck = true;
     
-	BOOST_FOREACH(const CTxOut& txout, tx.vout)	{
-		CScript txOut = txout.scriptPubKey;
-		CDynamicAddress stubAddress;
-		int64_t stubVariable;
-		uint256 stubHash;
-		
-		if (txOut.IsProtocolInstruction(MINT_TX) &&
-			!fluid.ParseMintKey(GetTime(), stubAddress, stubVariable, ScriptToAsmStr(txOut))) {
-				fluidTimestampCheck = false;
-		} 
-
-		if ((txOut.IsProtocolInstruction(STERILIZE_TX) ||
-			txOut.IsProtocolInstruction(REALLOW_TX)) &&
-			!fluid.GenericParseHash(ScriptToAsmStr(txOut), GetTime(), stubHash)) {
-				fluidTimestampCheck = false;
-		}
-			
-		if ((txOut.IsProtocolInstruction(DYNODE_MODFIY_TX) ||
-			 txOut.IsProtocolInstruction(MINING_MODIFY_TX)) &&
-			 !fluid.GenericParseNumber(ScriptToAsmStr(txOut), GetTime(), stubVariable)) {
-				fluidTimestampCheck = false;
-		}
+    BOOST_FOREACH(const CTxOut& txout, tx.vout)	{	
+		if (IsTransactionFluid(txout.scriptPubKey) && !fluid.ExtractCheckTimestamp(ScriptToAsmStr(txout.scriptPubKey), GetTime()))
+			fluidTimestampCheck = false;
 	}
-    
+
     if (!res || fDryRun || !fluidTimestampCheck) {
         if(!res) LogPrint("mempool", "%s: %s %s\n", __func__, tx.GetHash().ToString(), state.GetRejectReason());
         BOOST_FOREACH(const uint256& hashTx, vHashTxToUncache)
@@ -2526,8 +2466,6 @@ bool DisconnectEscrow(const CBlockIndex *pindex, const CTransaction &tx, int op,
 	if(!pescrowdb->WriteEscrow(vvchArgs[0], vtxPos))
 		return error("DisconnectEscrow() : failed to write to escrow DB");
 	
-
-
 	return true;
 }
 
@@ -4215,36 +4153,12 @@ bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW, bo
                 tx.GetHash().ToString(),
                 FormatStateMessage(state));
 
-			BOOST_FOREACH(const CTxOut& txout, tx.vout)
-			{
-				CScript txOut = txout.scriptPubKey;
-				CDynamicAddress stubAddress;
-				int64_t stubVariable;
-				uint256 stubHash;
-				
-				if (txOut.IsProtocolInstruction(MINT_TX) &&
-					!fluid.ParseMintKey(block.nTime, stubAddress, stubVariable, ScriptToAsmStr(txOut))) {
-						return error("CheckBlock(): Timestamp check for Fluid Transaction to Block %s failed with %s",
-					tx.GetHash().ToString(),
-					FormatStateMessage(state));
-				} 
-						
-				if ((txOut.IsProtocolInstruction(STERILIZE_TX) ||
-					txOut.IsProtocolInstruction(REALLOW_TX)) &&
-					!fluid.GenericParseHash(ScriptToAsmStr(txOut), block.nTime, stubHash)) {
-						return error("CheckBlock(): Timestamp check for Fluid Transaction to Block %s failed with %s",
-					tx.GetHash().ToString(),
-					FormatStateMessage(state));
-				}
-						
-				if ((txOut.IsProtocolInstruction(DYNODE_MODFIY_TX) ||
-					 txOut.IsProtocolInstruction(MINING_MODIFY_TX)) &&
-					 !fluid.GenericParseNumber(ScriptToAsmStr(txOut), block.nTime, stubVariable)) {
-						return error("CheckBlock(): Timestamp check for Fluid Transaction to Block %s failed with %s",
-					tx.GetHash().ToString(),
-					FormatStateMessage(state));
-				}
-			}
+		BOOST_FOREACH(const CTxOut& txout, tx.vout)	{	
+			if (IsTransactionFluid(txout.scriptPubKey) && !fluid.ExtractCheckTimestamp(ScriptToAsmStr(txout.scriptPubKey), block.nTime))
+				return error("CheckBlock(): Timestamp check for Fluid Transaction to Block %s failed with %s",
+						tx.GetHash().ToString(),
+						FormatStateMessage(state));
+		}
 	}
                 
     unsigned int nSigOps = 0;

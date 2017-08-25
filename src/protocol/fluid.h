@@ -79,13 +79,12 @@ public:
 	bool GenericVerifyInstruction(std::string uniqueIdentifier, CDynamicAddress signer, std::string &messageTokenKey, int whereToLook=1);
 	
 	bool ParseMintKey(int64_t nTime, CDynamicAddress &destination, CAmount &coinAmount, std::string uniqueIdentifier, bool txCheckPurpose=false);
-	bool ParseDestructionAmount(std::string scriptString, CAmount coinsSpent, CAmount &coinsDestroyed);
 
-	bool GetMintingInstructions(const CBlockHeader& blockHeader, CValidationState& state, CDynamicAddress &toMintAddress, CAmount &mintAmount);
-	void GetDestructionTxes(const CBlockHeader& blockHeader, CValidationState& state, CAmount &amountDestroyed);
+	bool GetMintingInstructions(const CBlockHeader& blockHeader, CDynamicAddress &toMintAddress, CAmount &mintAmount);
+	void GetDestructionTxes(const CBlockHeader& blockHeader, CAmount &amountDestroyed);
 	
-	bool GetProofOverrideRequest(const CBlockHeader& blockHeader, CValidationState& state, CAmount &howMuch);
-	bool GetDynodeOverrideRequest(const CBlockHeader& blockHeader, CValidationState& state, CAmount &howMuch);
+	bool GetProofOverrideRequest(const CBlockHeader& blockHeader, CAmount &howMuch);
+	bool GetDynodeOverrideRequest(const CBlockHeader& blockHeader, CAmount &howMuch);
 	
 	void AddRemoveBanAddresses(const CBlockHeader& blockHeader, HashVector& bannedList);
 	bool CheckIfAddressIsBlacklisted(CScript scriptPubKey);
@@ -93,10 +92,11 @@ public:
 	bool RemoveEntry(std::string getBanInstruction, int64_t timestamp, HashVector& bannedList);
 	
 	bool InsertTransactionToRecord(CScript fluidInstruction, StringVector& transactionRecord);
-	bool CheckTransactionInRecord(CScript fluidInstruction);
+	bool CheckTransactionInRecord(CScript fluidInstruction, const CBlockHeader& blockHeader);
 	void AddFluidTransactionsToRecord(const CBlockHeader& blockHeader, StringVector& transactionRecord);
 	
 	bool ValidationProcesses(CValidationState& state, CScript txOut, CAmount txValue);
+	bool ExtractCheckTimestamp(std::string scriptString, int64_t timeStamp);
 };
 
 /** Standard Reward Payment Determination Functions */

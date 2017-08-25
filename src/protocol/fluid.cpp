@@ -245,11 +245,28 @@ bool Fluid::GenericParseNumber(std::string scriptString, int64_t timeStamp, CAmo
 	std::string ls = ptrs.at(1); ScrubString(ls, true);
 	
 	// Step 4: Final steps of parsing, is the timestamp exceeding five minutes?
-	if (timeStamp > stringToInteger(ls) + maximumFluidDistortionTime && !txCheckPurpose)
+	if ((timeStamp > stringToInteger(ls) + maximumFluidDistortionTime || timeStamp < stringToInteger(ls) - maximumFluidDistortionTime) && !txCheckPurpose)
 		return false;
 	
 	howMuch			 	= stringToInteger(lr);
 
+	return true;
+}
+
+
+bool Fluid::ExtractCheckTimestamp(std::string scriptString, int64_t timeStamp) {
+	std::string r = getRidOfScriptStatement(scriptString); scriptString = r;
+	std::string dehexString = HexToString(scriptString);
+	StringVector strs, ptrs; SeperateString(dehexString, strs, false); SeperateString(strs.at(0), ptrs, true);
+	
+	if(1 >= (int)strs.size())
+		return false;
+	
+	std::string ls = ptrs.at(1); ScrubString(ls, true);
+	
+	if ((timeStamp > stringToInteger(ls) + maximumFluidDistortionTime || timeStamp < stringToInteger(ls) - maximumFluidDistortionTime) + maximumFluidDistortionTime)
+		return false;
+	
 	return true;
 }
 
@@ -279,7 +296,7 @@ bool Fluid::GenericParseHash(std::string scriptString, int64_t timeStamp, uint25
 	std::string ls = ptrs.at(1); ScrubString(ls, true);
 	
 	// Step 4: Final steps of parsing, is the timestamp exceeding five minutes?
-	if (timeStamp > stringToInteger(ls) + maximumFluidDistortionTime && !txCheckPurpose)
+	if ((timeStamp > stringToInteger(ls) + maximumFluidDistortionTime || timeStamp < stringToInteger(ls) - maximumFluidDistortionTime) + maximumFluidDistortionTime && !txCheckPurpose)
 		return false;
 	
 	// Step 3: Get hash
@@ -418,28 +435,7 @@ bool Fluid::ParseMintKey(int64_t nTime, CDynamicAddress &destination, CAmount &c
 	return true;
 }
 
-bool Fluid::ParseDestructionAmount(std::string scriptString, CAmount coinsSpent, CAmount &coinsDestroyed) {
-	// Step 1: Make sense out of ASM ScriptKey, split OP_DESTROY from Hex
-	std::string r = getRidOfScriptStatement(scriptString); scriptString = r;
-	
-	// Step 1.2: Convert new Hex Data to dehexed amount
-	std::string dehexString = HexToString(scriptString);
-	scriptString = dehexString;
-	
-	// Step 2: Take string and apply lexical cast to convert it to CAmount (int64_t)
-	std::string lr = scriptString; ScrubString(lr, true); 
-	
-	coinsDestroyed			= stringToInteger(lr);
-
-	if (coinsDestroyed != coinsSpent) {
-		LogPrintf("ParseDestructionAmount: Coins claimed to be destroyed do not match coins spent to destroy! Amount is %s claimed destroyed vs %s actually spent\n", std::to_string(coinsDestroyed), std::to_string(coinsSpent));
-		return false;
-	}
-	
-	return true;
-}
-
-bool Fluid::GetMintingInstructions(const CBlockHeader& blockHeader, CValidationState& state, CDynamicAddress &toMintAddress, CAmount &mintAmount) {
+bool Fluid::GetMintingInstructions(const CBlockHeader& blockHeader, CDynamicAddress &toMintAddress, CAmount &mintAmount) {
 	CBlock block; 
 	if(!getBlockFromHeader(blockHeader, block))
 		throw std::runtime_error("Cannot access blockchain database!");
@@ -461,7 +457,7 @@ bool Fluid::GetMintingInstructions(const CBlockHeader& blockHeader, CValidationS
 	return false;
 }
 
-void Fluid::GetDestructionTxes(const CBlockHeader& blockHeader, CValidationState& state, CAmount &amountDestroyed) {
+void Fluid::GetDestructionTxes(const CBlockHeader& blockHeader, CAmount &amountDestroyed) {
 	CBlock block; 
 	CAmount parseToDestroy = 0; amountDestroyed = 0;
 	if(!getBlockFromHeader(blockHeader, block))
@@ -469,16 +465,14 @@ void Fluid::GetDestructionTxes(const CBlockHeader& blockHeader, CValidationState
 	
     BOOST_FOREACH(const CTransaction& tx, block.vtx) {
 		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
-			if (txout.scriptPubKey.IsProtocolInstruction(DESTROY_TX)) {
-				if (ParseDestructionAmount(ScriptToAsmStr(txout.scriptPubKey), txout.nValue, parseToDestroy)) {
-					amountDestroyed += txout.nValue; // This is what metric we need to get
-				}
-			} else { LogPrintf("GetDestructionTxes: No destruction scripts, script: %s\n", ScriptToAsmStr(txout.scriptPubKey)); }
+			if (txout.scriptPubKey.IsProtocolInstruction(DESTROY_TX)) {			
+				amountDestroyed += txout.nValue; // This is what metric we need to get
+			}
 		}
 	}
 }
 
-bool Fluid::GetProofOverrideRequest(const CBlockHeader& blockHeader, CValidationState& state, CAmount &howMuch) {
+bool Fluid::GetProofOverrideRequest(const CBlockHeader& blockHeader, CAmount &howMuch) {
 	CBlock block; 
 	if(!getBlockFromHeader(blockHeader, block))
 		throw std::runtime_error("Cannot access blockchain database!");
@@ -495,7 +489,7 @@ bool Fluid::GetProofOverrideRequest(const CBlockHeader& blockHeader, CValidation
 	return false;
 }
 
-bool Fluid::GetDynodeOverrideRequest(const CBlockHeader& blockHeader, CValidationState& state, CAmount &howMuch) {
+bool Fluid::GetDynodeOverrideRequest(const CBlockHeader& blockHeader, CAmount &howMuch) {
 	CBlock block; 
 	if(!getBlockFromHeader(blockHeader, block))
 		throw std::runtime_error("Cannot access blockchain database!");
@@ -688,10 +682,6 @@ bool Fluid::ValidationProcesses(CValidationState &state, CScript txOut, CAmount 
     std::string message; uint256 entry;
     CAmount nCoinsBurn = 0, mintAmount;
     
-	if (txOut.IsProtocolInstruction(DESTROY_TX) && 
-		!fluid.ParseDestructionAmount(ScriptToAsmStr(txOut), txValue, nCoinsBurn))
-			return state.DoS(100, false, REJECT_INVALID, "bad-txns-fluid-burn-parse-failure");
-
 	/* Block of Fluid Verification */
 	if (IsTransactionFluid(txOut)) {
 			if (!CheckIfQuorumExists(ScriptToAsmStr(txOut), message)) {
@@ -715,7 +705,11 @@ bool Fluid::ValidationProcesses(CValidationState &state, CScript txOut, CAmount 
 					return state.DoS(100, false, REJECT_INVALID, "bad-txns-fluid-modify-parse-failure");
 			}
 			
-			if (CheckTransactionInRecord(txOut)) {
+			// Step 1: Get transaction out time
+			// Step 2: Check for block that has that stamp
+			// Step 3: Now, check the header
+			
+			if (CheckTransactionInRecord(txOut, chainActive.Tip()->GetBlockHeader())) {
 					return state.DoS(500, false, REJECT_INVALID, "bad-txns-fluid-exists-already");
 			}
 	}
@@ -729,46 +723,58 @@ bool Fluid::ValidationProcesses(CValidationState &state, CScript txOut, CAmount 
 
 void BuildFluidInformationIndex(CBlockIndex* pindex, CAmount &nExpectedBlockValue, CAmount nFees, CAmount nValueIn, 
 								CAmount nValueOut, bool fDynodePaid) {
+	
+	CBlockIndex* prevIndex = pindex->pprev;
+	const CBlockHeader& previousBlock = pindex->pprev->GetBlockHeader();
+	
 	CAmount fluidIssuance, dynamicBurnt, newReward = 0, newDynodeReward = 0;
-	CValidationState validationState;
 	CDynamicAddress addressX;
-
-	if (fluid.GetMintingInstructions(pindex->pprev->GetBlockHeader(), validationState, addressX, fluidIssuance)) {
-	    nExpectedBlockValue = 	getDynodeSubsidyWithOverride(pindex->pprev->overridenDynodeReward, fDynodePaid) + 
-								getBlockSubsidyWithOverride(pindex->pprev->nHeight, nFees, pindex->pprev->overridenBlockReward) + 
+	
+	if (fluid.GetMintingInstructions(previousBlock, addressX, fluidIssuance)) {
+	    nExpectedBlockValue = 	getDynodeSubsidyWithOverride(prevIndex->overridenDynodeReward, fDynodePaid) + 
+								getBlockSubsidyWithOverride(prevIndex->nHeight, nFees, prevIndex->overridenBlockReward) + 
 								fluidIssuance;
 	} else {
-		nExpectedBlockValue = 	getDynodeSubsidyWithOverride(pindex->pprev->overridenDynodeReward, fDynodePaid) + 
-								getBlockSubsidyWithOverride(pindex->pprev->nHeight, nFees, pindex->pprev->overridenBlockReward);
+		nExpectedBlockValue = 	getDynodeSubsidyWithOverride(prevIndex->overridenDynodeReward, fDynodePaid) + 
+								getBlockSubsidyWithOverride(prevIndex->nHeight, nFees, prevIndex->overridenBlockReward);
 	}
 
     // Get Destruction Transactions on the Network
-    fluid.GetDestructionTxes(pindex->pprev->GetBlockHeader(), validationState, dynamicBurnt);
+    fluid.GetDestructionTxes(previousBlock, dynamicBurnt);
 
-   	pindex->nMoneySupply = (pindex->pprev? pindex->pprev->nMoneySupply : 0) + (nValueOut - nValueIn) - dynamicBurnt;
-   	pindex->nDynamicBurnt = (pindex->pprev? pindex->pprev->nDynamicBurnt : 0) + dynamicBurnt;
+   	pindex->nMoneySupply = (prevIndex? prevIndex->nMoneySupply : 0) + (nValueOut - nValueIn) - dynamicBurnt;
+   	pindex->nDynamicBurnt = (prevIndex? prevIndex->nDynamicBurnt : 0) + dynamicBurnt;
 
 	// Get override reward transactions from the network
-	if (!fluid.GetProofOverrideRequest(pindex->pprev->GetBlockHeader(), validationState, newReward)) {
-			pindex->overridenBlockReward = (pindex->pprev? pindex->pprev->overridenBlockReward : 0);
+	if (!fluid.GetProofOverrideRequest(previousBlock, newReward)) {
+			pindex->overridenBlockReward = (prevIndex? prevIndex->overridenBlockReward : 0);
 	} else {
 			pindex->overridenBlockReward = newReward;
 	}
 	 
-	if (!fluid.GetDynodeOverrideRequest(pindex->pprev->GetBlockHeader(), validationState, newDynodeReward)) {
-	 		pindex->overridenDynodeReward = (pindex->pprev? pindex->pprev->overridenDynodeReward : 0);
+	if (!fluid.GetDynodeOverrideRequest(previousBlock, newDynodeReward)) {
+	 		pindex->overridenDynodeReward = (prevIndex? prevIndex->overridenDynodeReward : 0);
 	} else {
 	 		pindex->overridenDynodeReward = newDynodeReward;
 	}
 	
 	// Handle the ban address system and update the vector
-	fluid.AddRemoveBanAddresses(pindex->pprev->GetBlockHeader(), pindex->bannedAddresses);
+	std::vector<uint256> bannedAddresses;
+	bannedAddresses.insert(bannedAddresses.end(), prevIndex->pprev->bannedAddresses.begin(), prevIndex->pprev->bannedAddresses.end());	
+	fluid.AddRemoveBanAddresses(prevIndex->pprev->GetBlockHeader(), bannedAddresses);
+
+	std::set<uint256> set(bannedAddresses.begin(), bannedAddresses.end());
+	bannedAddresses.assign(set.begin(), set.end());
+	pindex->bannedAddresses = bannedAddresses;
 	
 	// Scan and add Fluid Transactions to the Database
-	fluid.AddFluidTransactionsToRecord(pindex->pprev->GetBlockHeader(), pindex->existingFluidTransactions);
+	std::vector<std::string> existingFluidTransactions;
+	existingFluidTransactions.insert(existingFluidTransactions.end(), prevIndex->pprev->existingFluidTransactions.begin(), prevIndex->pprev->existingFluidTransactions.end());
+	fluid.AddFluidTransactionsToRecord(prevIndex->pprev->GetBlockHeader(), existingFluidTransactions);
 
-	// Allow or disallow Fluid Transactions (TODO)
-	pindex->allowFluidTransactions = (pindex->pprev? pindex->pprev->allowFluidTransactions : true); // allowTransactions;
+	std::set<std::string> setX(existingFluidTransactions.begin(), existingFluidTransactions.end());
+	existingFluidTransactions.assign(setX.begin(), setX.end());
+	pindex->existingFluidTransactions = existingFluidTransactions;
 }
 
 void Fluid::AddFluidTransactionsToRecord(const CBlockHeader& blockHeader, StringVector& transactionRecord) {
@@ -815,12 +821,10 @@ bool Fluid::InsertTransactionToRecord(CScript fluidInstruction, StringVector& tr
 }
 
 /* Check if transaction exists in record */
-bool Fluid::CheckTransactionInRecord(CScript fluidInstruction) {
+bool Fluid::CheckTransactionInRecord(CScript fluidInstruction, const CBlockHeader& blockHeader) {
 	std::string verificationString;
-	StringVector transactionRecord;
-	if (chainActive.Height() <= minimumThresholdForBanning)
-		return false;
-	else  { CBlockIndex* pindex = chainActive.Tip(); transactionRecord = pindex->existingFluidTransactions; }
+	CBlockIndex* pindex = mapBlockIndex[blockHeader.GetHash()];
+	StringVector transactionRecord = pindex->existingFluidTransactions;
 	
 	if (IsTransactionFluid(fluidInstruction)) {
 			verificationString = ScriptToAsmStr(fluidInstruction);
@@ -830,7 +834,7 @@ bool Fluid::CheckTransactionInRecord(CScript fluidInstruction) {
 				BOOST_FOREACH(const std::string& existingRecord, transactionRecord)
 				{
 					if (existingRecord == verificationString) {
-						LogPrintf("Attempt to repeat Fluid Transaction: %s", existingRecord);
+						LogPrintf("Attempt to repeat Fluid Transaction: %s\n", existingRecord);
 						return true;
 					}
 				}
