@@ -47,7 +47,6 @@
 #include "versionbits.h"
 #include "checkforks.h"
 #include "protocol/fluid.h"
-#include "protocol/duality.h"
 
 #include "protocol/identity.h"
 #include "protocol/offer.h"

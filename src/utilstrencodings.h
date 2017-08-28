@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
+#include "uint256.h"
 
 #define UVOIDBEGIN(a)       ((void*)&(a))
 #define BEGIN(a)            ((char*)&(a))
@@ -203,8 +204,8 @@ std::string StitchString(std::string stringOne, std::string stringTwo, std::stri
 int64_t stringToInteger(std::string input);
 std::string getRidOfScriptStatement(std::string input);
 
-extern static const std::string PrimaryDelimiter;
-extern static const std::string SubDelimiter;
-extern static const std::string SignatureDelimiter;
+extern std::string PrimaryDelimiter;
+extern std::string SubDelimiter;
+extern std::string SignatureDelimiter;
 
 #endif // DYNAMIC_UTILSTRENCODINGS_H

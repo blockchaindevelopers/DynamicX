@@ -17,9 +17,9 @@
 
 #include <boost/algorithm/string.hpp>
 
-static const std::string SignatureDelimiter = " ";
-static const std::string PrimaryDelimiter = "@";
-static const std::string SubDelimiter = "$";
+std::string SignatureDelimiter = " ";
+std::string PrimaryDelimiter = "@";
+std::string SubDelimiter = "$";
 
 static const std::string CHARS_ALPHA_NUM = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 

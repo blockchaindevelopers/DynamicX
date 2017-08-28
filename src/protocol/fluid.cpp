@@ -32,11 +32,14 @@
 #include "timedata.h"
 #include "util.h"
 #include "utilmoneystr.h"
+#include "core_io.h"
 
 #include "wallet/wallet.h"
 #include "wallet/walletdb.h"
 
 Fluid fluid;
+
+extern CWallet* pwalletMain;
 
 bool getBlockFromHeader(const CBlockHeader& blockHeader, CBlock &block) {
 	uint256 hash = blockHeader.GetHash();

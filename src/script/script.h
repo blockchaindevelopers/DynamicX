@@ -9,7 +9,7 @@
 #include "crypto/common.h"
 
 #include "prevector.h"
-#include "protocol/auxillary.h"
+#include "utilstrencodings.h"
 
 #include <assert.h>
 #include <climits>
@@ -19,6 +19,31 @@
 #include <string.h>
 #include <string>
 #include <vector>
+
+// Identification codes for Fluid Protocol Transactions
+
+static const int IDENTIFIER_NO_TX 					= 0;
+static const int IDENTIFIER_MINT_TX 				= 1;
+static const int IDENTIFIER_DESTROY_TX 				= 2;
+static const int IDENTIFIER_DYNODE_MODFIY_TX 		= 3;
+static const int IDENTIFIER_MINING_MODIFY_TX 		= 4;
+static const int IDENTIFIER_ACTIVATE_TX 			= 5;
+static const int IDENTIFIER_DEACTIVATE_TX 			= 6;
+static const int IDENTIFIER_REALLOW_TX 				= 7;
+static const int IDENTIFIER_STERILIZE_TX 			= 8;
+
+enum ProtocolCodes {
+	MINT_TX 			= IDENTIFIER_MINT_TX,
+	DESTROY_TX 			= IDENTIFIER_DESTROY_TX,
+	DYNODE_MODFIY_TX 	= IDENTIFIER_DYNODE_MODFIY_TX,
+	MINING_MODIFY_TX 	= IDENTIFIER_MINING_MODIFY_TX,
+	ACTIVATE_TX 		= IDENTIFIER_ACTIVATE_TX,
+	DEACTIVATE_TX 		= IDENTIFIER_DEACTIVATE_TX,
+	REALLOW_TX			= IDENTIFIER_REALLOW_TX,
+	STERILIZE_TX		= IDENTIFIER_STERILIZE_TX,
+	
+	NO_TX = IDENTIFIER_NO_TX
+};
 
 // Maximum number of bytes pushable to the stack
 static const unsigned int MAX_SCRIPT_ELEMENT_SIZE = 520;

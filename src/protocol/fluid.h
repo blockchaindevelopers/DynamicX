@@ -42,35 +42,12 @@
 class CBlock;
 class CBlockTemplate;
 
-static const int IDENTIFIER_NO_TX 					= 0;
-static const int IDENTIFIER_MINT_TX 				= 1;
-static const int IDENTIFIER_DESTROY_TX 				= 2;
-static const int IDENTIFIER_DYNODE_MODFIY_TX 		= 3;
-static const int IDENTIFIER_MINING_MODIFY_TX 		= 4;
-static const int IDENTIFIER_ACTIVATE_TX 			= 5;
-static const int IDENTIFIER_DEACTIVATE_TX 			= 6;
-static const int IDENTIFIER_REALLOW_TX 				= 7;
-static const int IDENTIFIER_STERILIZE_TX 			= 8;
-
 enum KeyNumber {
 	KEY_UNE = 1,
 	KEY_DEUX = 2,
 	KEY_TROIS = 3,
 	
 	KEY_MAX = 0
-};
-
-enum ProtocolCodes {
-	MINT_TX 			= IDENTIFIER_MINT_TX,
-	DESTROY_TX 			= IDENTIFIER_DESTROY_TX,
-	DYNODE_MODFIY_TX 	= IDENTIFIER_DYNODE_MODFIY_TX,
-	MINING_MODIFY_TX 	= IDENTIFIER_MINING_MODIFY_TX,
-	ACTIVATE_TX 		= IDENTIFIER_ACTIVATE_TX,
-	DEACTIVATE_TX 		= IDENTIFIER_DEACTIVATE_TX,
-	REALLOW_TX			= IDENTIFIER_REALLOW_TX,
-	STERILIZE_TX		= IDENTIFIER_STERILIZE_TX,
-	
-	NO_TX = IDENTIFIER_NO_TX
 };
 
 static const CAmount BLOCKCHAIN_INIT_REWARD = COIN * 1;
@@ -101,17 +78,8 @@ public:
 };
 
 class Fluid : public CParameters, public HexFunctions {
-private:
-	enum OverrideType {
-		MINING_OVERRIDE,
-		DYNODE_OVERRIDE,
-		MAX_OVERRIDE
-	};
-
 public:
-	static const CAmount fluidMintingMinimum = 100 * COIN;
-	static const CAmount fluidMintingMaximum = 100000 * COIN;
-	
+
 	bool IsGivenKeyMaster(CDynamicAddress inputKey, int &whichOne);
 	bool HowManyKeysWeHave(CDynamicAddress inputKey, bool &keyOne, bool &keyTwo, bool &keyThree);
 	bool CheckIfQuorumExists(std::string token, std::string &message, bool individual = false);
