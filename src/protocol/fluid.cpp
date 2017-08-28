@@ -22,22 +22,19 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "core_io.h"
-#include "wallet/wallet.h"
-#include "wallet/walletdb.h"
-#include "init.h"
+#include "fluid.h"
+
+#include "main.h"
+
 #include "keepass.h"
 #include "net.h"
 #include "netbase.h"
-#include "rpcserver.h"
 #include "timedata.h"
 #include "util.h"
 #include "utilmoneystr.h"
-#include "utilstrencodings.h"
-#include "fluid.h"
-#include "main.h"
 
-#include <algorithm>
+#include "wallet/wallet.h"
+#include "wallet/walletdb.h"
 
 Fluid fluid;
 
@@ -67,10 +64,25 @@ bool IsTransactionFluid(CScript txOut) {
 		|| txOut.IsProtocolInstruction(STERILIZE_TX));
 }
 
-/** Checks whether as to parties have actually signed it - please use this with ones **without** the OP_CODE */
-bool Fluid::CheckNonScriptQuorum(std::string token, std::string &message, bool individual) {
-	std::string result = "12345 " + token;
-	return CheckIfQuorumExists(result, message, individual);
+/** Does client instance own address for engaging in processes - required for RPC (PS: NEEDS wallet) */
+bool Fluid::InitiateFluidVerify(CDynamicAddress dynamicAddress) {
+#ifdef ENABLE_WALLET
+    LOCK2(cs_main, pwalletMain ? &pwalletMain->cs_wallet : NULL);
+	CDynamicAddress address(dynamicAddress);
+	
+	if (address.IsValid()) {
+		CTxDestination dest = address.Get();
+		CScript scriptPubKey = GetScriptForDestination(dest);
+		isminetype mine = pwalletMain ? IsMine(*pwalletMain, dest) : ISMINE_NO;
+		
+		return ((mine & ISMINE_SPENDABLE) ? true : false);
+	}
+	
+	return false;
+#else
+	// Wallet cannot be accessed, cannot continue ahead!
+    return false;
+#endif
 }
 
 /** Checks if any given address is a master key, and if so, which one */
@@ -127,25 +139,54 @@ bool Fluid::HowManyKeysWeHave(CDynamicAddress inputKey, bool &keyOne, bool &keyT
 		return false;
 }
 
-/** Does client instance own address for engaging in processes - required for RPC (PS: NEEDS wallet) */
-bool Fluid::InitiateFluidVerify(CDynamicAddress dynamicAddress) {
-#ifdef ENABLE_WALLET
-    LOCK2(cs_main, pwalletMain ? &pwalletMain->cs_wallet : NULL);
-	CDynamicAddress address(dynamicAddress);
+/** Checks whether as to parties have actually signed it - please use this with ones with the OP_CODE */
+bool Fluid::CheckIfQuorumExists(std::string token, std::string &message, bool individual) {
+	bool addressOneConsents, addressTwoConsents, addressThreeConsents;
 	
-	if (address.IsValid()) {
-		CTxDestination dest = address.Get();
-		CScript scriptPubKey = GetScriptForDestination(dest);
-		isminetype mine = pwalletMain ? IsMine(*pwalletMain, dest) : ISMINE_NO;
+	if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_UNE), message, 1))
+		if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_UNE), message, 2))
+			addressOneConsents = false;
+		else 
+			addressOneConsents = true;
+	else 	addressOneConsents = true;
+
+	if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_DEUX), message,1 ))
+		if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_DEUX), message, 2))
+			addressTwoConsents = false;
+		else 
+			addressTwoConsents = true;
+	else 	addressTwoConsents = true;
 		
-		return ((mine & ISMINE_SPENDABLE) ? true : false);
+	if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_TROIS), message, 1))
+		if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_TROIS), message ,2))
+			addressThreeConsents = false;
+		else 
+			addressThreeConsents = true;
+	else 	addressThreeConsents = true;
+
+	if (individual) {
+		if (addressOneConsents == true ||
+			addressTwoConsents == true ||
+			addressThreeConsents == true)
+			return true;
+		else
+			return false;
+	} else {
+	if 	( (addressOneConsents && addressTwoConsents) ||
+		  (addressTwoConsents && addressThreeConsents) ||
+		  (addressOneConsents && addressThreeConsents)
+		)
+		return true;
+	else
+		return false;
 	}
-	
-	return false;
-#else
-	// Wallet cannot be accessed, cannot continue ahead!
-    return false;
-#endif
+}
+
+
+/** Checks whether as to parties have actually signed it - please use this with ones **without** the OP_CODE */
+bool Fluid::CheckNonScriptQuorum(std::string token, std::string &message, bool individual) {
+	std::string result = "12345 " + token;
+	return CheckIfQuorumExists(result, message, individual);
 }
 
 /** Because some things in life are meant to be intimate, like socks in a drawer */
@@ -218,6 +259,22 @@ bool Fluid::GenericConsentMessage(std::string message, std::string &signedString
     return true;
 }
 
+bool Fluid::ExtractCheckTimestamp(std::string scriptString, int64_t timeStamp) {
+	std::string r = getRidOfScriptStatement(scriptString); scriptString = r;
+	std::string dehexString = HexToString(scriptString);
+	StringVector strs, ptrs; SeperateString(dehexString, strs, false); SeperateString(strs.at(0), ptrs, true);
+	
+	if(1 >= (int)strs.size())
+		return false;
+	
+	std::string ls = ptrs.at(1); ScrubString(ls, true);
+	
+	if ((timeStamp > stringToInteger(ls) + maximumFluidDistortionTime || timeStamp < stringToInteger(ls) - maximumFluidDistortionTime))
+		return false;
+	
+	return true;
+}
+
 /** It gets a number from the ASM of an OP_CODE without signature verification */
 bool Fluid::GenericParseNumber(std::string scriptString, int64_t timeStamp, CAmount &howMuch, bool txCheckPurpose) {
 	// Step 1: Make sense out of ASM ScriptKey, split OP_MINT from Hex
@@ -250,23 +307,6 @@ bool Fluid::GenericParseNumber(std::string scriptString, int64_t timeStamp, CAmo
 	
 	howMuch			 	= stringToInteger(lr);
 
-	return true;
-}
-
-
-bool Fluid::ExtractCheckTimestamp(std::string scriptString, int64_t timeStamp) {
-	std::string r = getRidOfScriptStatement(scriptString); scriptString = r;
-	std::string dehexString = HexToString(scriptString);
-	StringVector strs, ptrs; SeperateString(dehexString, strs, false); SeperateString(strs.at(0), ptrs, true);
-	
-	if(1 >= (int)strs.size())
-		return false;
-	
-	std::string ls = ptrs.at(1); ScrubString(ls, true);
-	
-	if ((timeStamp > stringToInteger(ls) + maximumFluidDistortionTime || timeStamp < stringToInteger(ls) - maximumFluidDistortionTime))
-		return false;
-	
 	return true;
 }
 
@@ -305,49 +345,6 @@ bool Fluid::GenericParseHash(std::string scriptString, int64_t timeStamp, uint25
 	LogPrintf("Processed UINT256 HASH: %s\n", hash.ToString());
 	
 	return true;
-}
-
-/** Checks whether as to parties have actually signed it - please use this with ones with the OP_CODE */
-bool Fluid::CheckIfQuorumExists(std::string token, std::string &message, bool individual) {
-	bool addressOneConsents, addressTwoConsents, addressThreeConsents;
-	
-	if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_UNE), message, 1))
-		if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_UNE), message, 2))
-			addressOneConsents = false;
-		else 
-			addressOneConsents = true;
-	else 	addressOneConsents = true;
-
-	if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_DEUX), message,1 ))
-		if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_DEUX), message, 2))
-			addressTwoConsents = false;
-		else 
-			addressTwoConsents = true;
-	else 	addressTwoConsents = true;
-		
-	if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_TROIS), message, 1))
-		if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_TROIS), message ,2))
-			addressThreeConsents = false;
-		else 
-			addressThreeConsents = true;
-	else 	addressThreeConsents = true;
-
-	if (individual) {
-		if (addressOneConsents == true ||
-			addressTwoConsents == true ||
-			addressThreeConsents == true)
-			return true;
-		else
-			return false;
-	} else {
-	if 	( (addressOneConsents && addressTwoConsents) ||
-		  (addressTwoConsents && addressThreeConsents) ||
-		  (addressOneConsents && addressThreeConsents)
-		)
-		return true;
-	else
-		return false;
-	}
 }
 
 /** Individually checks the validity of an instruction */
@@ -506,61 +503,52 @@ bool Fluid::GetDynodeOverrideRequest(const CBlockHeader& blockHeader, CAmount &h
 	return false;
 }
 
-CAmount GetPoWBlockPayment(const int& nHeight, CAmount nFees)
-{
-	CAmount nSubsidy = BLOCKCHAIN_INIT_REWARD;
+void Fluid::AddFluidTransactionsToRecord(const CBlockHeader& blockHeader, StringVector& transactionRecord) {
+	/* Step One: Get the bloukz! */
+	CBlock block; 
+	std::string message;
+	if(!getBlockFromHeader(blockHeader, block))
+		throw std::runtime_error("Cannot access blockchain database!");
 	
-	if (chainActive.Height() >= 1 && chainActive.Height() <= Params().GetConsensus().nRewardsStart) {
-        nSubsidy = BLOCKCHAIN_INIT_REWARD;
-    }
-    else if (chainActive.Height() > Params().GetConsensus().nRewardsStart) {
-        nSubsidy = PHASE_1_POW_REWARD;
-    }
-	
-	LogPrint("creation", "GetPoWBlockPayment() : create=%s PoW Reward=%d\n", FormatMoney(nSubsidy+nFees), nSubsidy+nFees);
-
-	return nSubsidy  + nFees;
-}
-
-CAmount GetDynodePayment(bool fDynode)
-{
-	CAmount dynodePayment = BLOCKCHAIN_INIT_REWARD;
-	
-    if (fDynode && 
-		chainActive.Height() > Params().GetConsensus().nDynodePaymentsStartBlock && 
-		chainActive.Height() < Params().GetConsensus().nUpdateDiffAlgoHeight) {
-        dynodePayment = PHASE_1_DYNODE_PAYMENT;
-    }
-    else if (fDynode && 
-			chainActive.Height() > Params().GetConsensus().nDynodePaymentsStartBlock && 
-			chainActive.Height() >= Params().GetConsensus().nUpdateDiffAlgoHeight) {
-        dynodePayment = PHASE_2_DYNODE_PAYMENT;
-    }
-    else if ((fDynode && !fDynode) &&
-			chainActive.Height() <= Params().GetConsensus().nDynodePaymentsStartBlock) {
-        dynodePayment = BLOCKCHAIN_INIT_REWARD;
-    }
-	
-	LogPrint("creation", "GetDynodePayment() : create=%s DN Payment=%d\n", FormatMoney(dynodePayment), dynodePayment);
-
-    return dynodePayment;
-}
-
-/** Passover code that will act as a switch to check if override did occur for Proof of Work Rewards **/ 
-CAmount getBlockSubsidyWithOverride(const int& nHeight, CAmount nFees, CAmount lastOverrideCommand) {
-	if (lastOverrideCommand != 0) {
-		return lastOverrideCommand;
-	} else {
-		return GetPoWBlockPayment(nHeight, nFees);
+	/* Step Two: Process transactions */
+    BOOST_FOREACH(const CTransaction& tx, block.vtx) {
+		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
+			if (IsTransactionFluid(txout.scriptPubKey)) {
+				if (!InsertTransactionToRecord(txout.scriptPubKey, transactionRecord)) {
+					LogPrintf("Script Public Key Database Entry: %s , FAILED!\n", ScriptToAsmStr(txout.scriptPubKey));
+				}
+			}
+		}
 	}
 }
 
-/** Passover code that will act as a switch to check if override did occur for Dynode Rewards **/ 
-CAmount getDynodeSubsidyWithOverride(CAmount lastOverrideCommand, bool fDynode) {
-	if (lastOverrideCommand != 0) {
-		return lastOverrideCommand;
-	} else {
-		return GetDynodePayment(fDynode);
+void Fluid::AddRemoveBanAddresses(const CBlockHeader& blockHeader, HashVector& bannedList) {
+	/* Step One: Get the bloukz! */
+	CBlock block; 
+	std::string message;
+	if(!getBlockFromHeader(blockHeader, block))
+		throw std::runtime_error("Cannot access blockchain database!");
+	
+	/* Step Two: Process transactions */
+    BOOST_FOREACH(const CTransaction& tx, block.vtx) {
+		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
+			/* First those who add addresses */
+			if (txout.scriptPubKey.IsProtocolInstruction(STERILIZE_TX)) {
+				if (CheckIfQuorumExists(ScriptToAsmStr(txout.scriptPubKey), message)) {
+					if (!ProcessBanEntry(ScriptToAsmStr(txout.scriptPubKey), block.nTime, bannedList)) {
+						LogPrintf("Script Public Key for Ban: %s , FAILED!\n", ScriptToAsmStr(txout.scriptPubKey));
+					}
+				}
+			}
+			/* Second those who remove addresses */
+			if (txout.scriptPubKey.IsProtocolInstruction(REALLOW_TX)) {
+				if (CheckIfQuorumExists(ScriptToAsmStr(txout.scriptPubKey), message)) {
+					if (!RemoveEntry(ScriptToAsmStr(txout.scriptPubKey), block.nTime, bannedList)) {
+						LogPrintf("Script Public Key for Unban: %s , FAILED!\n", ScriptToAsmStr(txout.scriptPubKey));
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -647,33 +635,111 @@ bool Fluid::RemoveEntry(std::string getBanInstruction, int64_t timestamp, HashVe
 	return false;
 }
 
-void Fluid::AddRemoveBanAddresses(const CBlockHeader& blockHeader, HashVector& bannedList) {
-	/* Step One: Get the bloukz! */
-	CBlock block; 
-	std::string message;
-	if(!getBlockFromHeader(blockHeader, block))
-		throw std::runtime_error("Cannot access blockchain database!");
+/* Insertion of transaction script to record */
+bool Fluid::InsertTransactionToRecord(CScript fluidInstruction, StringVector& transactionRecord) {
+	std::string verificationString;
+
+	if (IsTransactionFluid(fluidInstruction)) {
+			verificationString = ScriptToAsmStr(fluidInstruction);
+			
+			std::string message;
+			if (CheckIfQuorumExists(verificationString, message)) {
+				BOOST_FOREACH(const std::string& existingRecord, transactionRecord)
+				{
+					if (existingRecord == verificationString) {
+						return false;
+					}
+				}
+				
+				transactionRecord.push_back(verificationString);
+				return true;
+			}
+	}
 	
-	/* Step Two: Process transactions */
-    BOOST_FOREACH(const CTransaction& tx, block.vtx) {
-		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
-			/* First those who add addresses */
-			if (txout.scriptPubKey.IsProtocolInstruction(STERILIZE_TX)) {
-				if (CheckIfQuorumExists(ScriptToAsmStr(txout.scriptPubKey), message)) {
-					if (!ProcessBanEntry(ScriptToAsmStr(txout.scriptPubKey), block.nTime, bannedList)) {
-						LogPrintf("Script Public Key for Ban: %s , FAILED!\n", ScriptToAsmStr(txout.scriptPubKey));
+	return false;
+}
+
+/* Check if transaction exists in record */
+bool Fluid::CheckTransactionInRecord(CScript fluidInstruction) {
+	std::string verificationString;
+	StringVector transactionRecord;
+	if (chainActive.Height() <= minimumThresholdForBanning)
+		return false;
+	else transactionRecord = chainActive.Tip()->existingFluidTransactions;
+	
+	if (IsTransactionFluid(fluidInstruction)) {
+			verificationString = ScriptToAsmStr(fluidInstruction);
+			
+			std::string message;
+			if (CheckIfQuorumExists(verificationString, message)) {
+				BOOST_FOREACH(const std::string& existingRecord, transactionRecord)
+				{
+					if (existingRecord == verificationString) {
+						LogPrintf("Attempt to repeat Fluid Transaction: %s\n", existingRecord);
+						return true;
 					}
 				}
 			}
-			/* Second those who remove addresses */
-			if (txout.scriptPubKey.IsProtocolInstruction(REALLOW_TX)) {
-				if (CheckIfQuorumExists(ScriptToAsmStr(txout.scriptPubKey), message)) {
-					if (!RemoveEntry(ScriptToAsmStr(txout.scriptPubKey), block.nTime, bannedList)) {
-						LogPrintf("Script Public Key for Unban: %s , FAILED!\n", ScriptToAsmStr(txout.scriptPubKey));
-					}
-				}
-			}
-		}
+	}
+	
+	return false;
+}
+
+CAmount GetPoWBlockPayment(const int& nHeight, CAmount nFees)
+{
+	CAmount nSubsidy = BLOCKCHAIN_INIT_REWARD;
+	
+	if (chainActive.Height() >= 1 && chainActive.Height() <= Params().GetConsensus().nRewardsStart) {
+        nSubsidy = BLOCKCHAIN_INIT_REWARD;
+    }
+    else if (chainActive.Height() > Params().GetConsensus().nRewardsStart) {
+        nSubsidy = PHASE_1_POW_REWARD;
+    }
+	
+	LogPrint("creation", "GetPoWBlockPayment() : create=%s PoW Reward=%d\n", FormatMoney(nSubsidy+nFees), nSubsidy+nFees);
+
+	return nSubsidy  + nFees;
+}
+
+CAmount GetDynodePayment(bool fDynode)
+{
+	CAmount dynodePayment = BLOCKCHAIN_INIT_REWARD;
+	
+    if (fDynode && 
+		chainActive.Height() > Params().GetConsensus().nDynodePaymentsStartBlock && 
+		chainActive.Height() < Params().GetConsensus().nUpdateDiffAlgoHeight) {
+        dynodePayment = PHASE_1_DYNODE_PAYMENT;
+    }
+    else if (fDynode && 
+			chainActive.Height() > Params().GetConsensus().nDynodePaymentsStartBlock && 
+			chainActive.Height() >= Params().GetConsensus().nUpdateDiffAlgoHeight) {
+        dynodePayment = PHASE_2_DYNODE_PAYMENT;
+    }
+    else if ((fDynode && !fDynode) &&
+			chainActive.Height() <= Params().GetConsensus().nDynodePaymentsStartBlock) {
+        dynodePayment = BLOCKCHAIN_INIT_REWARD;
+    }
+	
+	LogPrint("creation", "GetDynodePayment() : create=%s DN Payment=%d\n", FormatMoney(dynodePayment), dynodePayment);
+
+    return dynodePayment;
+}
+
+/** Passover code that will act as a switch to check if override did occur for Proof of Work Rewards **/ 
+CAmount getBlockSubsidyWithOverride(const int& nHeight, CAmount nFees, CAmount lastOverrideCommand) {
+	if (lastOverrideCommand != 0) {
+		return lastOverrideCommand;
+	} else {
+		return GetPoWBlockPayment(nHeight, nFees);
+	}
+}
+
+/** Passover code that will act as a switch to check if override did occur for Dynode Rewards **/ 
+CAmount getDynodeSubsidyWithOverride(CAmount lastOverrideCommand, bool fDynode) {
+	if (lastOverrideCommand != 0) {
+		return lastOverrideCommand;
+	} else {
+		return GetDynodePayment(fDynode);
 	}
 }
 
@@ -778,73 +844,4 @@ void BuildFluidInformationIndex(CBlockIndex* pindex, CAmount &nExpectedBlockValu
 		existingFluidTransactions.assign(setX.begin(), setX.end());
 		pindex->existingFluidTransactions = existingFluidTransactions;
 	}
-}
-
-void Fluid::AddFluidTransactionsToRecord(const CBlockHeader& blockHeader, StringVector& transactionRecord) {
-	/* Step One: Get the bloukz! */
-	CBlock block; 
-	std::string message;
-	if(!getBlockFromHeader(blockHeader, block))
-		throw std::runtime_error("Cannot access blockchain database!");
-	
-	/* Step Two: Process transactions */
-    BOOST_FOREACH(const CTransaction& tx, block.vtx) {
-		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
-			if (IsTransactionFluid(txout.scriptPubKey)) {
-				if (!InsertTransactionToRecord(txout.scriptPubKey, transactionRecord)) {
-					LogPrintf("Script Public Key Database Entry: %s , FAILED!\n", ScriptToAsmStr(txout.scriptPubKey));
-				}
-			}
-		}
-	}
-}
-
-/* Insertion of transaction script to record */
-bool Fluid::InsertTransactionToRecord(CScript fluidInstruction, StringVector& transactionRecord) {
-	std::string verificationString;
-
-	if (IsTransactionFluid(fluidInstruction)) {
-			verificationString = ScriptToAsmStr(fluidInstruction);
-			
-			std::string message;
-			if (CheckIfQuorumExists(verificationString, message)) {
-				BOOST_FOREACH(const std::string& existingRecord, transactionRecord)
-				{
-					if (existingRecord == verificationString) {
-						return false;
-					}
-				}
-				
-				transactionRecord.push_back(verificationString);
-				return true;
-			}
-	}
-	
-	return false;
-}
-
-/* Check if transaction exists in record */
-bool Fluid::CheckTransactionInRecord(CScript fluidInstruction) {
-	std::string verificationString;
-	StringVector transactionRecord;
-	if (chainActive.Height() <= minimumThresholdForBanning)
-		return false;
-	else transactionRecord = chainActive.Tip()->existingFluidTransactions;
-	
-	if (IsTransactionFluid(fluidInstruction)) {
-			verificationString = ScriptToAsmStr(fluidInstruction);
-			
-			std::string message;
-			if (CheckIfQuorumExists(verificationString, message)) {
-				BOOST_FOREACH(const std::string& existingRecord, transactionRecord)
-				{
-					if (existingRecord == verificationString) {
-						LogPrintf("Attempt to repeat Fluid Transaction: %s\n", existingRecord);
-						return true;
-					}
-				}
-			}
-	}
-	
-	return false;
 }

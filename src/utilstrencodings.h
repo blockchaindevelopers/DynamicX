@@ -11,6 +11,8 @@
 #ifndef DYNAMIC_UTILSTRENCODINGS_H
 #define DYNAMIC_UTILSTRENCODINGS_H
 
+#include <algorithm>
+#include <iostream>
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -24,6 +26,9 @@
 
 /** This is needed because the foreach macro can't get over the comma in pair<t1, t2> */
 #define PAIRTYPE(t1, t2)    std::pair<t1, t2>
+
+typedef std::vector<std::string> StringVector;
+typedef std::vector<uint256> HashVector;
 
 /** Used by SanitizeString() */
 enum SafeChars
@@ -136,5 +141,70 @@ bool TimingResistantEqual(const T& a, const T& b)
  * @note The result must be in the range (-10^18,10^18), otherwise an overflow error will trigger.
  */
 bool ParseFixedPoint(const std::string &val, int decimals, int64_t *amount_out);
+
+class HexFunctions {
+public:
+	// C++98 guarantees that '0', '1', ... '9' are consecutive.
+	// It only guarantees that 'a' ... 'f' and 'A' ... 'F' are
+	// in increasing order, but the only two alternative encodings
+	// of the basic source character set that are still used by
+	// anyone today (ASCII and EBCDIC) make them consecutive.
+	unsigned char hexval(unsigned char c)
+	{
+		if ('0' <= c && c <= '9')
+			return c - '0';
+		else if ('a' <= c && c <= 'f')
+			return c - 'a' + 10;
+		else if ('A' <= c && c <= 'F')
+			return c - 'A' + 10;
+		else abort();
+	}
+
+	// TODO: Switch to CryptoPP
+	std::string StringToHex(std::string input) {
+		static const char* const lut = "0123456789ABCDEF";
+		size_t len = input.length();
+		std::string output;
+		output.reserve(2 * len);
+		for (size_t i = 0; i < len; ++i)
+		{
+			const unsigned char c = input[i];
+			output.push_back(lut[c >> 4]);
+			output.push_back(lut[c & 15]);
+		}
+		
+		return output;
+	}
+	
+	// TODO: Switch to CryptoPP
+	std::string HexToString(std::string in) {
+		std::string out;
+		out.clear();
+		out.reserve(in.length() / 2);
+		for (std::string::const_iterator p = in.begin(); p != in.end(); p++)
+		{
+		   unsigned char c = hexval(*p);
+		   p++;
+		   if (p == in.end()) break; // incomplete last digit - should report error
+		   c = (c << 4) + hexval(*p); // + takes precedence over <<
+		   out.push_back(c);
+		}
+		return out;
+	}
+	
+	void ConvertToHex(std::string &input) { std::string output = StringToHex(input); input = output; }
+	void ConvertToString(std::string &input) { std::string output = HexToString(input); input = output; }
+};
+
+void ScrubString(std::string &input, bool forInteger = false);
+void SeperateString(std::string input, StringVector &output, bool subDelimiter = false);
+std::string StitchString(std::string stringOne, std::string stringTwo, bool subDelimiter = false);
+std::string StitchString(std::string stringOne, std::string stringTwo, std::string stringThree, bool subDelimiter = false);
+int64_t stringToInteger(std::string input);
+std::string getRidOfScriptStatement(std::string input);
+
+extern static const std::string PrimaryDelimiter;
+extern static const std::string SubDelimiter;
+extern static const std::string SignatureDelimiter;
 
 #endif // DYNAMIC_UTILSTRENCODINGS_H

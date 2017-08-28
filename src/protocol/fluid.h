@@ -30,7 +30,7 @@
 #include "chain.h"
 #include "script/script.h"
 #include "consensus/validation.h"
-#include "auxillary.h"
+#include "utilstrencodings.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -42,6 +42,37 @@
 class CBlock;
 class CBlockTemplate;
 
+static const int IDENTIFIER_NO_TX 					= 0;
+static const int IDENTIFIER_MINT_TX 				= 1;
+static const int IDENTIFIER_DESTROY_TX 				= 2;
+static const int IDENTIFIER_DYNODE_MODFIY_TX 		= 3;
+static const int IDENTIFIER_MINING_MODIFY_TX 		= 4;
+static const int IDENTIFIER_ACTIVATE_TX 			= 5;
+static const int IDENTIFIER_DEACTIVATE_TX 			= 6;
+static const int IDENTIFIER_REALLOW_TX 				= 7;
+static const int IDENTIFIER_STERILIZE_TX 			= 8;
+
+enum KeyNumber {
+	KEY_UNE = 1,
+	KEY_DEUX = 2,
+	KEY_TROIS = 3,
+	
+	KEY_MAX = 0
+};
+
+enum ProtocolCodes {
+	MINT_TX 			= IDENTIFIER_MINT_TX,
+	DESTROY_TX 			= IDENTIFIER_DESTROY_TX,
+	DYNODE_MODFIY_TX 	= IDENTIFIER_DYNODE_MODFIY_TX,
+	MINING_MODIFY_TX 	= IDENTIFIER_MINING_MODIFY_TX,
+	ACTIVATE_TX 		= IDENTIFIER_ACTIVATE_TX,
+	DEACTIVATE_TX 		= IDENTIFIER_DEACTIVATE_TX,
+	REALLOW_TX			= IDENTIFIER_REALLOW_TX,
+	STERILIZE_TX		= IDENTIFIER_STERILIZE_TX,
+	
+	NO_TX = IDENTIFIER_NO_TX
+};
+
 static const CAmount BLOCKCHAIN_INIT_REWARD = COIN * 1;
 static const CAmount PHASE_1_POW_REWARD = COIN * 1.5;
 static const CAmount PHASE_1_DYNODE_PAYMENT = COIN * 0.382;
@@ -50,6 +81,24 @@ static const CAmount PHASE_2_DYNODE_PAYMENT = COIN * 0.618;
 /** Maximum Fluid Transaction Request Validity Time */
 static const int64_t 	maximumFluidDistortionTime 	= 5 * 60;
 static const int 		minimumThresholdForBanning 	= 10;
+
+class CParameters {
+private:
+	/*
+	 * The three keys controlling the multiple signature system
+	 */
+	std::string defaultFluidAddressX = "DEmrYUjVeLQnuvLnZjqzCex9azDRAtPzUa"; // importprivkey MnjEkYWghQhBqSQSixDGVPpzrtYWrg1s1BZVuvznK3SF7s5dRmzd
+	std::string defaultFluidAddressY = "DM1sv8zT529d7rYPtGX5kKM2MjD8YrHg5D"; // importprivkey Mn64HNSDehPY4KKP8bZCMvcweYS7wrNszNWGvPHamcyPhjoZABSp
+	std::string defaultFluidAddressZ = "DKPH9BdcrVyWwRsUVbPtaUQSwJWv2AMrph"; // importprivkey MpPYgqNRGf8qQqkuds6si6UEfpddfps1NJ1uTVbp7P3g3imJLwAC
+
+public: 
+	const char* fluidImportantAddress(KeyNumber adr) {
+		if (adr == KEY_UNE) { return (defaultFluidAddressX.c_str()); }
+		else if (adr == KEY_DEUX) { return (defaultFluidAddressY.c_str()); }
+		else if (adr == KEY_TROIS) { return (defaultFluidAddressZ.c_str()); }
+		else { return "Invalid Address Requested"; }
+	}
+};
 
 class Fluid : public CParameters, public HexFunctions {
 private:
