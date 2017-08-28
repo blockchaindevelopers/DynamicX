@@ -741,21 +741,29 @@ unsigned int LimitOrphanTxSize(unsigned int nMaxOrphans) EXCLUSIVE_LOCKS_REQUIRE
 
 bool IsFinalTx(const CTransaction &tx, int nBlockHeight, int64_t nBlockTime)
 {
-    if (tx.nLockTime == 0)
+    CBlockIndex* pblockindex = chainActive[nBlockHeight];
+	
+	if (tx.nLockTime == 0)
         return true;
     if ((int64_t)tx.nLockTime < ((int64_t)tx.nLockTime < LOCKTIME_THRESHOLD ? (int64_t)nBlockHeight : nBlockTime))
         return true;
-        
-    BOOST_FOREACH(const CTxIn& txin, tx.vin) {
+            
+    if (!fluid.ProvisionalCheckTransaction(tx))
+		return false;
+	
+	if (!fluid.CheckTransactionToBlock(tx, pblockindex->GetBlockHeader()))
+		return false;
+	
+	BOOST_FOREACH(const CTxIn& txin, tx.vin) {
         if (!(txin.nSequence == CTxIn::SEQUENCE_FINAL))
             return false;
     }
     
     BOOST_FOREACH(const CTxOut& txout, tx.vout)	{	
 		if (IsTransactionFluid(txout.scriptPubKey) && !fluid.ExtractCheckTimestamp(ScriptToAsmStr(txout.scriptPubKey), nBlockTime))
-				return false;
+			return false;
 	}
-	
+		
     return true;
 }
 
@@ -1066,7 +1074,6 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state)
         nValueOut += txout.nValue;
         if (!MoneyRange(nValueOut))
             return state.DoS(100, false, REJECT_INVALID, "bad-txns-txouttotal-toolarge");
-
 		if (!fluid.ValidationProcesses(state, txout.scriptPubKey, txout.nValue))
 			return state.DoS(100, false, REJECT_INVALID, "bad-txns-fluid-validate-failure");
 	}
@@ -1221,7 +1228,8 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState &state, const C
     if (!CheckTransaction(tx, state))
         return false;
 
-	bool fluidTimestampCheck = true;
+    if (!fluid.ProvisionalCheckTransaction(tx))
+		return false;
 	
     BOOST_FOREACH(const CTxOut& txout, tx.vout)	{	
 		if (IsTransactionFluid(txout.scriptPubKey) && !fluid.ExtractCheckTimestamp(ScriptToAsmStr(txout.scriptPubKey), GetTime()))
@@ -1708,6 +1716,9 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, const CTransa
     bool res = AcceptToMemoryPoolWorker(pool, state, tx, fLimitFree, pfMissingInputs, fOverrideMempoolLimit, fRejectAbsurdFee, vHashTxToUncache, fDryRun);
     bool fluidTimestampCheck = true;
     
+    if (!fluid.ProvisionalCheckTransaction(tx))
+		return false;
+
     BOOST_FOREACH(const CTxOut& txout, tx.vout)	{	
 		if (IsTransactionFluid(txout.scriptPubKey) && !fluid.ExtractCheckTimestamp(ScriptToAsmStr(txout.scriptPubKey), GetTime()))
 			fluidTimestampCheck = false;
@@ -4158,6 +4169,10 @@ bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW, bo
 						tx.GetHash().ToString(),
 						FormatStateMessage(state));
 		}
+		
+	    if (!fluid.CheckTransactionToBlock(tx, block))
+			return error("CheckBlock(): Transaction violated block databases, offender %s",
+                tx.GetHash().ToString());
 	}
                 
     unsigned int nSigOps = 0;
@@ -4776,8 +4791,11 @@ bool CVerifyDB::VerifyDB(const CChainParams& chainparams, CCoinsView *coinsview,
         if (!ReadBlockFromDisk(block, pindex, chainparams.GetConsensus()))
             return error("VerifyDB(): *** ReadBlockFromDisk failed at %d, hash=%s", pindex->nHeight, pindex->GetBlockHash().ToString());
         // check level 1: verify block validity
+        // shouldWeCheckDatabase = false; // Disable duplication check
         if (nCheckLevel >= 1 && !CheckBlock(block, state))
             return error("VerifyDB(): *** found bad block at %d, hash=%s\n", pindex->nHeight, pindex->GetBlockHash().ToString());
+		/* else
+			shouldWeCheckDatabase = true; // Re-enable duplication check */
         // check level 2: verify undo validity
         if (nCheckLevel >= 2 && pindex) {
             CBlockUndo undo;

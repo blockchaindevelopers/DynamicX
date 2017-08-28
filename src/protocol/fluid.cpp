@@ -40,6 +40,7 @@
 Fluid fluid;
 
 extern CWallet* pwalletMain;
+bool shouldWeCheckDatabase = true;
 
 bool getBlockFromHeader(const CBlockHeader& blockHeader, CBlock &block) {
 	uint256 hash = blockHeader.GetHash();
@@ -272,7 +273,7 @@ bool Fluid::ExtractCheckTimestamp(std::string scriptString, int64_t timeStamp) {
 	
 	std::string ls = ptrs.at(1); ScrubString(ls, true);
 	
-	if ((timeStamp > stringToInteger(ls) + maximumFluidDistortionTime || timeStamp < stringToInteger(ls) - maximumFluidDistortionTime))
+	if (timeStamp > stringToInteger(ls) + maximumFluidDistortionTime)
 		return false;
 	
 	return true;
@@ -305,7 +306,7 @@ bool Fluid::GenericParseNumber(std::string scriptString, int64_t timeStamp, CAmo
 	std::string ls = ptrs.at(1); ScrubString(ls, true);
 	
 	// Step 4: Final steps of parsing, is the timestamp exceeding five minutes?
-	if ((timeStamp > stringToInteger(ls) + maximumFluidDistortionTime || timeStamp < stringToInteger(ls) - maximumFluidDistortionTime) && !txCheckPurpose)
+	if (timeStamp > stringToInteger(ls) + maximumFluidDistortionTime && !txCheckPurpose)
 		return false;
 	
 	howMuch			 	= stringToInteger(lr);
@@ -339,7 +340,7 @@ bool Fluid::GenericParseHash(std::string scriptString, int64_t timeStamp, uint25
 	std::string ls = ptrs.at(1); ScrubString(ls, true);
 	
 	// Step 4: Final steps of parsing, is the timestamp exceeding five minutes?
-	if ((timeStamp > stringToInteger(ls) + maximumFluidDistortionTime || timeStamp < stringToInteger(ls) - maximumFluidDistortionTime) && !txCheckPurpose)
+	if (timeStamp > stringToInteger(ls) + maximumFluidDistortionTime && !txCheckPurpose)
 		return false;
 	
 	// Step 3: Get hash
@@ -496,7 +497,7 @@ bool Fluid::GetDynodeOverrideRequest(const CBlockHeader& blockHeader, CAmount &h
 	
     BOOST_FOREACH(const CTransaction& tx, block.vtx) {
 		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
-			if (txout.scriptPubKey.IsProtocolInstruction(MINING_MODIFY_TX)) {
+			if (txout.scriptPubKey.IsProtocolInstruction(DYNODE_MODFIY_TX)) {
 				std::string message;
 				if (CheckIfQuorumExists(ScriptToAsmStr(txout.scriptPubKey), message))
 					return GenericParseNumber(ScriptToAsmStr(txout.scriptPubKey), block.nTime, howMuch);
@@ -555,12 +556,45 @@ void Fluid::AddRemoveBanAddresses(const CBlockHeader& blockHeader, HashVector& b
 	}
 }
 
-bool Fluid::CheckIfAddressIsBlacklisted(CScript scriptPubKey) {
+/* Check if transaction exists in record */
+bool Fluid::CheckTransactionInRecord(CScript fluidInstruction, CBlockIndex* pindex) {
+	std::string verificationString;
+	StringVector transactionRecord;
+	if (chainActive.Height() <= minimumThresholdForBanning || !shouldWeCheckDatabase)
+		return false;
+	else if (pindex == NULL) 
+		transactionRecord = chainActive.Tip()->existingFluidTransactions;
+	else
+		transactionRecord = pindex->existingFluidTransactions;
+	
+	if (IsTransactionFluid(fluidInstruction)) {
+			verificationString = ScriptToAsmStr(fluidInstruction);
+			
+			std::string message;
+			if (CheckIfQuorumExists(verificationString, message)) {
+				BOOST_FOREACH(const std::string& existingRecord, transactionRecord)
+				{
+					if (existingRecord == verificationString) {
+						LogPrintf("Attempt to repeat Fluid Transaction: %s\n", existingRecord);
+						return true;
+					}
+				}
+			}
+	}
+	
+	return false;
+}
+
+bool Fluid::CheckIfAddressIsBlacklisted(CScript scriptPubKey, CBlockIndex* pindex) {
 	/* Step 1: Copy vector */
 	HashVector bannedDatabase;
-	if (chainActive.Height() <= minimumThresholdForBanning)
+	
+	if (chainActive.Height() <= minimumThresholdForBanning || !shouldWeCheckDatabase)
 		return false;
-	else bannedDatabase = chainActive.Tip()->bannedAddresses;
+	else if (pindex == NULL) 
+		bannedDatabase = chainActive.Tip()->bannedAddresses;
+	else
+		bannedDatabase = pindex->bannedAddresses;
 	
 	CTxDestination source;
 	/* Step 2: Get destination */
@@ -662,32 +696,6 @@ bool Fluid::InsertTransactionToRecord(CScript fluidInstruction, StringVector& tr
 	return false;
 }
 
-/* Check if transaction exists in record */
-bool Fluid::CheckTransactionInRecord(CScript fluidInstruction) {
-	std::string verificationString;
-	StringVector transactionRecord;
-	if (chainActive.Height() <= minimumThresholdForBanning)
-		return false;
-	else transactionRecord = chainActive.Tip()->existingFluidTransactions;
-	
-	if (IsTransactionFluid(fluidInstruction)) {
-			verificationString = ScriptToAsmStr(fluidInstruction);
-			
-			std::string message;
-			if (CheckIfQuorumExists(verificationString, message)) {
-				BOOST_FOREACH(const std::string& existingRecord, transactionRecord)
-				{
-					if (existingRecord == verificationString) {
-						LogPrintf("Attempt to repeat Fluid Transaction: %s\n", existingRecord);
-						return true;
-					}
-				}
-			}
-	}
-	
-	return false;
-}
-
 CAmount GetPoWBlockPayment(const int& nHeight, CAmount nFees)
 {
 	CAmount nSubsidy = BLOCKCHAIN_INIT_REWARD;
@@ -773,19 +781,50 @@ bool Fluid::ValidationProcesses(CValidationState &state, CScript txOut, CAmount 
 				 !GenericParseNumber(ScriptToAsmStr(txOut), 0, mintAmount, true)) {
 					return state.DoS(100, false, REJECT_INVALID, "bad-txns-fluid-modify-parse-failure");
 			}
-			
-			// Step 1: Get transaction out time
-			// Step 2: Check for block that has that stamp
-			// Step 3: Now, check the header
-			
-			if (CheckTransactionInRecord(txOut)) {
-					return state.DoS(500, false, REJECT_INVALID, "bad-txns-fluid-exists-already");
-			}
+	}
+
+	return true;
+}
+
+bool Fluid::ProvisionalCheckTransaction(const CTransaction &transaction) {
+	BOOST_FOREACH(const CTxOut& txout, transaction.vout) {
+		CScript txOut = txout.scriptPubKey;
+		
+		if (CheckIfAddressIsBlacklisted(txOut)) {
+			LogPrintf("ProvisionalCheckTransaction(): Transaction %s is present on Banlist!\n", transaction.GetHash().ToString());
+			return false;
+		}
+		
+		if (IsTransactionFluid(txOut) && CheckTransactionInRecord(txOut)) {
+			LogPrintf("ProvisionalCheckTransaction(): Fluid Transaction %s has already been executed!\n", transaction.GetHash().ToString());
+			return false;
+		}
 	}
 	
-	/* Check if address is part of ban list */
-	if (CheckIfAddressIsBlacklisted(txOut))
-		return state.DoS(100, false, REJECT_INVALID, "bad-txns-output-banned-address");
+	return true;
+}
+
+bool Fluid::CheckTransactionToBlock(const CTransaction &transaction, const CBlockHeader& blockHeader) {
+	uint256 hash = blockHeader.GetHash();
+	
+    if (mapBlockIndex.count(hash) == 0)
+        return false;
+
+    CBlockIndex* pblockindex = mapBlockIndex[hash];
+
+	BOOST_FOREACH(const CTxOut& txout, transaction.vout) {
+		CScript txOut = txout.scriptPubKey;
+		
+		if (CheckIfAddressIsBlacklisted(txOut, pblockindex)) {
+			LogPrintf("CheckTransactionToBlock(): Transaction %s is present on Banlist!\n", transaction.GetHash().ToString());
+			return false;
+		}
+		
+		if (IsTransactionFluid(txOut) && CheckTransactionInRecord(txOut, pblockindex)) {
+			LogPrintf("CheckTransactionToBlock(): Fluid Transaction %s has already been executed!\n", transaction.GetHash().ToString());
+			return false;
+		}
+	}
 	
 	return true;
 }
@@ -832,16 +871,16 @@ void BuildFluidInformationIndex(CBlockIndex* pindex, CAmount &nExpectedBlockValu
 	
 	if (chainActive.Height() >= minimumThresholdForBanning) {
 		// Handle the ban address system and update the vector
-		bannedAddresses.insert(bannedAddresses.end(), prevIndex->pprev->bannedAddresses.begin(), prevIndex->pprev->bannedAddresses.end());	
-		fluid.AddRemoveBanAddresses(prevIndex->pprev->GetBlockHeader(), bannedAddresses);
+		bannedAddresses.insert(bannedAddresses.end(), prevIndex->bannedAddresses.begin(), prevIndex->bannedAddresses.end());	
+		fluid.AddRemoveBanAddresses(prevIndex->GetBlockHeader(), bannedAddresses);
 
 		std::set<uint256> set(bannedAddresses.begin(), bannedAddresses.end());
 		bannedAddresses.assign(set.begin(), set.end());
 		pindex->bannedAddresses = bannedAddresses;
 		
 		// Scan and add Fluid Transactions to the Database
-		existingFluidTransactions.insert(existingFluidTransactions.end(), prevIndex->pprev->existingFluidTransactions.begin(), prevIndex->pprev->existingFluidTransactions.end());
-		fluid.AddFluidTransactionsToRecord(prevIndex->pprev->GetBlockHeader(), existingFluidTransactions);
+		existingFluidTransactions.insert(existingFluidTransactions.end(), prevIndex->existingFluidTransactions.begin(), prevIndex->existingFluidTransactions.end());
+		fluid.AddFluidTransactionsToRecord(prevIndex->GetBlockHeader(), existingFluidTransactions);
 
 		std::set<std::string> setX(existingFluidTransactions.begin(), existingFluidTransactions.end());
 		existingFluidTransactions.assign(setX.begin(), setX.end());

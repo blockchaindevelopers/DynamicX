@@ -59,6 +59,9 @@ static const CAmount PHASE_2_DYNODE_PAYMENT = COIN * 0.618;
 static const int64_t 	maximumFluidDistortionTime 	= 5 * 60;
 static const int 		minimumThresholdForBanning 	= 10;
 
+/**/
+extern bool shouldWeCheckDatabase;
+
 class CParameters {
 private:
 	/*
@@ -104,16 +107,18 @@ public:
 	bool GetDynodeOverrideRequest(const CBlockHeader& blockHeader, CAmount &howMuch);
 	
 	void AddRemoveBanAddresses(const CBlockHeader& blockHeader, HashVector& bannedList);
-	bool CheckIfAddressIsBlacklisted(CScript scriptPubKey);
+	bool CheckIfAddressIsBlacklisted(CScript scriptPubKey, CBlockIndex* pindex = NULL);
 	bool ProcessBanEntry(std::string getBanInstruction, int64_t timestamp, HashVector& bannedList);
 	bool RemoveEntry(std::string getBanInstruction, int64_t timestamp, HashVector& bannedList);
 	
 	bool InsertTransactionToRecord(CScript fluidInstruction, StringVector& transactionRecord);
-	bool CheckTransactionInRecord(CScript fluidInstruction);
+	bool CheckTransactionInRecord(CScript fluidInstruction, CBlockIndex* pindex = NULL);
 	void AddFluidTransactionsToRecord(const CBlockHeader& blockHeader, StringVector& transactionRecord);
 	
 	bool ValidationProcesses(CValidationState& state, CScript txOut, CAmount txValue);
 	bool ExtractCheckTimestamp(std::string scriptString, int64_t timeStamp);
+	bool ProvisionalCheckTransaction(const CTransaction &transaction);
+	bool CheckTransactionToBlock(const CTransaction &transaction, const CBlockHeader& blockHeader);
 };
 
 /** Standard Reward Payment Determination Functions */
