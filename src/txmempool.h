@@ -11,15 +11,9 @@
 #include "api/bitcore/addressindex.h"
 #include "amount.h"
 #include "coins.h"
-#include "indirectmap.h"
-#include "primitives/transaction.h"
-#include "random.h"
 #include "api/bitcore/spentindex.h"
 #include "sync.h"
 
-#include <list>
-#include <memory>
-#include <set>
 
 #if !defined(QT_PROJECT_BUILD)
     #undef foreach

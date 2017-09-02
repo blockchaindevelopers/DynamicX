@@ -1,8 +1,8 @@
 /*
- * Syscoin Developers 2015
+ * Dynamic Developers 2015
  */
 #include "offerview.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "guiutil.h"
 #include "platformstyle.h"
 #include "clientmodel.h"
@@ -55,7 +55,7 @@ OfferView::~OfferView()
 
 }
 
-void OfferView::setSyscoinGUI(SyscoinGUI *gui)
+void OfferView::setDynamicGUI(DynamicGUI *gui)
 {
     this->gui = gui;
 }

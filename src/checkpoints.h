@@ -8,9 +8,7 @@
 #ifndef DYNAMIC_CHECKPOINTS_H
 #define DYNAMIC_CHECKPOINTS_H
 
-#include "uint256.h"
 
-#include <map>
 
 class CBlockIndex;
 

@@ -1,8 +1,8 @@
 /*
- * Syscoin Developers 2015
+ * Dynamic Developers 2015
  */
 #include "certview.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "guiutil.h"
 #include "platformstyle.h"
 #include "clientmodel.h"
@@ -41,7 +41,7 @@ CertView::~CertView()
 {
 }
 
-void CertView::setSyscoinGUI(SyscoinGUI *gui)
+void CertView::setDynamicGUI(DynamicGUI *gui)
 {
     this->gui = gui;
 }

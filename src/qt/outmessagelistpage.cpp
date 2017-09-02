@@ -45,7 +45,7 @@ OutMessageListPage::OutMessageListPage(const PlatformStyle *platformStyle, QWidg
 		
 	}
 
-    ui->labelExplanation->setText(tr("These are Syscoin messages you have sent."));
+    ui->labelExplanation->setText(tr("These are Dynamic messages you have sent."));
 	
     // Context menu actions
     QAction *copyGuidAction = new QAction(ui->copyMessage->text(), this);

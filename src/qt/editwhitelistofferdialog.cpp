@@ -1,5 +1,5 @@
 /*
- * Syscoin Developers 2015
+ * Dynamic Developers 2015
  */
 #include <boost/assign/list_of.hpp>
 #include "editwhitelistofferdialog.h"
@@ -7,7 +7,7 @@
 #include "offertablemodel.h"
 #include "offerwhitelisttablemodel.h"
 #include "walletmodel.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "platformstyle.h"
 #include "newwhitelistdialog.h"
 #include "csvmodelwriter.h"
@@ -20,14 +20,14 @@
 #include <QModelIndex>
 #include <QMenu>
 #include <QItemSelection>
-#include "rpc/server.h"
+#include "rpcserver.h"
 #include "tinyformat.h"
 
 using namespace std;
 
 
 
-extern CRPCTable tableRPC;
+extern const CRPCTable tableRPC;
 EditWhitelistOfferDialog::EditWhitelistOfferDialog(const PlatformStyle *platformStyle, QModelIndex *idx, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::EditWhitelistOfferDialog),
@@ -67,7 +67,7 @@ EditWhitelistOfferDialog::EditWhitelistOfferDialog(const PlatformStyle *platform
 	
     // Context menu actions
     QAction *removeAction = new QAction(tr("Remove"), this);
-	QAction *copyAction = new QAction(tr("Copy Alias"), this);
+	QAction *copyAction = new QAction(tr("Copy Identity"), this);
     // Build context menu
     contextMenu = new QMenu();
     contextMenu->addAction(copyAction);
@@ -106,11 +106,11 @@ void EditWhitelistOfferDialog::setModel(WalletModel *walletModel, OfferWhitelist
     ui->tableView->setSelectionMode(QAbstractItemView::SingleSelection);
     // Set column widths
 #if QT_VERSION < 0x050000
-    ui->tableView->horizontalHeader()->setResizeMode(OfferWhitelistTableModel::Alias, QHeaderView::Stretch);
+    ui->tableView->horizontalHeader()->setResizeMode(OfferWhitelistTableModel::Identity, QHeaderView::Stretch);
 	ui->tableView->horizontalHeader()->setResizeMode(OfferWhitelistTableModel::Expires, QHeaderView::ResizeToContents);
 	ui->tableView->horizontalHeader()->setResizeMode(OfferWhitelistTableModel::Discount, QHeaderView::ResizeToContents);
 #else
-    ui->tableView->horizontalHeader()->setSectionResizeMode(OfferWhitelistTableModel::Alias, QHeaderView::Stretch);
+    ui->tableView->horizontalHeader()->setSectionResizeMode(OfferWhitelistTableModel::Identity, QHeaderView::Stretch);
 	ui->tableView->horizontalHeader()->setSectionResizeMode(OfferWhitelistTableModel::Expires, QHeaderView::ResizeToContents);
 	ui->tableView->horizontalHeader()->setSectionResizeMode(OfferWhitelistTableModel::Discount, QHeaderView::ResizeToContents);
 #endif
@@ -132,7 +132,7 @@ void EditWhitelistOfferDialog::showEvent ( QShowEvent * event )
 }
 void EditWhitelistOfferDialog::on_copy()
 {
-    GUIUtil::copyEntryData(ui->tableView, OfferWhitelistTableModel::Alias);
+    GUIUtil::copyEntryData(ui->tableView, OfferWhitelistTableModel::Identity);
 }
 void EditWhitelistOfferDialog::on_removeButton_clicked()
 {
@@ -150,7 +150,7 @@ void EditWhitelistOfferDialog::on_removeButton_clicked()
     {
         return;
     }
-	QString aliasGUID = selection.at(0).data(OfferWhitelistTableModel::Alias).toString();
+	QString identityGUID = selection.at(0).data(OfferWhitelistTableModel::Identity).toString();
 
 
 	string strError;
@@ -158,7 +158,7 @@ void EditWhitelistOfferDialog::on_removeButton_clicked()
 	UniValue params(UniValue::VARR);
 	UniValue result;
 	params.push_back(offerGUID.toStdString());
-	params.push_back(aliasGUID.toStdString());
+	params.push_back(identityGUID.toStdString());
 
 	try {
 		result = tableRPC.execute(strMethod, params);
@@ -182,7 +182,7 @@ void EditWhitelistOfferDialog::on_removeButton_clicked()
 		QMessageBox::information(this, windowTitle(),
 		tr("Entry removed successfully!"),
 			QMessageBox::Ok, QMessageBox::Ok);
-		model->updateEntry(aliasGUID, aliasGUID, aliasGUID, CT_DELETED); 
+		model->updateEntry(identityGUID, identityGUID, identityGUID, CT_DELETED); 
 	}
 	catch (UniValue& objError)
 	{
@@ -268,7 +268,7 @@ void EditWhitelistOfferDialog::on_refreshButton_clicked()
 		if (result.type() == UniValue::VARR)
 		{
 			this->model->clear();
-			string alias_str = "";
+			string identity_str = "";
 			string offer_discount_percentage_str = "";
 			int64_t expires_on = 0;
 			const UniValue &arr = result.get_array();
@@ -277,9 +277,9 @@ void EditWhitelistOfferDialog::on_refreshButton_clicked()
 				if (input.type() != UniValue::VOBJ)
 					continue;
 				const UniValue& o = input.get_obj();
-				const UniValue& alias_value = find_value(o, "alias");
-				if (alias_value.type() == UniValue::VSTR)
-					alias_str = alias_value.get_str();
+				const UniValue& identity_value = find_value(o, "identity");
+				if (identity_value.type() == UniValue::VSTR)
+					identity_str = identity_value.get_str();
 				const UniValue& offer_discount_percentage_value = find_value(o, "offer_discount_percentage");
 				if (offer_discount_percentage_value.type() == UniValue::VSTR)
 					offer_discount_percentage_str = offer_discount_percentage_value.get_str();
@@ -287,8 +287,8 @@ void EditWhitelistOfferDialog::on_refreshButton_clicked()
 				if (expires_on_value.type() == UniValue::VNUM)
 					expires_on = expires_on_value.get_int64();
 				const QString& dateTimeString = GUIUtil::dateTimeStr(expires_on);		
-				model->addRow(QString::fromStdString(alias_str),  dateTimeString, QString::fromStdString(offer_discount_percentage_str));
-				model->updateEntry(QString::fromStdString(alias_str),  dateTimeString, QString::fromStdString(offer_discount_percentage_str), CT_NEW); 
+				model->addRow(QString::fromStdString(identity_str),  dateTimeString, QString::fromStdString(offer_discount_percentage_str));
+				model->updateEntry(QString::fromStdString(identity_str),  dateTimeString, QString::fromStdString(offer_discount_percentage_str), CT_NEW); 
 				ui->removeAllButton->setEnabled(true);
 			}
 		}
@@ -350,7 +350,7 @@ void EditWhitelistOfferDialog::on_exportButton_clicked()
     CSVModelWriter writer(filename);
     // name, column, role
     writer.setModel(proxyModel);
-	writer.addColumn(tr("Alias"), OfferWhitelistTableModel::Alias, Qt::EditRole);
+	writer.addColumn(tr("Identity"), OfferWhitelistTableModel::Identity, Qt::EditRole);
 	writer.addColumn(tr("Expires On"), OfferWhitelistTableModel::Expires, Qt::EditRole);
 	writer.addColumn(tr("Discount"), OfferWhitelistTableModel::Discount, Qt::EditRole);
 	
@@ -373,7 +373,7 @@ void EditWhitelistOfferDialog::contextualMenu(const QPoint &point)
 
 void EditWhitelistOfferDialog::selectNewEntry(const QModelIndex &parent, int begin, int /*end*/)
 {
-    QModelIndex idx = proxyModel->mapFromSource(model->index(begin, OfferWhitelistTableModel::Alias, parent));
+    QModelIndex idx = proxyModel->mapFromSource(model->index(begin, OfferWhitelistTableModel::Identity, parent));
     if(idx.isValid() && (idx.data(Qt::EditRole).toString() == newEntryToSelect))
     {
         // Select row of newly created offer, once

@@ -6,7 +6,7 @@
 #include "optionsmodel.h"
 #include "offerview.h"
 #include "walletmodel.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "resellofferdialog.h"
 #include "newmessagedialog.h"
 #include "csvmodelwriter.h"
@@ -18,16 +18,16 @@
 #include <QKeyEvent>
 #include <QMenu>
 #include "main.h"
-#include "rpc/server.h"
+#include "rpcserver.h"
 #include "qcomboboxdelegate.h"
 #include <QSettings>
 #include <QStandardItemModel>
 #include <boost/algorithm/string.hpp>
-#include "offer.h"
+#include "protocol/offer.h"
 using namespace std;
 
 
-extern CRPCTable tableRPC;
+extern const CRPCTable tableRPC;
 extern bool getCategoryList(vector<string>& categoryList);
 OfferListPage::OfferListPage(const PlatformStyle *platformStyle, OfferView *parent) :
     QDialog(0),
@@ -57,7 +57,7 @@ OfferListPage::OfferListPage(const PlatformStyle *platformStyle, OfferView *pare
 	}
 	
 
-    ui->labelExplanation->setText(tr("Search for Syscoin Offers (double click on one to purchase). Select Safe Search from wallet options if you wish to omit potentially offensive Offers(On by default)"));
+    ui->labelExplanation->setText(tr("Search for Dynamic Offers (double click on one to purchase). Select Safe Search from wallet options if you wish to omit potentially offensive Offers(On by default)"));
 	
     // Context menu actions
     QAction *copyOfferAction = new QAction(ui->copyOffer->text(), this);
@@ -192,7 +192,7 @@ void OfferListPage::setModel(WalletModel* walletModel, OfferTableModel *model)
 	ui->tableView->setColumnWidth(8, 75); //sold
     ui->tableView->setColumnWidth(9, 50); //status
     ui->tableView->setColumnWidth(10, 50); //private
-    ui->tableView->setColumnWidth(11, 100); //seller alias
+    ui->tableView->setColumnWidth(11, 100); //seller identity
 	ui->tableView->setColumnWidth(12, 150); //seller rating
     ui->tableView->setColumnWidth(13, 0); //btc only
 	
@@ -231,10 +231,10 @@ void OfferListPage::on_messageButton_clicked()
     {
         return;
     }
-	QString offerAlias = selection.at(0).data(OfferTableModel::AliasRole).toString();
+	QString offerIdentity = selection.at(0).data(OfferTableModel::IdentityRole).toString();
 	QString offerTitle = selection.at(0).data(OfferTableModel::TitleRole).toString();
 	// send message to seller
-	NewMessageDialog dlg(NewMessageDialog::NewMessage, offerAlias, offerTitle);   
+	NewMessageDialog dlg(NewMessageDialog::NewMessage, offerIdentity, offerTitle);   
 	dlg.exec();
 
 
@@ -281,9 +281,9 @@ void OfferListPage::on_purchaseButton_clicked()
 		return;
 	}
 	QString offerGUID = selection.at(0).data(OfferTableModel::NameRole).toString();
-	QString URI = QString("syscoin://") + offerGUID;
+	QString URI = QString("dynamic://") + offerGUID;
     SendCoinsRecipient recipient;
-    if (GUIUtil::parseSyscoinURI(URI, &recipient))
+    if (GUIUtil::parseDynamicURI(URI, &recipient))
 		offerView->handlePaymentRequest(&recipient);
 }
 void OfferListPage::onCopyOfferDescriptionAction()
@@ -411,11 +411,11 @@ void OfferListPage::on_searchOffer_clicked(string GUID)
 	string expired_str;
 	string private_str;
 	string paymentoptions_str;
-	string alias_peg_str;
-	string alias_str;
+	string identity_peg_str;
+	string identity_str;
 	string safesearch_str;
 	string geolocation_str;
-	string aliasRating_str;
+	string identityRating_str;
 	int sold = 0;
 
 	int expired = 0;
@@ -473,11 +473,11 @@ void OfferListPage::on_searchOffer_clicked(string GUID)
 			value_str = "";
 			desc_str = "";
 			private_str = "";
-			alias_str = "";
+			identity_str = "";
 			paymentoptions_str = "";
-			alias_peg_str = "";
+			identity_peg_str = "";
 			safesearch_str = "";
-			aliasRating_str = "";
+			identityRating_str = "";
 			geolocation_str = "";
 			expired = 0;
 			sold = 0;
@@ -516,15 +516,15 @@ void OfferListPage::on_searchOffer_clicked(string GUID)
 			const UniValue& private_value = find_value(o, "private");
 			if (private_value.type() == UniValue::VSTR)
 				private_str = private_value.get_str();	
-			const UniValue& alias_value = find_value(o, "alias");
-			if (alias_value.type() == UniValue::VSTR)
-				alias_str = alias_value.get_str();
-			const UniValue& aliasRating_value = find_value(o, "alias_rating_display");
-			if (aliasRating_value.type() == UniValue::VSTR)
-				aliasRating_str = aliasRating_value.get_str();
-			const UniValue& alias_peg_value = find_value(o, "alias_peg");
-			if (alias_peg_value.type() == UniValue::VSTR)
-				alias_peg_str = alias_peg_value.get_str();
+			const UniValue& identity_value = find_value(o, "identity");
+			if (identity_value.type() == UniValue::VSTR)
+				identity_str = identity_value.get_str();
+			const UniValue& identityRating_value = find_value(o, "identity_rating_display");
+			if (identityRating_value.type() == UniValue::VSTR)
+				identityRating_str = identityRating_value.get_str();
+			const UniValue& identity_peg_value = find_value(o, "identity_peg");
+			if (identity_peg_value.type() == UniValue::VSTR)
+				identity_peg_str = identity_peg_value.get_str();
 			const UniValue& expired_value = find_value(o, "expired");
 			if (expired_value.type() == UniValue::VNUM)
 				expired = expired_value.get_int();
@@ -560,10 +560,10 @@ void OfferListPage::on_searchOffer_clicked(string GUID)
 					QString::number(sold),
 					QString::fromStdString(expired_str), 
 					QString::fromStdString(private_str),
-					QString::fromStdString(alias_str),
-					QString::fromStdString(aliasRating_str),
+					QString::fromStdString(identity_str),
+					QString::fromStdString(identityRating_str),
 					QString::fromStdString(paymentoptions_str),
-					QString::fromStdString(alias_peg_str),
+					QString::fromStdString(identity_peg_str),
 					QString::fromStdString(safesearch_str),
 					QString::fromStdString(geolocation_str));
 				this->model->updateEntry(QString::fromStdString(name_str),
@@ -577,10 +577,10 @@ void OfferListPage::on_searchOffer_clicked(string GUID)
 					QString::number(sold),
 					QString::fromStdString(expired_str),
 					QString::fromStdString(private_str), 
-					QString::fromStdString(alias_str), 
-					QString::fromStdString(aliasRating_str),
+					QString::fromStdString(identity_str), 
+					QString::fromStdString(identityRating_str),
 					QString::fromStdString(paymentoptions_str),
-					QString::fromStdString(alias_peg_str), 
+					QString::fromStdString(identity_peg_str), 
 					QString::fromStdString(safesearch_str),
 					QString::fromStdString(geolocation_str), AllOffer, CT_NEW);	
 		  }

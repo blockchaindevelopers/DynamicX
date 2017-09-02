@@ -98,7 +98,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../syscoin.qrc"/>
+  <include location="../dynamic.qrc"/>
  </resources>
  <connections/>
 </ui>

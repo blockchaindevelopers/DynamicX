@@ -8,8 +8,6 @@
 
 #include "uint256.h"
 
-#include <map>
-#include <string>
 
 namespace Consensus {
 

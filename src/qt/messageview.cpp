@@ -1,8 +1,8 @@
 /*
- * Syscoin Developers 2016
+ * Dynamic Developers 2016
  */
 #include "messageview.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 
 #include "platformstyle.h"
 #include "guiutil.h"
@@ -42,7 +42,7 @@ MessageView::~MessageView()
 {
 }
 
-void MessageView::setSyscoinGUI(SyscoinGUI *gui)
+void MessageView::setDynamicGUI(DynamicGUI *gui)
 {
     this->gui = gui;
 }

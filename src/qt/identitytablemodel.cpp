@@ -1,5 +1,5 @@
 
-#include "aliastablemodel.h"
+#include "identitytablemodel.h"
 
 #include "guiutil.h"
 #include "walletmodel.h"
@@ -8,68 +8,68 @@
 #include "base58.h"
 
 #include <QFont>
-#include "rpc/server.h"
+#include "rpcserver.h"
 using namespace std;
 
-const QString AliasTableModel::Alias = "A";
+const QString IdentityTableModel::Identity = "A";
 
 
-extern CRPCTable tableRPC;
-struct AliasTableEntry
+extern const CRPCTable tableRPC;
+struct IdentityTableEntry
 {
     enum Type {
-        Alias
+        Identity
     };
 
     Type type;
     QString value;
 	QString multisig;
 	QString privvalue;
-    QString alias;
+    QString identity;
 	QString expires_on;
 	QString expired;
 	QString safesearch;
 	QString buyer_rating;
 	QString seller_rating;
 	QString arbiter_rating;
-    AliasTableEntry() {}
-    AliasTableEntry(Type type, const QString &alias, const QString &multisig, const QString &value,  const QString &privvalue, const QString &expires_on,const QString &expired,  const QString &safesearch, const QString &buyer_rating, const QString &seller_rating, const QString &arbiter_rating):
-        type(type), alias(alias), multisig(multisig), value(value), privvalue(privvalue), expires_on(expires_on), expired(expired), safesearch(safesearch), buyer_rating(buyer_rating), seller_rating(seller_rating), arbiter_rating(arbiter_rating) {}
+    IdentityTableEntry() {}
+    IdentityTableEntry(Type type, const QString &identity, const QString &multisig, const QString &value,  const QString &privvalue, const QString &expires_on,const QString &expired,  const QString &safesearch, const QString &buyer_rating, const QString &seller_rating, const QString &arbiter_rating):
+        type(type), identity(identity), multisig(multisig), value(value), privvalue(privvalue), expires_on(expires_on), expired(expired), safesearch(safesearch), buyer_rating(buyer_rating), seller_rating(seller_rating), arbiter_rating(arbiter_rating) {}
 };
 
-struct AliasTableEntryLessThan
+struct IdentityTableEntryLessThan
 {
-    bool operator()(const AliasTableEntry &a, const AliasTableEntry &b) const
+    bool operator()(const IdentityTableEntry &a, const IdentityTableEntry &b) const
     {
-        return a.alias < b.alias;
+        return a.identity < b.identity;
     }
-    bool operator()(const AliasTableEntry &a, const QString &b) const
+    bool operator()(const IdentityTableEntry &a, const QString &b) const
     {
-        return a.alias < b;
+        return a.identity < b;
     }
-    bool operator()(const QString &a, const AliasTableEntry &b) const
+    bool operator()(const QString &a, const IdentityTableEntry &b) const
     {
-        return a < b.alias;
+        return a < b.identity;
     }
 };
 
 // Private implementation
-class AliasTablePriv
+class IdentityTablePriv
 {
 public:
     CWallet *wallet;
-    QList<AliasTableEntry> cachedAliasTable;
-    AliasTableModel *parent;
+    QList<IdentityTableEntry> cachedIdentityTable;
+    IdentityTableModel *parent;
 
-    AliasTablePriv(CWallet *wallet, AliasTableModel *parent):
+    IdentityTablePriv(CWallet *wallet, IdentityTableModel *parent):
         wallet(wallet), parent(parent) {}
 
-    void refreshAliasTable(AliasModelType type)
+    void refreshIdentityTable(IdentityModelType type)
     {
 
-        cachedAliasTable.clear();
+        cachedIdentityTable.clear();
         {
-			string strMethod = string("aliaslist");
+			string strMethod = string("identitylist");
 			UniValue params(UniValue::VARR); 
 			UniValue result;
 			string name_str;
@@ -192,34 +192,34 @@ public:
 
     }
 
-    void updateEntry(const QString &alias, const QString &multisig, const QString &value, const QString &privvalue, const QString &expires_on, const QString &expired, const QString &safesearch, const QString &buyer_rating, const QString &seller_rating, const QString &arbiter_rating,AliasModelType type, int status)
+    void updateEntry(const QString &identity, const QString &multisig, const QString &value, const QString &privvalue, const QString &expires_on, const QString &expired, const QString &safesearch, const QString &buyer_rating, const QString &seller_rating, const QString &arbiter_rating,IdentityModelType type, int status)
     {
 		if(!parent || parent->modelType != type)
 		{
 			return;
 		}
-        // Find alias / value in model
-        QList<AliasTableEntry>::iterator lower = qLowerBound(
-            cachedAliasTable.begin(), cachedAliasTable.end(), alias, AliasTableEntryLessThan());
-        QList<AliasTableEntry>::iterator upper = qUpperBound(
-            cachedAliasTable.begin(), cachedAliasTable.end(), alias, AliasTableEntryLessThan());
-        int lowerIndex = (lower - cachedAliasTable.begin());
-        int upperIndex = (upper - cachedAliasTable.begin());
+        // Find identity / value in model
+        QList<IdentityTableEntry>::iterator lower = qLowerBound(
+            cachedIdentityTable.begin(), cachedIdentityTable.end(), identity, IdentityTableEntryLessThan());
+        QList<IdentityTableEntry>::iterator upper = qUpperBound(
+            cachedIdentityTable.begin(), cachedIdentityTable.end(), identity, IdentityTableEntryLessThan());
+        int lowerIndex = (lower - cachedIdentityTable.begin());
+        int upperIndex = (upper - cachedIdentityTable.begin());
         bool inModel = (lower != upper);
 		int index;
-        AliasTableEntry::Type newEntryType = AliasTableEntry::Alias;
+        IdentityTableEntry::Type newEntryType = IdentityTableEntry::Identity;
 
         switch(status)
         {
         case CT_NEW:
-			index = parent->lookupAlias(alias);
+			index = parent->lookupIdentity(identity);
             if(inModel || index != -1)
             {
                 break;
             
             }
             parent->beginInsertRows(QModelIndex(), lowerIndex, lowerIndex);
-            cachedAliasTable.insert(lowerIndex, AliasTableEntry(newEntryType, alias, multisig, value, privvalue, expires_on, expired, safesearch, buyer_rating, seller_rating, arbiter_rating));
+            cachedIdentityTable.insert(lowerIndex, IdentityTableEntry(newEntryType, identity, multisig, value, privvalue, expires_on, expired, safesearch, buyer_rating, seller_rating, arbiter_rating));
             parent->endInsertRows();
             break;
         case CT_UPDATED:
@@ -245,7 +245,7 @@ public:
                 break;
             }
             parent->beginRemoveRows(QModelIndex(), lowerIndex, upperIndex-1);
-            cachedAliasTable.erase(lower, upper);
+            cachedIdentityTable.erase(lower, upper);
             parent->endRemoveRows();
             break;
         }
@@ -253,14 +253,14 @@ public:
 
     int size()
     {
-        return cachedAliasTable.size();
+        return cachedIdentityTable.size();
     }
 
-    AliasTableEntry *index(int idx)
+    IdentityTableEntry *index(int idx)
     {
-        if(idx >= 0 && idx < cachedAliasTable.size())
+        if(idx >= 0 && idx < cachedIdentityTable.size())
         {
-            return &cachedAliasTable[idx];
+            return &cachedIdentityTable[idx];
         }
         else
         {
@@ -269,45 +269,45 @@ public:
     }
 };
 
-AliasTableModel::AliasTableModel(CWallet *wallet, WalletModel *parent,  AliasModelType type) :
+IdentityTableModel::IdentityTableModel(CWallet *wallet, WalletModel *parent,  IdentityModelType type) :
     QAbstractTableModel(parent),walletModel(parent),wallet(wallet),priv(0), modelType(type)
 {
 
-	columns << tr("Alias")  << tr("Multisignature") << tr("Expires On") << tr("Alias Status") << tr("Buyer Rating") << tr("Seller Rating") << tr("Arbiter Rating");		 
-    priv = new AliasTablePriv(wallet, this);
-	refreshAliasTable();
+	columns << tr("Identity")  << tr("Multisignature") << tr("Expires On") << tr("Identity Status") << tr("Buyer Rating") << tr("Seller Rating") << tr("Arbiter Rating");		 
+    priv = new IdentityTablePriv(wallet, this);
+	refreshIdentityTable();
 }
 
-AliasTableModel::~AliasTableModel()
+IdentityTableModel::~IdentityTableModel()
 {
     delete priv;
 }
-void AliasTableModel::refreshAliasTable() 
+void IdentityTableModel::refreshIdentityTable() 
 {
-	if(modelType != MyAlias)
+	if(modelType != MyIdentity)
 		return;
 	clear();
-	priv->refreshAliasTable(modelType);
+	priv->refreshIdentityTable(modelType);
 }
-int AliasTableModel::rowCount(const QModelIndex &parent) const
+int IdentityTableModel::rowCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
     return priv->size();
 }
 
-int AliasTableModel::columnCount(const QModelIndex &parent) const
+int IdentityTableModel::columnCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
     return columns.length();
 }
 
-QVariant AliasTableModel::data(const QModelIndex &index, int role) const
+QVariant IdentityTableModel::data(const QModelIndex &index, int role) const
 {
 	QString ratingStr;
     if(!index.isValid())
         return QVariant();
 
-    AliasTableEntry *rec = static_cast<AliasTableEntry*>(index.internalPointer());
+    IdentityTableEntry *rec = static_cast<IdentityTableEntry*>(index.internalPointer());
 
     if(role == Qt::DisplayRole || role == Qt::EditRole)
     {
@@ -318,7 +318,7 @@ QVariant AliasTableModel::data(const QModelIndex &index, int role) const
         case PrivValue:
             return rec->privvalue;
         case Name:
-            return rec->alias;
+            return rec->identity;
        case Multisig:
             return rec->multisig;
         case ExpiresOn:
@@ -339,14 +339,14 @@ QVariant AliasTableModel::data(const QModelIndex &index, int role) const
     {
         switch(rec->type)
         {
-        case AliasTableEntry::Alias:
-            return Alias;
+        case IdentityTableEntry::Identity:
+            return Identity;
         default: break;
         }
     }
     else if (role == NameRole)
     {
-         return rec->alias;
+         return rec->identity;
     }
     else if (role == MultisigRole)
     {
@@ -376,11 +376,11 @@ QVariant AliasTableModel::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
-bool AliasTableModel::setData(const QModelIndex &index, const QVariant &value, int role)
+bool IdentityTableModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
     if(!index.isValid())
         return false;
-    AliasTableEntry *rec = static_cast<AliasTableEntry*>(index.internalPointer());
+    IdentityTableEntry *rec = static_cast<IdentityTableEntry*>(index.internalPointer());
 
     editStatus = OK;
 
@@ -454,24 +454,24 @@ bool AliasTableModel::setData(const QModelIndex &index, const QVariant &value, i
                 return false;
             }
         case Name:
-            // Do nothing, if old alias == new alias
-            if(rec->alias == value.toString())
+            // Do nothing, if old identity == new identity
+            if(rec->identity == value.toString())
             {
                 editStatus = NO_CHANGES;
                 return false;
             }
-            // Check for duplicate aliases to prevent accidental deletion of aliases, if you try
-            // to paste an existing alias over another alias (with a different label)
-            else if(lookupAlias(rec->alias) != -1)
+            // Check for duplicate identities to prevent accidental deletion of identities, if you try
+            // to paste an existing identity over another identity (with a different label)
+            else if(lookupIdentity(rec->identity) != -1)
             {
-                editStatus = DUPLICATE_ALIAS;
+                editStatus = DUPLICATE_IDENTITY;
                 return false;
             }
-            // Double-check that we're not overwriting a receiving alias
-            else if(rec->type == AliasTableEntry::Alias)
+            // Double-check that we're not overwriting a receiving identity
+            else if(rec->type == IdentityTableEntry::Identity)
             {
                 {
-                    // update alias
+                    // update identity
                 }
             }
             break;
@@ -481,7 +481,7 @@ bool AliasTableModel::setData(const QModelIndex &index, const QVariant &value, i
     return false;
 }
 
-QVariant AliasTableModel::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant IdentityTableModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if(orientation == Qt::Horizontal)
     {
@@ -493,7 +493,7 @@ QVariant AliasTableModel::headerData(int section, Qt::Orientation orientation, i
     return QVariant();
 }
 
-Qt::ItemFlags AliasTableModel::flags(const QModelIndex &index) const
+Qt::ItemFlags IdentityTableModel::flags(const QModelIndex &index) const
 {
     if(!index.isValid())
         return 0;
@@ -501,10 +501,10 @@ Qt::ItemFlags AliasTableModel::flags(const QModelIndex &index) const
     return retval;
 }
 
-QModelIndex AliasTableModel::index(int row, int column, const QModelIndex &parent) const
+QModelIndex IdentityTableModel::index(int row, int column, const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
-    AliasTableEntry *data = priv->index(row);
+    IdentityTableEntry *data = priv->index(row);
     if(data)
     {
         return createIndex(row, column, priv->index(row));
@@ -515,42 +515,42 @@ QModelIndex AliasTableModel::index(int row, int column, const QModelIndex &paren
     }
 }
 
-void AliasTableModel::updateEntry(const QString &alias, const QString &multisig, const QString &value, const QString &privvalue, const QString &expires_on, const QString &expired, const QString &safesearch, const QString &buyer_rating, const QString &seller_rating, const QString &arbiter_rating, AliasModelType type, int status)
+void IdentityTableModel::updateEntry(const QString &identity, const QString &multisig, const QString &value, const QString &privvalue, const QString &expires_on, const QString &expired, const QString &safesearch, const QString &buyer_rating, const QString &seller_rating, const QString &arbiter_rating, IdentityModelType type, int status)
 {
-    // Update alias book model from Syscoin core
-    priv->updateEntry(alias, multisig, value, privvalue, expires_on, expired, safesearch, buyer_rating, seller_rating, arbiter_rating, type, status);
+    // Update identity book model from Dynamic core
+    priv->updateEntry(identity, multisig, value, privvalue, expires_on, expired, safesearch, buyer_rating, seller_rating, arbiter_rating, type, status);
 }
 
-QString AliasTableModel::addRow(const QString &type, const QString &alias,const QString &multisig, const QString &value, const QString &privvalue, const QString &expires_on, const QString &expired, const QString &safesearch, const QString &buyer_rating, const QString &seller_rating, const QString &arbiter_rating)
+QString IdentityTableModel::addRow(const QString &type, const QString &identity,const QString &multisig, const QString &value, const QString &privvalue, const QString &expires_on, const QString &expired, const QString &safesearch, const QString &buyer_rating, const QString &seller_rating, const QString &arbiter_rating)
 {
-    std::string strAlias = alias.toStdString();
+    std::string strIdentity = identity.toStdString();
     editStatus = OK;
-    // Check for duplicate aliases
+    // Check for duplicate identities
     {
         LOCK(wallet->cs_wallet);
-        if(lookupAlias(alias) != -1)
+        if(lookupIdentity(identity) != -1)
         {
-            editStatus = DUPLICATE_ALIAS;
+            editStatus = DUPLICATE_IDENTITY;
             return QString();
         }
     }
 
     // Add entry
 
-    return QString::fromStdString(strAlias);
+    return QString::fromStdString(strIdentity);
 }
-void AliasTableModel::clear()
+void IdentityTableModel::clear()
 {
 	beginResetModel();
-    priv->cachedAliasTable.clear();
+    priv->cachedIdentityTable.clear();
 	endResetModel();
 }
 
 
-int AliasTableModel::lookupAlias(const QString &alias) const
+int IdentityTableModel::lookupIdentity(const QString &identity) const
 {
     QModelIndexList lst = match(index(0, Name, QModelIndex()),
-                                Qt::EditRole, alias, 1, Qt::MatchExactly);
+                                Qt::EditRole, identity, 1, Qt::MatchExactly);
     if(lst.isEmpty())
     {
         return -1;
@@ -561,7 +561,7 @@ int AliasTableModel::lookupAlias(const QString &alias) const
     }
 }
 
-void AliasTableModel::emitDataChanged(int idx)
+void IdentityTableModel::emitDataChanged(int idx)
 {
     Q_EMIT dataChanged(index(idx, 0, QModelIndex()), index(idx, columns.length()-1, QModelIndex()));
 }

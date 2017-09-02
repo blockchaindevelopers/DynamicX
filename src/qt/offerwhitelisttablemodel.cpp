@@ -12,28 +12,28 @@ using namespace std;
 struct OfferWhitelistTableEntry
 {
 
-    QString alias;
+    QString identity;
 	QString expires;
 	QString discount;	
 
     OfferWhitelistTableEntry() {}
-    OfferWhitelistTableEntry(const QString &alias, const QString &expires,const QString &discount):
-        alias(alias), expires(expires),discount(discount) {}
+    OfferWhitelistTableEntry(const QString &identity, const QString &expires,const QString &discount):
+        identity(identity), expires(expires),discount(discount) {}
 };
 
 struct OfferWhitelistTableEntryLessThan
 {
     bool operator()(const OfferWhitelistTableEntry &a, const OfferWhitelistTableEntry &b) const
     {
-        return a.alias < b.alias;
+        return a.identity < b.identity;
     }
     bool operator()(const OfferWhitelistTableEntry &a, const QString &b) const
     {
-        return a.alias < b;
+        return a.identity < b;
     }
     bool operator()(const QString &a, const OfferWhitelistTableEntry &b) const
     {
-        return a < b.alias;
+        return a < b.identity;
     }
 };
 
@@ -48,7 +48,7 @@ public:
         parent(parent) {}
 
 
-    void updateEntry(const QString &alias, const QString &expires,const QString &discount, int status)
+    void updateEntry(const QString &identity, const QString &expires,const QString &discount, int status)
     {
 		if(!parent)
 		{
@@ -56,9 +56,9 @@ public:
 		}
         // Find offer / value in model
         QList<OfferWhitelistTableEntry>::iterator lower = qLowerBound(
-            cachedEntryTable.begin(), cachedEntryTable.end(), alias, OfferWhitelistTableEntryLessThan());
+            cachedEntryTable.begin(), cachedEntryTable.end(), identity, OfferWhitelistTableEntryLessThan());
         QList<OfferWhitelistTableEntry>::iterator upper = qUpperBound(
-            cachedEntryTable.begin(), cachedEntryTable.end(), alias, OfferWhitelistTableEntryLessThan());
+            cachedEntryTable.begin(), cachedEntryTable.end(), identity, OfferWhitelistTableEntryLessThan());
         int lowerIndex = (lower - cachedEntryTable.begin());
         int upperIndex = (upper - cachedEntryTable.begin());
         bool inModel = (lower != upper);
@@ -71,7 +71,7 @@ public:
                 break;
             }
             parent->beginInsertRows(QModelIndex(), lowerIndex, lowerIndex);
-            cachedEntryTable.insert(lowerIndex, OfferWhitelistTableEntry(alias, expires, discount));
+            cachedEntryTable.insert(lowerIndex, OfferWhitelistTableEntry(identity, expires, discount));
             parent->endInsertRows();
             break;
         case CT_UPDATED:
@@ -79,7 +79,7 @@ public:
             {
                 break;
             }
-			lower->alias = alias;
+			lower->identity = identity;
 			lower->expires = expires;
 			lower->discount = discount;
             parent->emitDataChanged(lowerIndex);
@@ -117,7 +117,7 @@ public:
 OfferWhitelistTableModel::OfferWhitelistTableModel(WalletModel *parent) :
     QAbstractTableModel(parent)
 {
-    columns << tr("Alias") << tr("Discount") << tr("Expires On");
+    columns << tr("Identity") << tr("Discount") << tr("Expires On");
     priv = new OfferWhitelistTablePriv(this);
 
 }
@@ -149,17 +149,17 @@ QVariant OfferWhitelistTableModel::data(const QModelIndex &index, int role) cons
     {
         switch(index.column())
         {
-        case Alias:
-            return rec->alias;
+        case Identity:
+            return rec->identity;
         case Discount:
             return rec->discount;
         case Expires:
             return rec->expires;
         }
     }
-    else if (role == AliasRole)
+    else if (role == IdentityRole)
     {
-        return rec->alias;
+        return rec->identity;
     }
     return QVariant();
 }
@@ -176,15 +176,15 @@ bool OfferWhitelistTableModel::setData(const QModelIndex &index, const QVariant 
     {
         switch(index.column())
         {
-        case Alias:
+        case Identity:
             // Do nothing, if old value == new value
-            if(rec->alias == value.toString())
+            if(rec->identity == value.toString())
             {
                 editStatus = NO_CHANGES;
                 return false;
             }
              // Check for duplicates
-            else if(lookupEntry(rec->alias) != -1)
+            else if(lookupEntry(rec->identity) != -1)
             {
                 editStatus = DUPLICATE_ENTRY;
                 return false;
@@ -247,18 +247,18 @@ QModelIndex OfferWhitelistTableModel::index(int row, int column, const QModelInd
     }
 }
 
-void OfferWhitelistTableModel::updateEntry(const QString &alias, const QString &expires,const QString &discount, int status)
+void OfferWhitelistTableModel::updateEntry(const QString &identity, const QString &expires,const QString &discount, int status)
 {
-    priv->updateEntry(alias, expires, discount, status);
+    priv->updateEntry(identity, expires, discount, status);
 }
 
-QString OfferWhitelistTableModel::addRow(const QString &alias, const QString &expires,const QString &discount)
+QString OfferWhitelistTableModel::addRow(const QString &identity, const QString &expires,const QString &discount)
 {
-    std::string strAlias = alias.toStdString();
+    std::string strIdentity = identity.toStdString();
     editStatus = OK;
     // Check for duplicate
     {
-        if(lookupEntry(alias) != -1)
+        if(lookupEntry(identity) != -1)
         {
             editStatus = DUPLICATE_ENTRY;
             return QString();
@@ -267,7 +267,7 @@ QString OfferWhitelistTableModel::addRow(const QString &alias, const QString &ex
 
     // Add entry
 
-    return QString::fromStdString(strAlias);
+    return QString::fromStdString(strIdentity);
 }
 void OfferWhitelistTableModel::clear()
 {
@@ -277,10 +277,10 @@ void OfferWhitelistTableModel::clear()
 }
 
 
-int OfferWhitelistTableModel::lookupEntry(const QString &alias) const
+int OfferWhitelistTableModel::lookupEntry(const QString &identity) const
 {
-    QModelIndexList lst = match(index(0, Alias, QModelIndex()),
-                                Qt::EditRole, alias, 1, Qt::MatchExactly);
+    QModelIndexList lst = match(index(0, Identity, QModelIndex()),
+                                Qt::EditRole, identity, 1, Qt::MatchExactly);
     if(lst.isEmpty())
     {
         return -1;

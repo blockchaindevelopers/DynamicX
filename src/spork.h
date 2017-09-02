@@ -8,7 +8,6 @@
 
 #include "hash.h"
 #include "net.h"
-#include "utilstrencodings.h"
 
 class CSporkManager;
 class CSporkMessage;

@@ -4,7 +4,7 @@
 #include "certtablemodel.h"
 #include "optionsmodel.h"
 #include "walletmodel.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "editcertdialog.h"
 #include "csvmodelwriter.h"
 #include "guiutil.h"
@@ -14,13 +14,13 @@
 #include <QKeyEvent>
 #include <QMenu>
 #include "main.h"
-#include "rpc/server.h"
+#include "rpcserver.h"
 #include <QStandardItemModel>
 #include "qcomboboxdelegate.h"
 #include <boost/algorithm/string.hpp>
 #include <QSettings>
 using namespace std;
-extern CRPCTable tableRPC;
+extern const CRPCTable tableRPC;
 extern bool getCategoryList(vector<string>& categoryList);
 CertListPage::CertListPage(const PlatformStyle *platformStyle, QWidget *parent) :
     QDialog(parent),
@@ -41,7 +41,7 @@ CertListPage::CertListPage(const PlatformStyle *platformStyle, QWidget *parent) 
 		ui->copyCert->setIcon(platformStyle->SingleColorIcon(":/icons/" + theme + "/editcopy"));
 		ui->searchCert->setIcon(platformStyle->SingleColorIcon(":/icons/" + theme + "/search"));
 	}
-    ui->labelExplanation->setText(tr("Search for Syscoin Certificates. Select Safe Search from wallet options if you wish to omit potentially offensive Certificates(On by default)"));
+    ui->labelExplanation->setText(tr("Search for Dynamic Certificates. Select Safe Search from wallet options if you wish to omit potentially offensive Certificates(On by default)"));
 	
     // Context menu actions
     QAction *copyCertAction = new QAction(ui->copyCert->text(), this);
@@ -279,7 +279,7 @@ void CertListPage::on_searchCert_clicked(string GUID)
 	string data_str;
 	string pubdata_str;
 	string category_str;
-	string alias_str;
+	string identity_str;
 	string expired_str;
 	int expired = 0;
 	int64_t expires_on = 0; 
@@ -333,7 +333,7 @@ void CertListPage::on_searchCert_clicked(string GUID)
 			data_str = "";
 			pubdata_str = "";
 			category_str = "";
-			alias_str = "";
+			identity_str = "";
 			expired = 0;
 			expires_on = 0;
 
@@ -355,9 +355,9 @@ void CertListPage::on_searchCert_clicked(string GUID)
 			const UniValue& category_value = find_value(o, "category");
 			if (category_value.type() == UniValue::VSTR)
 				category_str = category_value.get_str();
-			const UniValue& alias_value = find_value(o, "alias");
-			if (alias_value.type() == UniValue::VSTR)
-				alias_str = alias_value.get_str();
+			const UniValue& identity_value = find_value(o, "identity");
+			if (identity_value.type() == UniValue::VSTR)
+				identity_str = identity_value.get_str();
 			const UniValue& expires_on_value = find_value(o, "expires_on");
 			if (expires_on_value.type() == UniValue::VNUM)
 				expires_on = expires_on_value.get_int64();
@@ -372,7 +372,7 @@ void CertListPage::on_searchCert_clicked(string GUID)
 					QString::fromStdString(category_str),
 					dateTimeString,
 					QString::fromStdString(expired_str),
-					QString::fromStdString(alias_str),
+					QString::fromStdString(identity_str),
 					settings.value("safesearch", "").toString());
 		   this->model->updateEntry(QString::fromStdString(name_str),
 					QString::fromStdString(value_str),
@@ -381,7 +381,7 @@ void CertListPage::on_searchCert_clicked(string GUID)
 					QString::fromStdString(category_str),
 					dateTimeString,
 					QString::fromStdString(expired_str), 
-					QString::fromStdString(alias_str), 
+					QString::fromStdString(identity_str), 
 					settings.value("safesearch", "").toString(), AllCert, CT_NEW);	
 		  }
 		  pageMap[currentPage] = make_pair(firstCert, lastCert);  

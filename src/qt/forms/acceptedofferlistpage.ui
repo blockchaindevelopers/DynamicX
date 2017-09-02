@@ -27,7 +27,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QComboBox" name="displayListAlias">
+      <widget class="QComboBox" name="displayListIdentity">
        <property name="maximumSize">
         <size>
          <width>250</width>
@@ -149,7 +149,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../syscoin.qrc"/>
+  <include location="../dynamic.qrc"/>
  </resources>
  <connections/>
 </ui>

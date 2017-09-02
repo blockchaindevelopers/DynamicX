@@ -71,8 +71,13 @@ public Q_SLOTS:
     /** Switch to DNS page */
 //    void gotoDNSPage();
     /** Switch to MultiSig page */
-	  void gotoMultiSigPage();
-
+	void gotoMultiSigPage();
+	// SYSCOIN
+    void gotoIdentityListPage();
+    void gotoEscrowListPage();
+    void gotoMessageListPage();
+    void gotoOfferListPage();
+    void gotoCertListPage();
 
     /** Show Sign/Verify Message dialog and switch to sign message tab */
     void gotoSignMessageTab(QString addr = "");

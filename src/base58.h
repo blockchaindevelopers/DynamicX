@@ -18,13 +18,9 @@
 
 #include "chainparams.h"
 #include "key.h"
-#include "pubkey.h"
-#include "script/script.h"
 #include "script/standard.h"
 #include "support/allocators/zeroafterfree.h"
 
-#include <string>
-#include <vector>
 
 /**
  * Encode a byte sequence as a base58-encoded string.
@@ -105,7 +101,7 @@ public:
  */
 class CDynamicAddress : public CBase58Data {
 public:
-	// DYNCOIN
+	// SYSCOIN
 	bool isIdentity;
 	unsigned char safetyLevel;
 	bool safeSearch;
@@ -119,7 +115,7 @@ public:
     bool IsValid() const;
     bool IsValid(const CChainParams &params) const;
 
-	// DYNCOIN identities as addresses
+	// SYSCOIN identities as addresses
     CDynamicAddress();
 	CDynamicAddress(const CTxDestination &dest, CChainParams::AddressType idVer = CChainParams::ADDRESS_DYN);
     CDynamicAddress(const std::string& strAddress);

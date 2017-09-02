@@ -8,14 +8,14 @@
 
 #include <QFont>
 #include <QSettings>
-#include "rpc/server.h"
+#include "rpcserver.h"
 using namespace std;
 
 
 const QString OfferAcceptTableModel::Offer = "O";
 
 
-extern CRPCTable tableRPC;
+extern const CRPCTable tableRPC;
 struct OfferAcceptTableEntry
 {
     enum Type {
@@ -32,12 +32,12 @@ struct OfferAcceptTableEntry
 	QString price;
 	QString total;
 	QString status;
-	QString alias;
+	QString identity;
 	QString buyer;
 
     OfferAcceptTableEntry() {}
-    OfferAcceptTableEntry(Type type, const QString &guid, const QString &offer, const QString &title, const QString &height,const QString &price, const QString &currency,const QString &qty,const QString &total, const QString &alias, const QString &status, const QString &buyer):
-        type(type), guid(guid), offer(offer), title(title), height(height),price(price), currency(currency),qty(qty), total(total), status(status), alias(alias), buyer(buyer) {}
+    OfferAcceptTableEntry(Type type, const QString &guid, const QString &offer, const QString &title, const QString &height,const QString &price, const QString &currency,const QString &qty,const QString &total, const QString &identity, const QString &status, const QString &buyer):
+        type(type), guid(guid), offer(offer), title(title), height(height),price(price), currency(currency),qty(qty), total(total), status(status), identity(identity), buyer(buyer) {}
 };
 
 struct OfferAcceptTableEntryLessThan
@@ -74,9 +74,9 @@ public:
         {
 			string strMethod = string("offeracceptlist");
 	        UniValue params(UniValue::VARR); 
-			UniValue listAliases(UniValue::VARR);
-			appendListAliases(listAliases);
-			params.push_back(listAliases);
+			UniValue listIdentities(UniValue::VARR);
+			appendListIdentities(listIdentities);
+			params.push_back(listIdentities);
 			UniValue result ;
 			string name_str;
 			string value_str;
@@ -142,7 +142,7 @@ public:
 						if (seller_value.type() == UniValue::VSTR)
 							seller_str = seller_value.get_str();
 
-						if((FindAliasInList(listAliases, buyer_str) && type == Accept) || (FindAliasInList(listAliases, seller_str) && type == MyAccept))
+						if((FindIdentityInList(listIdentities, buyer_str) && type == Accept) || (FindIdentityInList(listIdentities, seller_str) && type == MyAccept))
 							updateEntry(QString::fromStdString(name_str), QString::fromStdString(value_str), QString::fromStdString(title_str), QString::fromStdString(height_str), QString::fromStdString(price_str), QString::fromStdString(currency_str), QString::fromStdString(qty_str), QString::fromStdString(total_str), QString::fromStdString(seller_str),QString::fromStdString(status_str), QString::fromStdString(buyer_str),type, CT_NEW); 
 					}
 				}
@@ -158,16 +158,16 @@ public:
          }
         
     }
-	bool FindAliasInList(const UniValue& listArray, const string& aliasName)
+	bool FindIdentityInList(const UniValue& listArray, const string& identityName)
 	{
 		for(unsigned int i = 0;i<listArray.size();i++)
 		{
-			if(listArray[i].get_str() == aliasName)
+			if(listArray[i].get_str() == identityName)
 				return true;
 		}
 		return false;
 	}
-    void updateEntry(const QString &offer, const QString &guid, const QString &title, const QString &height,const QString &price, const QString &currency,const QString &qty,const QString &total, const QString &alias, const QString &status,  const QString &buyer, OfferAcceptModelType type, int statusi)
+    void updateEntry(const QString &offer, const QString &guid, const QString &title, const QString &height,const QString &price, const QString &currency,const QString &qty,const QString &total, const QString &identity, const QString &status,  const QString &buyer, OfferAcceptModelType type, int statusi)
     {
 		if(!parent || parent->modelType != type)
 		{
@@ -191,7 +191,7 @@ public:
                 break;
             }
             parent->beginInsertRows(QModelIndex(), lowerIndex, lowerIndex);
-            cachedOfferTable.insert(lowerIndex, OfferAcceptTableEntry(newEntryType, guid, offer, title, height, price, currency, qty, total, alias, status, buyer));
+            cachedOfferTable.insert(lowerIndex, OfferAcceptTableEntry(newEntryType, guid, offer, title, height, price, currency, qty, total, identity, status, buyer));
             parent->endInsertRows();
             break;
         case CT_UPDATED:
@@ -209,7 +209,7 @@ public:
 			lower->total = total;
 			lower->status = status;
 			lower->buyer = buyer;
-			lower->alias = alias;
+			lower->identity = identity;
             parent->emitDataChanged(lowerIndex);
             break;
         case CT_DELETED:
@@ -298,8 +298,8 @@ QVariant OfferAcceptTableModel::data(const QModelIndex &index, int role) const
             return rec->total;
         case Status:
             return rec->status;
-        case Alias:
-            return rec->alias;
+        case Identity:
+            return rec->identity;
         case Buyer:
             return rec->buyer;
         }
@@ -325,9 +325,9 @@ QVariant OfferAcceptTableModel::data(const QModelIndex &index, int role) const
     {
         return rec->buyer;
     }
-    else if (role == AliasRole)
+    else if (role == IdentityRole)
     {
-        return rec->alias;
+        return rec->identity;
     }
     return QVariant();
 }
@@ -389,9 +389,9 @@ bool OfferAcceptTableModel::setData(const QModelIndex &index, const QVariant &va
             }
            
             break;
-       case Alias:
+       case Identity:
             // Do nothing, if old value == new value
-            if(rec->alias == value.toString())
+            if(rec->identity == value.toString())
             {
                 editStatus = NO_CHANGES;
                 return false;
@@ -492,12 +492,12 @@ QModelIndex OfferAcceptTableModel::index(int row, int column, const QModelIndex 
     }
 }
 
-void OfferAcceptTableModel::updateEntry(const QString &offer, const QString &value, const QString &title, const QString &height,const QString &price, const QString &currency, const QString &qty, const QString &total, const QString &alias, const QString &status, const QString &buyer, OfferAcceptModelType type, int statusi)
+void OfferAcceptTableModel::updateEntry(const QString &offer, const QString &value, const QString &title, const QString &height,const QString &price, const QString &currency, const QString &qty, const QString &total, const QString &identity, const QString &status, const QString &buyer, OfferAcceptModelType type, int statusi)
 {
-    priv->updateEntry(offer, value, title, height, price, currency, qty, total, alias, status, buyer, type, statusi);
+    priv->updateEntry(offer, value, title, height, price, currency, qty, total, identity, status, buyer, type, statusi);
 }
 
-QString OfferAcceptTableModel::addRow(const QString &type, const QString &offer, const QString &title, const QString &value, const QString &height,const QString &price, const QString &currency, const QString &qty, const QString &total, const QString &alias, const QString &status, const QString &buyer)
+QString OfferAcceptTableModel::addRow(const QString &type, const QString &offer, const QString &title, const QString &value, const QString &height,const QString &price, const QString &currency, const QString &qty, const QString &total, const QString &identity, const QString &status, const QString &buyer)
 {
     editStatus = OK;
     // Check for duplicate offer

@@ -233,7 +233,7 @@ public:
 };
 } // anon namespace
 
-// DYNCOIN identities as addresses
+// SYSCOIN identities as addresses
 CDynamicAddress::CDynamicAddress() {
 	isIdentity = false;
 	identityName = "";
@@ -242,7 +242,7 @@ CDynamicAddress::CDynamicAddress() {
 	vchRedeemScript.clear();
 	vchPubKey.clear();
 }
-// DYNCOIN support old sys
+// SYSCOIN support old sys
 CDynamicAddress::CDynamicAddress(const CTxDestination &dest, CChainParams::AddressType idVer) { 
 	isIdentity = false;
 	safeSearch = false;
@@ -309,7 +309,7 @@ CDynamicAddress::CDynamicAddress(const char* pszAddress) {
 		}	
 	}
 }
-// DYNCOIN support old sys
+// SYSCOIN support old sys
 bool CDynamicAddress::Set(const CKeyID& id, CChainParams::AddressType idVer)
 {   
     /* if(idVer == CChainParams::ADDRESS_OLDDYN)
@@ -329,7 +329,7 @@ bool CDynamicAddress::Set(const CScriptID& id, CChainParams::AddressType idVer)
         SetData(Params().Base58Prefix(CChainParams::SCRIPT_ADDRESS_SEQ), &id, 20);
     return true;
 }
-// DYNCOIN support old sys
+// SYSCOIN support old sys
 bool CDynamicAddress::Set(const CTxDestination& dest, CChainParams::AddressType idVer)
 {
     return boost::apply_visitor(CDynamicAddressVisitor(this, idVer), dest);
@@ -343,7 +343,7 @@ bool CDynamicAddress::IsValid() const
 bool CDynamicAddress::IsValid(const CChainParams& params) const
 {
     bool fCorrectSize = vchData.size() == 20;
-	// DYNCOIN allow old DYNCOIN address scheme
+	// SYSCOIN allow old SYSCOIN address scheme
     bool fKnownVersion = vchVersion == params.Base58Prefix(CChainParams::PUBKEY_ADDRESS)     ||
 						 vchVersion == params.Base58Prefix(CChainParams::PUBKEY_ADDRESS_DYN) ||
                          vchVersion == params.Base58Prefix(CChainParams::PUBKEY_ADDRESS_SEQ) ||
@@ -358,7 +358,7 @@ CTxDestination CDynamicAddress::Get() const
         return CNoDestination();
     uint160 id;
     memcpy(&id, &vchData[0], 20);
-	// DYNCOIN allow old DYNCOIN address scheme
+	// SYSCOIN allow old SYSCOIN address scheme
     if (vchVersion == Params().Base58Prefix(CChainParams::PUBKEY_ADDRESS) ||
 		vchVersion == Params().Base58Prefix(CChainParams::PUBKEY_ADDRESS_DYN) ||
         vchVersion == Params().Base58Prefix(CChainParams::PUBKEY_ADDRESS_SEQ))

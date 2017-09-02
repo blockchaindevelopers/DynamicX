@@ -9,15 +9,11 @@
 #define DYNAMIC_NETBASE_H
 
 #if defined(HAVE_CONFIG_H)
-#include "config/dynamic-config.h"
 #endif
 
 #include "compat.h"
 #include "serialize.h"
 
-#include <stdint.h>
-#include <string>
-#include <vector>
 
 extern int nConnectTimeout;
 extern bool fNameLookup;

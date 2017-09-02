@@ -6,9 +6,7 @@
 #ifndef DYNAMIC_PRIVATESEND_RELAY_H
 #define DYNAMIC_PRIVATESEND_RELAY_H
 
-#include "main.h"
 
-#include "activedynode.h"
 #include "dynodeman.h"
 
 class CPrivateSendRelay

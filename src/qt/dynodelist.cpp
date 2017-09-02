@@ -33,14 +33,14 @@ DynodeList::DynodeList(const PlatformStyle *platformStyle, QWidget *parent) :
 
     ui->startButton->setEnabled(true);
 
-    int columnAliasWidth = 100;
+    int columnIdentityWidth = 100;
     int columnAddressWidth = 200;
     int columnProtocolWidth = 60;
     int columnStatusWidth = 80;
     int columnActiveWidth = 130;
     int columnLastSeenWidth = 130;
 
-    ui->tableWidgetMyDynodes->setColumnWidth(0, columnAliasWidth);
+    ui->tableWidgetMyDynodes->setColumnWidth(0, columnIdentityWidth);
     ui->tableWidgetMyDynodes->setColumnWidth(1, columnAddressWidth);
     ui->tableWidgetMyDynodes->setColumnWidth(2, columnProtocolWidth);
     ui->tableWidgetMyDynodes->setColumnWidth(3, columnStatusWidth);
@@ -55,11 +55,11 @@ DynodeList::DynodeList(const PlatformStyle *platformStyle, QWidget *parent) :
 
     ui->tableWidgetMyDynodes->setContextMenuPolicy(Qt::CustomContextMenu);
 
-    QAction *startAliasAction = new QAction(tr("Start alias"), this);
+    QAction *startIdentityAction = new QAction(tr("Start identity"), this);
     contextMenu = new QMenu();
-    contextMenu->addAction(startAliasAction);
+    contextMenu->addAction(startIdentityAction);
     connect(ui->tableWidgetMyDynodes, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(showContextMenu(const QPoint&)));
-    connect(startAliasAction, SIGNAL(triggered()), this, SLOT(on_startButton_clicked()));
+    connect(startIdentityAction, SIGNAL(triggered()), this, SLOT(on_startButton_clicked()));
 
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(updateNodeList()));
@@ -96,13 +96,13 @@ void DynodeList::showContextMenu(const QPoint &point)
     if(item) contextMenu->exec(QCursor::pos());
 }
 
-void DynodeList::StartAlias(std::string strAlias)
+void DynodeList::StartIdentity(std::string strIdentity)
 {
     std::string strStatusHtml;
-    strStatusHtml += "<center>Alias: " + strAlias;
+    strStatusHtml += "<center>Identity: " + strIdentity;
 
     BOOST_FOREACH(CDynodeConfig::CDynodeEntry dne, dynodeConfig.getEntries()) {
-        if(dne.getAlias() == strAlias) {
+        if(dne.getAlias() == strIdentity) {
             std::string strError;
             CDynodeBroadcast dnb;
 
@@ -174,13 +174,13 @@ void DynodeList::StartAll(std::string strCommand)
     updateMyNodeList(true);
 }
 
-void DynodeList::updateMyDynodeInfo(QString strAlias, QString strAddr, dynode_info_t& infoDn)
+void DynodeList::updateMyDynodeInfo(QString strIdentity, QString strAddr, dynode_info_t& infoDn)
 {
     bool fOldRowFound = false;
     int nNewRow = 0;
 
     for(int i = 0; i < ui->tableWidgetMyDynodes->rowCount(); i++) {
-        if(ui->tableWidgetMyDynodes->item(i, 0)->text() == strAlias) {
+        if(ui->tableWidgetMyDynodes->item(i, 0)->text() == strIdentity) {
             fOldRowFound = true;
             nNewRow = i;
             break;
@@ -192,7 +192,7 @@ void DynodeList::updateMyDynodeInfo(QString strAlias, QString strAddr, dynode_in
         ui->tableWidgetMyDynodes->insertRow(nNewRow);
     }
 
-    QTableWidgetItem *aliasItem = new QTableWidgetItem(strAlias);
+    QTableWidgetItem *identityItem = new QTableWidgetItem(strIdentity);
     QTableWidgetItem *addrItem = new QTableWidgetItem(infoDn.fInfoValid ? QString::fromStdString(infoDn.addr.ToString()) : strAddr);
     QTableWidgetItem *protocolItem = new QTableWidgetItem(QString::number(infoDn.fInfoValid ? infoDn.nProtocolVersion : -1));
     QTableWidgetItem *statusItem = new QTableWidgetItem(QString::fromStdString(infoDn.fInfoValid ? CDynode::StateToString(infoDn.nActiveState) : "MISSING"));
@@ -201,7 +201,7 @@ void DynodeList::updateMyDynodeInfo(QString strAlias, QString strAddr, dynode_in
                                                                                                    infoDn.fInfoValid ? infoDn.nTimeLastPing + QDateTime::currentDateTime().offsetFromUtc() : 0)));
     QTableWidgetItem *pubkeyItem = new QTableWidgetItem(QString::fromStdString(infoDn.fInfoValid ? CDynamicAddress(infoDn.pubKeyCollateralAddress.GetID()).ToString() : ""));
 
-    ui->tableWidgetMyDynodes->setItem(nNewRow, 0, aliasItem);
+    ui->tableWidgetMyDynodes->setItem(nNewRow, 0, identityItem);
     ui->tableWidgetMyDynodes->setItem(nNewRow, 1, addrItem);
     ui->tableWidgetMyDynodes->setItem(nNewRow, 2, protocolItem);
     ui->tableWidgetMyDynodes->setItem(nNewRow, 3, statusItem);
@@ -319,10 +319,10 @@ void DynodeList::on_filterLineEdit_textChanged(const QString &strFilterIn)
 
 void DynodeList::on_startButton_clicked()
 {
-    std::string strAlias;
+    std::string strIdentity;
     {
         LOCK(cs_mydnlist);
-        // Find selected node alias
+        // Find selected node identity
         QItemSelectionModel* selectionModel = ui->tableWidgetMyDynodes->selectionModel();
         QModelIndexList selected = selectionModel->selectedRows();
 
@@ -330,12 +330,12 @@ void DynodeList::on_startButton_clicked()
 
         QModelIndex index = selected.at(0);
         int nSelectedRow = index.row();
-        strAlias = ui->tableWidgetMyDynodes->item(nSelectedRow, 0)->text().toStdString();
+        strIdentity = ui->tableWidgetMyDynodes->item(nSelectedRow, 0)->text().toStdString();
     }
 
     // Display message box
     QMessageBox::StandardButton retval = QMessageBox::question(this, tr("Confirm Dynode start"),
-        tr("Are you sure you want to start Dynode %1?").arg(QString::fromStdString(strAlias)),
+        tr("Are you sure you want to start Dynode %1?").arg(QString::fromStdString(strIdentity)),
         QMessageBox::Yes | QMessageBox::Cancel,
         QMessageBox::Cancel);
 
@@ -348,11 +348,11 @@ void DynodeList::on_startButton_clicked()
 
         if(!ctx.isValid()) return; // Unlock wallet was cancelled
 
-        StartAlias(strAlias);
+        StartIdentity(strIdentity);
         return;
     }
 
-    StartAlias(strAlias);
+    StartIdentity(strIdentity);
 }
 
 void DynodeList::on_startAllButton_clicked()

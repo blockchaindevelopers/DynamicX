@@ -34,8 +34,32 @@
 #include <QSet>
 #include <QTimer>
 
+#include "guiutil.h"
+#include "identitytablemodel.h"
+#include "messagetablemodel.h"
+#include "escrowtablemodel.h"
+#include "certtablemodel.h"
+#include "offertablemodel.h"
+#include "offeraccepttablemodel.h"
+
+#include "protocol/identity.h"
+#include "rpcserver.h"
+
+#include <QSettings>
+
+using namespace std;
+
+extern bool DecodeAndParseIdentityTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsigned char> >& vvch);
+extern bool DecodeAndParseOfferTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsigned char> >& vvch);
+extern bool DecodeAndParseCertTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsigned char> >& vvch);
+extern bool DecodeAndParseMessageTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsigned char> >& vvch);
+extern bool DecodeAndParseEscrowTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsigned char> >& vvch);
+extern std::string EncodeHexTx(const CTransaction& tx, const int serializeFlags = 0);
+extern bool DecodeHexTx(CTransaction& tx, const std::string& strHexTx, bool fTryNoWitness = false);
+
 WalletModel::WalletModel(const PlatformStyle *platformStyle, CWallet *_wallet, OptionsModel *_optionsModel, QObject *parent) :
     QObject(parent), wallet(_wallet), optionsModel(_optionsModel), addressTableModel(0),
+    identityTableModelMine(0), identityTableModelAll(0), certTableModelMine(0), certTableModelAll(0), offerTableModelMine(0), offerTableModelAll(0), offerTableModelAccept(0), offerTableModelMyAccept(0),
     transactionTableModel(0),
     recentRequestsTableModel(0),
     cachedBalance(0),
@@ -57,7 +81,20 @@ WalletModel::WalletModel(const PlatformStyle *platformStyle, CWallet *_wallet, O
     transactionTableModel = new TransactionTableModel(platformStyle, wallet, this);
     recentRequestsTableModel = new RecentRequestsTableModel(wallet, this);
     // nameTableModel = new NameTableModel(wallet, this);
-
+	// SYSCOIN
+	identityTableModelMine = new IdentityTableModel(wallet, this, MyIdentity);
+	identityTableModelAll = new IdentityTableModel(wallet, this, AllIdentity);
+	escrowTableModelMine = new EscrowTableModel(wallet, this, MyEscrow);
+	escrowTableModelAll = new EscrowTableModel(wallet, this, AllEscrow);
+	inMessageTableModel = new MessageTableModel(wallet, this, InMessage);
+	outMessageTableModel = new MessageTableModel(wallet, this, OutMessage);
+	certTableModelMine = new CertTableModel(wallet, this, MyCert);
+	certTableModelAll = new CertTableModel(wallet, this, AllCert);
+	offerTableModelMine = new OfferTableModel(wallet, this, MyOffer);
+	offerTableModelAll = new OfferTableModel(wallet, this, AllOffer);
+	offerTableModelAccept = new OfferAcceptTableModel(wallet, this, Accept);
+	offerTableModelMyAccept = new OfferAcceptTableModel(wallet, this, MyAccept);
+	
     // This timer will be fired repeatedly to update the balance
     pollTimer = new QTimer(this);
     connect(pollTimer, SIGNAL(timeout()), this, SLOT(pollBalanceChanged()));
@@ -88,6 +125,52 @@ CAmount WalletModel::getBalance(const CCoinControl *coinControl) const
     return wallet->GetBalance();
 }
 
+void appendListIdentities(UniValue& defaultIdentityArray, bool allIdentities)
+{
+	QSettings settings;
+	QString defaultListIdentity = settings.value("defaultListIdentity", "").toString();
+	if(allIdentities || defaultListIdentity == QObject::tr("All"))
+	{
+		string strMethod = string("identitylist");
+		UniValue params(UniValue::VARR); 
+		UniValue result ;
+		string name_str;
+		
+		try {
+
+			result = tableRPC.execute(strMethod, params);
+
+			if (result.type() == UniValue::VARR)
+			{
+				name_str = "";
+				const UniValue &arr = result.get_array();
+				for (unsigned int idx = 0; idx < arr.size(); idx++) {
+					const UniValue& input = arr[idx];
+					if (input.type() != UniValue::VOBJ)
+						continue;
+					const UniValue& o = input.get_obj();
+					name_str = "";
+					const UniValue& name_value = find_value(o, "name");
+					if (name_value.type() == UniValue::VSTR)
+					{
+						name_str = name_value.get_str();
+						defaultIdentityArray.push_back(name_str);
+					}
+				}
+			}
+		}
+		catch (UniValue& objError)
+		{
+		}
+		catch(std::exception& e)
+		{
+		}
+	}
+	else
+	{
+		defaultIdentityArray.push_back(defaultListIdentity.toStdString());
+	}
+}
 
 CAmount WalletModel::getAnonymizedBalance() const
 {
@@ -207,6 +290,37 @@ void WalletModel::updateAddressBook(const QString &address, const QString &label
 {
     if(addressTableModel)
         addressTableModel->updateEntry(address, label, isMine, purpose, status);
+}
+
+void WalletModel::updateIdentity() {
+	if (identityTableModelMine)
+		identityTableModelMine->refreshIdentityTable();
+}
+
+void WalletModel::updateCert() {
+	if (certTableModelMine)
+		certTableModelMine->refreshCertTable();
+}
+
+void WalletModel::updateMessage() {
+	if (inMessageTableModel)
+		inMessageTableModel->refreshMessageTable();
+	if (outMessageTableModel)
+		outMessageTableModel->refreshMessageTable();
+}
+
+void WalletModel::updateEscrow() {
+	if (escrowTableModelMine)
+		escrowTableModelMine->refreshEscrowTable();
+}
+
+void WalletModel::updateOffer() {
+	if (offerTableModelMine)
+		offerTableModelMine->refreshOfferTable();
+	if (offerTableModelAccept)
+		offerTableModelAccept->refreshOfferTable();
+	if (offerTableModelMyAccept)
+		offerTableModelMyAccept->refreshOfferTable();
 }
 
 void WalletModel::updateWatchOnlyFlag(bool fHaveWatchonly)
@@ -444,6 +558,43 @@ TransactionTableModel *WalletModel::getTransactionTableModel()
     return transactionTableModel;
 }
 
+IdentityTableModel *WalletModel::getIdentityTableModelMine() {
+	return identityTableModelMine;
+}
+IdentityTableModel *WalletModel::getIdentityTableModelAll() {
+	return identityTableModelAll;
+}
+EscrowTableModel *WalletModel::getEscrowTableModelMine() {
+	return escrowTableModelMine;
+}
+EscrowTableModel *WalletModel::getEscrowTableModelAll() {
+	return escrowTableModelAll;
+}
+MessageTableModel *WalletModel::getMessageTableModelIn() {
+	return inMessageTableModel;
+}
+MessageTableModel *WalletModel::getMessageTableModelOut() {
+	return outMessageTableModel;
+}
+CertTableModel *WalletModel::getCertTableModelMine() {
+	return certTableModelMine;
+}
+CertTableModel *WalletModel::getCertTableModelAll() {
+	return certTableModelAll;
+}
+OfferTableModel *WalletModel::getOfferTableModelMine() {
+	return offerTableModelMine;
+}
+OfferTableModel *WalletModel::getOfferTableModelAll() {
+	return offerTableModelAll;
+}
+OfferAcceptTableModel *WalletModel::getOfferTableModelAccept() {
+	return offerTableModelAccept;
+}
+OfferAcceptTableModel *WalletModel::getOfferTableModelMyAccept() {
+	return offerTableModelMyAccept;
+}
+
 RecentRequestsTableModel *WalletModel::getRecentRequestsTableModel()
 {
     return recentRequestsTableModel;
@@ -519,6 +670,23 @@ static void NotifyKeyStoreStatusChanged(WalletModel *walletmodel, CCryptoKeyStor
 {
     qDebug() << "NotifyKeyStoreStatusChanged";
     QMetaObject::invokeMethod(walletmodel, "updateStatus", Qt::QueuedConnection);
+}
+
+static void NotifyDynamicTransactionChanged(WalletModel *walletmodel, const CTransaction &tx, ChangeType status)
+{
+	std::vector<std::vector<unsigned char> > vvchArgs;
+	int op, nOut;
+	// there should only be one service with data carrying output per tx, notify for that one
+	if (DecodeAndParseIdentityTx(tx, op, nOut, vvchArgs))
+		QMetaObject::invokeMethod(walletmodel, "updateIdentity", Qt::QueuedConnection);
+	else if (DecodeAndParseOfferTx(tx, op, nOut, vvchArgs))
+		QMetaObject::invokeMethod(walletmodel, "updateOffer", Qt::QueuedConnection);
+	else if (DecodeAndParseCertTx(tx, op, nOut, vvchArgs))
+		QMetaObject::invokeMethod(walletmodel, "updateCert", Qt::QueuedConnection);
+	else if (DecodeAndParseEscrowTx(tx, op, nOut, vvchArgs))
+		QMetaObject::invokeMethod(walletmodel, "updateEscrow", Qt::QueuedConnection);
+	else if (DecodeAndParseMessageTx(tx, op, nOut, vvchArgs))
+		QMetaObject::invokeMethod(walletmodel, "updateMessage", Qt::QueuedConnection);
 }
 
 static void NotifyAddressBookChanged(WalletModel *walletmodel, CWallet *wallet,
@@ -696,11 +864,29 @@ void WalletModel::listCoins(std::map<QString, std::vector<COutput> >& mapCoins) 
             cout = COutput(&wallet->mapWallet[cout.tx->vin[0].prevout.hash], cout.tx->vin[0].prevout.n, 0, true);
         }
 
+		// SYSCOIN txs are unspendable unless input to another dynamic tx (passed into createtransaction)
+		if(out.tx->nVersion == GetDynamicTxVersion())
+		{
+			int op;
+			vector<vector<unsigned char> > vvchArgs;
+			// any sys tx thats not an identity payment shouldnt show up in listCoins (used by coin control)
+			if (out.tx->vout.size() >= out.i && IsDynamicScript(out.tx->vout[out.i].scriptPubKey, op, vvchArgs) && op != OP_IDENTITY_PAYMENT)
+				continue;
+		}
         CTxDestination address;
-        if(!out.fSpendable || !ExtractDestination(cout.tx->vout[cout.i].scriptPubKey, address))
+		// SYSCOIN
+        if(/*!out.fSpendable || */!ExtractDestination(cout.tx->vout[cout.i].scriptPubKey, address))
             continue;
-        mapCoins[QString::fromStdString(CDynamicAddress(address).ToString())].push_back(out);
-    }
+		// SYSCOIN
+		CDynamicAddress dynamicAddress = CDynamicAddress(address);
+		dynamicAddress = CDynamicAddress(dynamicAddress.ToString());
+		QString qStrAddress = QString::fromStdString(dynamicAddress.ToString());
+		
+		if(dynamicAddress.isIdentity)
+			qStrAddress = QString::fromStdString(dynamicAddress.identityName);
+			
+        mapCoins[qStrAddress].push_back(out);
+	}
 }
 
 bool WalletModel::isLockedCoin(uint256 hash, unsigned int n) const

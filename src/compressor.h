@@ -8,8 +8,6 @@
 #ifndef DYNAMIC_COMPRESSOR_H
 #define DYNAMIC_COMPRESSOR_H
 
-#include "script/script.h"
-#include "serialize.h"
 #include "primitives/transaction.h"
 
 class CKeyID;

@@ -41,14 +41,14 @@ private:
     QString newEntryToSelect;
 
 private Q_SLOTS:
-    /** Copy alias of currently selected cert entry to clipboard */
+    /** Copy identity of currently selected cert entry to clipboard */
     void on_copy();
 
     /** Export button clicked */
     void on_exportButton_clicked();
 	void on_refreshButton_clicked();
 
-    /** Spawn contextual menu (right mouse menu) for alias book entry */
+    /** Spawn contextual menu (right mouse menu) for identity book entry */
     void contextualMenu(const QPoint &point);
 
 

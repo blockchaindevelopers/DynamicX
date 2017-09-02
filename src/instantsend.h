@@ -8,7 +8,6 @@
 
 #include "chain.h"
 #include "net.h"
-#include "primitives/transaction.h"
 
 class CInstantSend;
 class COutPointLock;

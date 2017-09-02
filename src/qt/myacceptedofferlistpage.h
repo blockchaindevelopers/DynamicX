@@ -38,8 +38,8 @@ public:
 	void showEvent ( QShowEvent * event );
 	bool lookup(const QString &lookupid, const QString &acceptid, QString& address, QString& price, QString& extTxId, QString& paymentOption);
 	void CheckPaymentInBTC(const QString &strExtTxId, const QString& address, const QString& price);
-	void CheckPaymentInZEC(const QString &strExtTxId, const QString& address, const QString& price);
-	void loadAliasList();
+	void CheckPaymentInSEQ(const QString &strExtTxId, const QString& address, const QString& price);
+	void loadIdentityList();
 	QString convertAddress(const QString &sysAddress);
 
 public Q_SLOTS:
@@ -76,7 +76,7 @@ private Q_SLOTS:
     void selectNewOffer(const QModelIndex &parent, int begin, int /*end*/);
 	void on_detailButton_clicked();
 	void on_ackButton_clicked();
-	void displayListChanged(const QString& alias);
+	void displayListChanged(const QString& identity);
 
 };
 

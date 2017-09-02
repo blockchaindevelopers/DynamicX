@@ -10,7 +10,6 @@
 
 #include "serialize.h"
 
-#include <vector>
 
 class COutPoint;
 class CTransaction;

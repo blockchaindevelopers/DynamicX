@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>OfferAcceptDialogZEC</class>
- <widget class="QDialog" name="OfferAcceptDialogZEC">
+ <class>OfferAcceptDialogSEQ</class>
+ <widget class="QDialog" name="OfferAcceptDialogSEQ">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Accept Syscoin Offer</string>
+   <string>Accept Dynamic Offer</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="1" column="0">
@@ -42,7 +42,7 @@
     </layout>
    </item>
    <item row="0" column="0">
-    <widget class="QLabel" name="aboutShadeZEC">
+    <widget class="QLabel" name="aboutShadeSEQ">
      <property name="text">
       <string/>
      </property>
@@ -64,12 +64,12 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="openZecWalletButton">
+      <widget class="QPushButton" name="openSeqWalletButton">
        <property name="toolTip">
         <string>Open your local Bitcoin client</string>
        </property>
        <property name="text">
-        <string>Open ZEC Wallet</string>
+        <string>Open SEQ Wallet</string>
        </property>
       </widget>
      </item>
@@ -100,7 +100,7 @@
      <item>
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
-        <widget class="QLabel" name="zcashInstructionLabel">
+        <widget class="QLabel" name="sequenceInstructionLabel">
          <property name="cursor">
           <cursorShape>IBeamCursor</cursorShape>
          </property>
@@ -134,7 +134,7 @@
        <item>
         <widget class="QLabel" name="label">
          <property name="text">
-          <string>ZCash TXID:</string>
+          <string>Sequence TXID:</string>
          </property>
         </widget>
        </item>
@@ -171,7 +171,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../syscoin.qrc"/>
+  <include location="../dynamic.qrc"/>
  </resources>
  <connections/>
 </ui>

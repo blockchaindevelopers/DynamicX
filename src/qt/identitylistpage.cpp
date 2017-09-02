@@ -1,14 +1,14 @@
 #include <boost/assign/list_of.hpp>
 #include <boost/foreach.hpp>
 
-#include "aliaslistpage.h"
-#include "ui_aliaslistpage.h"
+#include "identitylistpage.h"
+#include "ui_identitylistpage.h"
 #include "platformstyle.h"
-#include "aliastablemodel.h"
+#include "identitytablemodel.h"
 #include "optionsmodel.h"
 #include "walletmodel.h"
-#include "syscoingui.h"
-#include "editaliasdialog.h"
+#include "dynamicgui.h"
+#include "editidentitydialog.h"
 #include "newmessagedialog.h"
 #include "signrawtxdialog.h"
 #include "csvmodelwriter.h"
@@ -21,17 +21,17 @@
 #include <QInputDialog>
 #include <QMenu>
 #include "main.h"
-#include "rpc/server.h"
+#include "rpcserver.h"
 
 #include <QSettings>
 using namespace std;
 
 
-extern CRPCTable tableRPC;
+extern const CRPCTable tableRPC;
 
-AliasListPage::AliasListPage(const PlatformStyle *platformStyle, QWidget *parent) :
+IdentityListPage::IdentityListPage(const PlatformStyle *platformStyle, QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::AliasListPage),
+    ui(new Ui::IdentityListPage),
     model(0),
     optionsModel(0),
 	currentPage(0)
@@ -41,56 +41,56 @@ AliasListPage::AliasListPage(const PlatformStyle *platformStyle, QWidget *parent
 	if (!platformStyle->getImagesOnButtons())
 	{
 		ui->messageButton->setIcon(QIcon());
-		ui->copyAlias->setIcon(QIcon());
-		ui->searchAlias->setIcon(QIcon());
+		ui->copyIdentity->setIcon(QIcon());
+		ui->searchIdentity->setIcon(QIcon());
 		ui->signMultisigButton->setIcon(QIcon());
 	}
 	else
 	{
 		ui->messageButton->setIcon(platformStyle->SingleColorIcon(":/icons/" + theme + "/outmail"));
-		ui->copyAlias->setIcon(platformStyle->SingleColorIcon(":/icons/" + theme + "/editcopy"));
-		ui->searchAlias->setIcon(platformStyle->SingleColorIcon(":/icons/" + theme + "/search"));
+		ui->copyIdentity->setIcon(platformStyle->SingleColorIcon(":/icons/" + theme + "/editcopy"));
+		ui->searchIdentity->setIcon(platformStyle->SingleColorIcon(":/icons/" + theme + "/search"));
 		ui->signMultisigButton->setIcon(platformStyle->SingleColorIcon(":/icons/" + theme + "/key"));
 	}
 
-    ui->labelExplanation->setText(tr("Search for Syscoin Aliases. Select Safe Search from wallet options if you wish to omit potentially offensive Aliases(On by default)"));
+    ui->labelExplanation->setText(tr("Search for Dynamic Identities. Select Safe Search from wallet options if you wish to omit potentially offensive Identities(On by default)"));
 	
     // Context menu actions
-    QAction *copyAliasAction = new QAction(ui->copyAlias->text(), this);
+    QAction *copyIdentityAction = new QAction(ui->copyIdentity->text(), this);
 	QAction *messageAction = new QAction(tr("Send Msg"), this);
 
     // Build context menu
     contextMenu = new QMenu();
-    contextMenu->addAction(copyAliasAction);
+    contextMenu->addAction(copyIdentityAction);
 	contextMenu->addSeparator();
 	contextMenu->addAction(messageAction);
     // Connect signals for context menu actions
-    connect(copyAliasAction, SIGNAL(triggered()), this, SLOT(on_copyAlias_clicked()));
+    connect(copyIdentityAction, SIGNAL(triggered()), this, SLOT(on_copyIdentity_clicked()));
 	connect(messageAction, SIGNAL(triggered()), this, SLOT(on_messageButton_clicked()));
 
     connect(ui->tableView, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextualMenu(QPoint)));
 
 
-	ui->lineEditAliasSearch->setPlaceholderText(tr("Enter search term, regex accepted (ie: ^name returns all Aliases starting with 'name'). Empty will search for all."));
+	ui->lineEditIdentitySearch->setPlaceholderText(tr("Enter search term, regex accepted (ie: ^name returns all Identities starting with 'name'). Empty will search for all."));
 }
 
-AliasListPage::~AliasListPage()
+IdentityListPage::~IdentityListPage()
 {
     delete ui;
 }
-void AliasListPage::showEvent ( QShowEvent * event )
+void IdentityListPage::showEvent ( QShowEvent * event )
 {
     if(!walletModel) return;
     /*if(walletModel->getEncryptionStatus() == WalletModel::Locked)
 	{
-        ui->labelExplanation->setText(tr("<font color='blue'>WARNING: Your wallet is currently locked. For security purposes you'll need to enter your passphrase in order to search Syscoin Aliases.</font> <a href=\"http://lockedwallet.syscoin.org\">more info</a>"));
+        ui->labelExplanation->setText(tr("<font color='blue'>WARNING: Your wallet is currently locked. For security purposes you'll need to enter your passphrase in order to search Dynamic Identities.</font> <a href=\"http://lockedwallet.dynamic.org\">more info</a>"));
 		ui->labelExplanation->setTextFormat(Qt::RichText);
 		ui->labelExplanation->setTextInteractionFlags(Qt::TextBrowserInteraction);
 		ui->labelExplanation->setOpenExternalLinks(true);
     }*/
 }
 
-void AliasListPage::setModel(WalletModel* walletModel, AliasTableModel *model)
+void IdentityListPage::setModel(WalletModel* walletModel, IdentityTableModel *model)
 {
     this->model = model;
 	this->walletModel = walletModel;
@@ -100,7 +100,7 @@ void AliasListPage::setModel(WalletModel* walletModel, AliasTableModel *model)
 	ui->tableView->setSortingEnabled(false);
 
     // Set column widths
-    ui->tableView->setColumnWidth(0, 500); //alias name
+    ui->tableView->setColumnWidth(0, 500); //identity name
 	ui->tableView->setColumnWidth(1, 100); //multisig
     ui->tableView->setColumnWidth(2, 150); //expires on
     ui->tableView->setColumnWidth(3, 75); //expired status
@@ -116,23 +116,23 @@ void AliasListPage::setModel(WalletModel* walletModel, AliasTableModel *model)
             this, SLOT(selectionChanged()));
 
 
-    // Select row for newly created alias
-    connect(model, SIGNAL(rowsInserted(QModelIndex,int,int)), this, SLOT(selectNewAlias(QModelIndex,int,int)));
+    // Select row for newly created identity
+    connect(model, SIGNAL(rowsInserted(QModelIndex,int,int)), this, SLOT(selectNewIdentity(QModelIndex,int,int)));
 
     selectionChanged();
 
 }
 
-void AliasListPage::setOptionsModel(OptionsModel *optionsModel)
+void IdentityListPage::setOptionsModel(OptionsModel *optionsModel)
 {
     this->optionsModel = optionsModel;
 }
-void AliasListPage::on_signMultisigButton_clicked()
+void IdentityListPage::on_signMultisigButton_clicked()
 {
 	SignRawTxDialog dlg;   
 	dlg.exec();
 }
-void AliasListPage::on_messageButton_clicked()
+void IdentityListPage::on_messageButton_clicked()
 {
    
  	if(!model)	
@@ -144,19 +144,19 @@ void AliasListPage::on_messageButton_clicked()
     {
         return;
     }
-	QString alias = selection.at(0).data(AliasTableModel::NameRole).toString();
+	QString identity = selection.at(0).data(IdentityTableModel::NameRole).toString();
 	// send message to seller
-	NewMessageDialog dlg(NewMessageDialog::NewMessage, alias);   
+	NewMessageDialog dlg(NewMessageDialog::NewMessage, identity);   
 	dlg.exec();
 }
 
-void AliasListPage::on_copyAlias_clicked()
+void IdentityListPage::on_copyIdentity_clicked()
 {
    
-    GUIUtil::copyEntryData(ui->tableView, AliasTableModel::Name);
+    GUIUtil::copyEntryData(ui->tableView, IdentityTableModel::Name);
 }
 
-void AliasListPage::selectionChanged()
+void IdentityListPage::selectionChanged()
 {
     // Set button states based on selected tab and selection
     QTableView *table = ui->tableView;
@@ -165,20 +165,20 @@ void AliasListPage::selectionChanged()
 
     if(table->selectionModel()->hasSelection())
     {
-        ui->copyAlias->setEnabled(true);
+        ui->copyIdentity->setEnabled(true);
 		ui->messageButton->setEnabled(true);
     }
     else
     {
-        ui->copyAlias->setEnabled(false);
+        ui->copyIdentity->setEnabled(false);
 		ui->messageButton->setEnabled(false);
     }
 }
-void AliasListPage::keyPressEvent(QKeyEvent * event)
+void IdentityListPage::keyPressEvent(QKeyEvent * event)
 {
   if( event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter )
   {
-	on_searchAlias_clicked();
+	on_searchIdentity_clicked();
     event->accept();
   }
   else
@@ -187,7 +187,7 @@ void AliasListPage::keyPressEvent(QKeyEvent * event)
 
 
 
-void AliasListPage::contextualMenu(const QPoint &point)
+void IdentityListPage::contextualMenu(const QPoint &point)
 {
     QModelIndex index = ui->tableView->indexAt(point);
     if(index.isValid()) {
@@ -195,18 +195,18 @@ void AliasListPage::contextualMenu(const QPoint &point)
     }
 }
 
-void AliasListPage::selectNewAlias(const QModelIndex &parent, int begin, int /*end*/)
+void IdentityListPage::selectNewIdentity(const QModelIndex &parent, int begin, int /*end*/)
 {
-    QModelIndex idx = model->index(begin, AliasTableModel::Name, parent);
-    if(idx.isValid() && (idx.data(Qt::EditRole).toString() == newAliasToSelect))
+    QModelIndex idx = model->index(begin, IdentityTableModel::Name, parent);
+    if(idx.isValid() && (idx.data(Qt::EditRole).toString() == newIdentityToSelect))
     {
-        // Select row of newly created alias, once
+        // Select row of newly created identity, once
         ui->tableView->setFocus();
         ui->tableView->selectRow(idx.row());
-        newAliasToSelect.clear();
+        newIdentityToSelect.clear();
     }
 }
-void AliasListPage::on_prevButton_clicked()
+void IdentityListPage::on_prevButton_clicked()
 {
 	if(pageMap.empty())
 	{
@@ -215,10 +215,10 @@ void AliasListPage::on_prevButton_clicked()
 		return;
 	}
 	currentPage--;
-	const pair<string, string> &aliasPair = pageMap[currentPage];
-	on_searchAlias_clicked(aliasPair.first);
+	const pair<string, string> &identityPair = pageMap[currentPage];
+	on_searchIdentity_clicked(identityPair.first);
 }
-void AliasListPage::on_nextButton_clicked()
+void IdentityListPage::on_nextButton_clicked()
 {
 	if(pageMap.empty())
 	{
@@ -226,12 +226,12 @@ void AliasListPage::on_nextButton_clicked()
 		ui->prevButton->setEnabled(false);
 		return;
 	}
-	const pair<string, string> &aliasPair = pageMap[currentPage];
+	const pair<string, string> &identityPair = pageMap[currentPage];
 	currentPage++;
-	on_searchAlias_clicked(aliasPair.second);
+	on_searchIdentity_clicked(identityPair.second);
 	ui->prevButton->setEnabled(true);
 }
-void AliasListPage::on_searchAlias_clicked(string GUID)
+void IdentityListPage::on_searchIdentity_clicked(string GUID)
 {
     if(!walletModel) return;
 	if(GUID == "")
@@ -249,9 +249,9 @@ void AliasListPage::on_searchAlias_clicked(string GUID)
         UniValue result ;
         string strReply;
         string strError;
-        string strMethod = string("aliasfilter");
-		string firstAlias = "";
-		string lastAlias = "";
+        string strMethod = string("identityfilter");
+		string firstIdentity = "";
+		string lastIdentity = "";
 		string name_str;
 		string value_str;
 		string privvalue_str;
@@ -265,7 +265,7 @@ void AliasListPage::on_searchAlias_clicked(string GUID)
 		string arbiter_rating_str = "";
 		
 		int64_t expires_on = 0;  
-        params.push_back(ui->lineEditAliasSearch->text().toStdString());
+        params.push_back(ui->lineEditIdentitySearch->text().toStdString());
 		params.push_back(GUID);
 		params.push_back(settings.value("safesearch", "").toString().toStdString());
 
@@ -276,14 +276,14 @@ void AliasListPage::on_searchAlias_clicked(string GUID)
         {
             strError = find_value(objError, "message").get_str();
             QMessageBox::critical(this, windowTitle(),
-            tr("Error searching alias: ")  + QString::fromStdString(strError),
+            tr("Error searching identity: ")  + QString::fromStdString(strError),
                 QMessageBox::Ok, QMessageBox::Ok);
             return;
         }
         catch(std::exception& e)
         {
             QMessageBox::critical(this, windowTitle(),
-                tr("General exception when searching alias"),
+                tr("General exception when searching identity"),
                 QMessageBox::Ok, QMessageBox::Ok);
             return;
         }
@@ -321,9 +321,9 @@ void AliasListPage::on_searchAlias_clicked(string GUID)
 				const UniValue& name_value = find_value(o, "name");
 				if (name_value.type() == UniValue::VSTR)
 					name_str = name_value.get_str();
-				if(firstAlias == "")
-					firstAlias = name_str;
-				lastAlias = name_str;
+				if(firstIdentity == "")
+					firstIdentity = name_str;
+				lastIdentity = name_str;
 				const UniValue& value_value = find_value(o, "value");
 				if (value_value.type() == UniValue::VSTR)
 					value_str = value_value.get_str();
@@ -362,7 +362,7 @@ void AliasListPage::on_searchAlias_clicked(string GUID)
 					multisig_str = reqsigs > 0? "Yes": "No";
 				}
 				const QString& dateTimeString = GUIUtil::dateTimeStr(expires_on);		
-				model->addRow(AliasTableModel::Alias,
+				model->addRow(IdentityTableModel::Identity,
 						QString::fromStdString(name_str),
 						QString::fromStdString(multisig_str),
 						QString::fromStdString(value_str),
@@ -384,9 +384,9 @@ void AliasListPage::on_searchAlias_clicked(string GUID)
 						QString::fromStdString(buyer_rating_str),
 						QString::fromStdString(seller_rating_str),
 						QString::fromStdString(arbiter_rating_str),
-						AllAlias, CT_NEW);	
+						AllIdentity, CT_NEW);	
 			  }
-			  pageMap[currentPage] = make_pair(firstAlias, lastAlias);  
+			  pageMap[currentPage] = make_pair(firstIdentity, lastIdentity);  
 			  ui->labelPage->setText(tr("Current Page: ") + QString("<b>%1</b>").arg(currentPage+1));
             
          }   
@@ -397,7 +397,7 @@ void AliasListPage::on_searchAlias_clicked(string GUID)
 			pageMap.clear();
 			currentPage = 0;
             QMessageBox::critical(this, windowTitle(),
-                tr("Error: Invalid response from aliasfilter command"),
+                tr("Error: Invalid response from identityfilter command"),
                 QMessageBox::Ok, QMessageBox::Ok);
             return;
         }

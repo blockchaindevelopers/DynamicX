@@ -10,9 +10,6 @@
 
 #include "serialize.h"
 
-#include <map>
-#include <list>
-#include <cstddef>
 
 /**
  * Serializable structure for key/value items

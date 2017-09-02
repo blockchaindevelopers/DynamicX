@@ -33,18 +33,18 @@ public:
     void loadRow(int row);
     void addParentItem(QStandardItemModel * model, const QString& text, const QVariant& data );
     void addChildItem( QStandardItemModel * model, const QString& text, const QVariant& data );
-	void setCertNotSafeBecauseOfAlias(const QString &alias);
+	void setCertNotSafeBecauseOfIdentity(const QString &identity);
 	void resetSafeSearch();
     QString getCert() const;
     void setCert(const QString &cert);
 
 public Q_SLOTS:
     void accept();
-	void aliasChanged(const QString& text);
+	void identityChanged(const QString& text);
 
 private:
     bool saveCurrentRow();
-	void loadAliases();
+	void loadIdentities();
 	void loadCategories();
     Ui::EditCertDialog *ui;
     QDataWidgetMapper *mapper;

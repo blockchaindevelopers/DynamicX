@@ -1,5 +1,5 @@
 /*
- * Syscoin Developers 2015
+ * Dynamic Developers 2015
  */
 #include "myacceptedofferlistpage.h"
 #include "ui_myacceptedofferlistpage.h"
@@ -11,15 +11,15 @@
 #include "platformstyle.h"
 #include "optionsmodel.h"
 #include "walletmodel.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "csvmodelwriter.h"
 #include "guiutil.h"
-#include "rpc/server.h"
+#include "rpcserver.h"
 #include "util.h"
 #include "utilmoneystr.h"
 using namespace std;
 
-extern CRPCTable tableRPC;
+extern const CRPCTable tableRPC;
 #include <QSortFilterProxyModel>
 #include <QClipboard>
 #include <QMessageBox>
@@ -28,7 +28,7 @@ extern CRPCTable tableRPC;
 #include <QNetworkRequest>
 #include <QNetworkReply>
 #include <QSettings>
-#include "qzecjsonrpcclient.h"
+#include "qseqjsonrpcclient.h"
 #include "qbtcjsonrpcclient.h"
 MyAcceptedOfferListPage::MyAcceptedOfferListPage(const PlatformStyle *platformStyle, QWidget *parent) :
     QDialog(parent),
@@ -65,7 +65,7 @@ MyAcceptedOfferListPage::MyAcceptedOfferListPage(const PlatformStyle *platformSt
 	}
 
 
-    ui->labelExplanation->setText(tr("These are offers you have sold to others. Offer operations take 2-5 minutes to become active. Right click on an offer for more info including buyer message, quantity, date, etc. You can choose which aliases to view sales information for using the dropdown to the right."));
+    ui->labelExplanation->setText(tr("These are offers you have sold to others. Offer operations take 2-5 minutes to become active. Right click on an offer for more info including buyer message, quantity, date, etc. You can choose which identities to view sales information for using the dropdown to the right."));
 	
 	connect(ui->tableView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(on_detailButton_clicked()));	
     // Context menu actions
@@ -97,34 +97,34 @@ MyAcceptedOfferListPage::MyAcceptedOfferListPage(const PlatformStyle *platformSt
 	connect(extAction, SIGNAL(triggered()), this, SLOT(on_extButton_clicked()));
 
     connect(ui->tableView, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextualMenu(QPoint)));
-	connect(ui->displayListAlias,SIGNAL(currentIndexChanged(const QString&)),this,SLOT(displayListChanged(const QString&)));
-	loadAliasList();
+	connect(ui->displayListIdentity,SIGNAL(currentIndexChanged(const QString&)),this,SLOT(displayListChanged(const QString&)));
+	loadIdentityList();
 
 }
-void MyAcceptedOfferListPage::loadAliasList()
+void MyAcceptedOfferListPage::loadIdentityList()
 {
 	QSettings settings;
-	QString oldListAlias = settings.value("defaultListAlias", "").toString();
-	ui->displayListAlias->clear();
-	ui->displayListAlias->addItem(tr("All"));
+	QString oldListIdentity = settings.value("defaultListIdentity", "").toString();
+	ui->displayListIdentity->clear();
+	ui->displayListIdentity->addItem(tr("All"));
 	
 	
-	UniValue aliasList(UniValue::VARR);
-	appendListAliases(aliasList);
-	for(unsigned int i = 0;i<aliasList.size();i++)
+	UniValue identityList(UniValue::VARR);
+	appendListIdentities(identityList);
+	for(unsigned int i = 0;i<identityList.size();i++)
 	{
-		const QString& aliasName = QString::fromStdString(aliasList[i].get_str());
-		ui->displayListAlias->addItem(aliasName);
+		const QString& identityName = QString::fromStdString(identityList[i].get_str());
+		ui->displayListIdentity->addItem(identityName);
 	}
-	int currentIndex = ui->displayListAlias->findText(oldListAlias);
+	int currentIndex = ui->displayListIdentity->findText(oldListIdentity);
 	if(currentIndex >= 0)
-		ui->displayListAlias->setCurrentIndex(currentIndex);
-	settings.setValue("defaultListAlias", oldListAlias);
+		ui->displayListIdentity->setCurrentIndex(currentIndex);
+	settings.setValue("defaultListIdentity", oldListIdentity);
 }
-void MyAcceptedOfferListPage::displayListChanged(const QString& alias)
+void MyAcceptedOfferListPage::displayListChanged(const QString& identity)
 {
 	QSettings settings;
-	settings.setValue("defaultListAlias", alias);
+	settings.setValue("defaultListIdentity", identity);
 	settings.sync();
 }
 bool MyAcceptedOfferListPage::lookup(const QString &lookupid, const QString &acceptid, QString& address, QString& price, QString& extTxId, QString& paymentOption)
@@ -133,9 +133,9 @@ bool MyAcceptedOfferListPage::lookup(const QString &lookupid, const QString &acc
 	string strError;
 	string strMethod = string("offeracceptlist");
 	UniValue params(UniValue::VARR); 
-	UniValue listAliases(UniValue::VARR);
-	appendListAliases(listAliases);
-	params.push_back(listAliases);
+	UniValue listIdentities(UniValue::VARR);
+	appendListIdentities(listIdentities);
+	params.push_back(listIdentities);
 	UniValue offerAcceptsValue;
 	QString offerAcceptHash;
 	params.push_back(acceptid.toStdString());
@@ -221,13 +221,13 @@ QString MyAcceptedOfferListPage::convertAddress(const QString &sysAddress)
 	catch (UniValue& objError)
 	{
 		QMessageBox::critical(this, windowTitle(),
-			tr("Failed to generate ZCash address, please close this screen and try again"),
+			tr("Failed to generate Sequence address, please close this screen and try again"),
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
 	catch(std::exception& e)
 	{
 		QMessageBox::critical(this, windowTitle(),
-			tr("There was an exception trying to generate ZCash address, please close this screen and try again: ") + QString::fromStdString(e.what()),
+			tr("There was an exception trying to generate Sequence address, please close this screen and try again: ") + QString::fromStdString(e.what()),
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
 	return QString("");
@@ -247,7 +247,7 @@ void MyAcceptedOfferListPage::on_ackButton_clicked()
 	QString offerid = selection.at(0).data(OfferAcceptTableModel::NameRole).toString();
 	QString acceptid = selection.at(0).data(OfferAcceptTableModel::GUIDRole).toString();
     QMessageBox::StandardButton retval = QMessageBox::question(this, tr("Confirm Payment Acknowledgement"),
-         tr("Warning: You are about to acknowledge this payment from the buyer. If you are shipping an item, please communicate a tracking number to the buyer via a Syscoin message.") + "<br><br>" + tr("Are you sure you wish to acknowledge this payment?"),
+         tr("Warning: You are about to acknowledge this payment from the buyer. If you are shipping an item, please communicate a tracking number to the buyer via a Dynamic message.") + "<br><br>" + tr("Are you sure you wish to acknowledge this payment?"),
          QMessageBox::Yes|QMessageBox::Cancel,
          QMessageBox::Cancel);
     if(retval == QMessageBox::Yes)
@@ -295,8 +295,8 @@ void MyAcceptedOfferListPage::slotConfirmedFinished(QNetworkReply * reply){
 	QString chain;
 	if(m_paymentOption == "BTC")
 		chain = tr("Bitcoin");
-	else if(m_paymentOption == "ZEC")
-		chain = tr("ZCash");
+	else if(m_paymentOption == "SEQ")
+		chain = tr("Sequence");
 	if(reply->error() != QNetworkReply::NoError) {
 		ui->extButton->setText(m_buttonText);
 		ui->extButton->setEnabled(true);
@@ -426,7 +426,7 @@ void MyAcceptedOfferListPage::CheckPaymentInBTC(const QString &strExtTxId, const
 	connect(nam, SIGNAL(finished(QNetworkReply *)), this, SLOT(slotConfirmedFinished(QNetworkReply *)));
 	btcClient.sendRawTxRequest(nam, strExtTxId);
 }
-void MyAcceptedOfferListPage::CheckPaymentInZEC(const QString &strExtTxId, const QString& address, const QString& price)
+void MyAcceptedOfferListPage::CheckPaymentInSEQ(const QString &strExtTxId, const QString& address, const QString& price)
 {
 	dblPrice = price.toDouble();
 	m_buttonText = ui->extButton->text();
@@ -435,10 +435,10 @@ void MyAcceptedOfferListPage::CheckPaymentInZEC(const QString &strExtTxId, const
 	m_strAddress = convertAddress(address);
 	m_strExtTxId = strExtTxId;
 
-	ZecRpcClient zecClient;
+	SeqRpcClient seqClient;
 	QNetworkAccessManager *nam = new QNetworkAccessManager(this);  
 	connect(nam, SIGNAL(finished(QNetworkReply *)), this, SLOT(slotConfirmedFinished(QNetworkReply *)));
-	zecClient.sendRawTxRequest(nam, strExtTxId);
+	seqClient.sendRawTxRequest(nam, strExtTxId);
 
 }
 
@@ -472,8 +472,8 @@ void MyAcceptedOfferListPage::on_extButton_clicked()
 	}
 	if(m_paymentOption == QString("BTC"))
 		CheckPaymentInBTC(extTxId, address, price);
-	else if(m_paymentOption == QString("ZEC"))
-		CheckPaymentInZEC(extTxId, address, price);
+	else if(m_paymentOption == QString("SEQ"))
+		CheckPaymentInSEQ(extTxId, address, price);
 
 
 }
@@ -516,7 +516,7 @@ void MyAcceptedOfferListPage::showEvent ( QShowEvent * event )
     if(!walletModel) return;
     /*if(walletModel->getEncryptionStatus() == WalletModel::Locked)
 	{
-        ui->labelExplanation->setText(tr("<font color='blue'>WARNING: Your wallet is currently locked. For security purposes you'll need to enter your passphrase in order to interact with Syscoin Offers. Because your wallet is locked you must manually refresh this table after creating or updating an Offer. </font> <a href=\"http://lockedwallet.syscoin.org\">more info</a><br><br>These are your registered Syscoin Offers. Offer updates take 1 confirmation to appear in this table."));
+        ui->labelExplanation->setText(tr("<font color='blue'>WARNING: Your wallet is currently locked. For security purposes you'll need to enter your passphrase in order to interact with Dynamic Offers. Because your wallet is locked you must manually refresh this table after creating or updating an Offer. </font> <a href=\"http://lockedwallet.dynamic.org\">more info</a><br><br>These are your registered Dynamic Offers. Offer updates take 1 confirmation to appear in this table."));
 		ui->labelExplanation->setTextFormat(Qt::RichText);
 		ui->labelExplanation->setTextInteractionFlags(Qt::TextBrowserInteraction);
 		ui->labelExplanation->setOpenExternalLinks(true);
@@ -552,7 +552,7 @@ void MyAcceptedOfferListPage::setModel(WalletModel *walletModel, OfferAcceptTabl
         ui->tableView->setColumnWidth(5, 75); //currency
         ui->tableView->setColumnWidth(6, 75); //qty
         ui->tableView->setColumnWidth(7, 50); //total
-        ui->tableView->setColumnWidth(8, 150); //seller alias
+        ui->tableView->setColumnWidth(8, 150); //seller identity
         ui->tableView->setColumnWidth(9, 150); //buyer
         ui->tableView->setColumnWidth(10, 40); //private
         ui->tableView->setColumnWidth(11, 0); //status
@@ -604,7 +604,7 @@ void MyAcceptedOfferListPage::on_refreshButton_clicked()
 {
     if(!model)
         return;
-	loadAliasList();
+	loadIdentityList();
     model->refreshOfferTable();
 }
 
@@ -676,7 +676,7 @@ void MyAcceptedOfferListPage::on_exportButton_clicked()
 	writer.addColumn(tr("Currency"), OfferAcceptTableModel::Currency, Qt::EditRole);
 	writer.addColumn(tr("Qty"), OfferAcceptTableModel::Qty, Qt::EditRole);
 	writer.addColumn(tr("Total"), OfferAcceptTableModel::Total, Qt::EditRole);
-	writer.addColumn(tr("Seller"), OfferAcceptTableModel::Alias, Qt::EditRole);
+	writer.addColumn(tr("Seller"), OfferAcceptTableModel::Identity, Qt::EditRole);
 	writer.addColumn(tr("Buyer"), OfferAcceptTableModel::Buyer, Qt::EditRole);
 	writer.addColumn(tr("Status"), OfferAcceptTableModel::Status, Qt::EditRole);
     if(!writer.write())

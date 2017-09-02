@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>EditAliasDialog</class>
- <widget class="QWidget" name="EditAliasDialog">
+ <class>EditIdentityDialog</class>
+ <widget class="QWidget" name="EditIdentityDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,11 +11,11 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Edit Alias</string>
+   <string>Edit Identity</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
-    <widget class="QTabWidget" name="EditAliasDialogTab">
+    <widget class="QTabWidget" name="EditIdentityDialogTab">
      <property name="currentIndex">
       <number>0</number>
      </property>
@@ -30,17 +30,17 @@
        <item row="0" column="0">
         <widget class="QLabel" name="label_2">
          <property name="text">
-          <string>Alias:</string>
+          <string>Identity:</string>
          </property>
          <property name="buddy">
-          <cstring>aliasEdit</cstring>
+          <cstring>identityEdit</cstring>
          </property>
         </widget>
        </item>
        <item row="0" column="1">
-        <widget class="QValidatedLineEdit" name="aliasEdit">
+        <widget class="QValidatedLineEdit" name="identityEdit">
          <property name="toolTip">
-          <string>The alias name.</string>
+          <string>The identity name.</string>
          </property>
         </widget>
        </item>
@@ -279,15 +279,15 @@
        <item row="6" column="0">
         <widget class="QLabel" name="label_10">
          <property name="text">
-          <string>Alias Rate Peg:</string>
+          <string>Identity Rate Peg:</string>
          </property>
         </widget>
        </item>
        <item row="6" column="1">
-        <widget class="QLineEdit" name="aliasPegEdit"/>
+        <widget class="QLineEdit" name="identityPegEdit"/>
        </item>
        <item row="7" column="1">
-        <widget class="QLabel" name="aliasPegDisclaimer">
+        <widget class="QLabel" name="identityPegDisclaimer">
          <property name="text">
           <string/>
          </property>
@@ -423,7 +423,7 @@
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="../syscoin.qrc"/>
+  <include location="../dynamic.qrc"/>
  </resources>
  <connections/>
 </ui>

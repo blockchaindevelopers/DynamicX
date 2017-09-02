@@ -6,10 +6,8 @@
 #define DYNAMIC_BENCH_BENCH_H
 
 #include <map>
-#include <string>
 
 #include <boost/function.hpp>
-#include <boost/preprocessor/cat.hpp>
 #include <boost/preprocessor/stringize.hpp>
 
 // Simple micro-benchmarking framework; API mostly matches a subset of the Google Benchmark

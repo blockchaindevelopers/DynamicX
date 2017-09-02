@@ -1,5 +1,5 @@
 /*
- * Syscoin Developers 2015
+ * Dynamic Developers 2015
  */
 #include "myofferlistpage.h"
 #include "ui_myofferlistpage.h"
@@ -10,7 +10,7 @@
 #include "optionsmodel.h"
 #include "platformstyle.h"
 #include "walletmodel.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "editofferdialog.h"
 #include "csvmodelwriter.h"
 #include "guiutil.h"
@@ -51,7 +51,7 @@ MyOfferListPage::MyOfferListPage(const PlatformStyle *platformStyle, QWidget *pa
 		
 	}
 
-    ui->labelExplanation->setText(tr("These are your registered Syscoin Offers. Offer operations (create, update) take 2-5 minutes to become active. You can choose which aliases to view related offers using the dropdown to the right."));
+    ui->labelExplanation->setText(tr("These are your registered Dynamic Offers. Offer operations (create, update) take 2-5 minutes to become active. You can choose which identities to view related offers using the dropdown to the right."));
 	
 	
     // Context menu actions
@@ -82,34 +82,34 @@ MyOfferListPage::MyOfferListPage(const PlatformStyle *platformStyle, QWidget *pa
 
 
 	offerWhitelistTableModel = 0;
-	connect(ui->displayListAlias,SIGNAL(currentIndexChanged(const QString&)),this,SLOT(displayListChanged(const QString&)));
-	loadAliasList();
+	connect(ui->displayListIdentity,SIGNAL(currentIndexChanged(const QString&)),this,SLOT(displayListChanged(const QString&)));
+	loadIdentityList();
 
 }
-void MyOfferListPage::loadAliasList()
+void MyOfferListPage::loadIdentityList()
 {
 	QSettings settings;
-	QString oldListAlias = settings.value("defaultListAlias", "").toString();
-	ui->displayListAlias->clear();
-	ui->displayListAlias->addItem(tr("All"));
+	QString oldListIdentity = settings.value("defaultListIdentity", "").toString();
+	ui->displayListIdentity->clear();
+	ui->displayListIdentity->addItem(tr("All"));
 	
 	
-	UniValue aliasList(UniValue::VARR);
-	appendListAliases(aliasList, true);
-	for(unsigned int i = 0;i<aliasList.size();i++)
+	UniValue identityList(UniValue::VARR);
+	appendListIdentities(identityList, true);
+	for(unsigned int i = 0;i<identityList.size();i++)
 	{
-		const QString& aliasName = QString::fromStdString(aliasList[i].get_str());
-		ui->displayListAlias->addItem(aliasName);
+		const QString& identityName = QString::fromStdString(identityList[i].get_str());
+		ui->displayListIdentity->addItem(identityName);
 	}
-	int currentIndex = ui->displayListAlias->findText(oldListAlias);
+	int currentIndex = ui->displayListIdentity->findText(oldListIdentity);
 	if(currentIndex >= 0)
-		ui->displayListAlias->setCurrentIndex(currentIndex);
-	settings.setValue("defaultListAlias", oldListAlias);
+		ui->displayListIdentity->setCurrentIndex(currentIndex);
+	settings.setValue("defaultListIdentity", oldListIdentity);
 }
-void MyOfferListPage::displayListChanged(const QString& alias)
+void MyOfferListPage::displayListChanged(const QString& identity)
 {
 	QSettings settings;
-	settings.setValue("defaultListAlias", alias);
+	settings.setValue("defaultListIdentity", identity);
 	settings.sync();
 }
 MyOfferListPage::~MyOfferListPage()
@@ -133,7 +133,7 @@ void MyOfferListPage::showEvent ( QShowEvent * event )
     if(!walletModel) return;
     /*if(walletModel->getEncryptionStatus() == WalletModel::Locked)
 	{
-        ui->labelExplanation->setText(tr("<font color='blue'>WARNING: Your wallet is currently locked. For security purposes you'll need to enter your passphrase in order to interact with Syscoin Offers. Because your wallet is locked you must manually refresh this table after creating or updating an Offer. </font> <a href=\"http://lockedwallet.syscoin.org\">more info</a><br><br>These are your registered Syscoin Offers. Offer updates take 1 confirmation to appear in this table."));
+        ui->labelExplanation->setText(tr("<font color='blue'>WARNING: Your wallet is currently locked. For security purposes you'll need to enter your passphrase in order to interact with Dynamic Offers. Because your wallet is locked you must manually refresh this table after creating or updating an Offer. </font> <a href=\"http://lockedwallet.dynamic.org\">more info</a><br><br>These are your registered Dynamic Offers. Offer updates take 1 confirmation to appear in this table."));
 		ui->labelExplanation->setTextFormat(Qt::RichText);
 		ui->labelExplanation->setTextInteractionFlags(Qt::TextBrowserInteraction);
 		ui->labelExplanation->setOpenExternalLinks(true);
@@ -172,7 +172,7 @@ void MyOfferListPage::setModel(WalletModel *walletModel, OfferTableModel *model)
 		ui->tableView->setColumnWidth(8, 75); //sold
         ui->tableView->setColumnWidth(9, 50); //status
         ui->tableView->setColumnWidth(10, 50); //private
-        ui->tableView->setColumnWidth(11, 100); //seller alias
+        ui->tableView->setColumnWidth(11, 100); //seller identity
 		ui->tableView->setColumnWidth(12, 150); //seller rating
         ui->tableView->setColumnWidth(13, 0); //btc only
 	
@@ -223,7 +223,7 @@ void MyOfferListPage::on_editButton_clicked()
 	QString offerGUID = indexes.at(0).data(OfferTableModel::NameRole).toString();
 	QString certGUID = indexes.at(0).data(OfferTableModel::CertRole).toString();
 	QString status = indexes.at(0).data(OfferTableModel::ExpiredRole).toString();
-	QString alias = indexes.at(0).data(OfferTableModel::AliasRole).toString();
+	QString identity = indexes.at(0).data(OfferTableModel::IdentityRole).toString();
 	if(status == QString("expired"))
 	{
            QMessageBox::information(this, windowTitle(),
@@ -231,7 +231,7 @@ void MyOfferListPage::on_editButton_clicked()
                QMessageBox::Ok, QMessageBox::Ok);
 		   return;
 	}
-    EditOfferDialog dlg(EditOfferDialog::EditOffer, offerGUID, certGUID, alias);
+    EditOfferDialog dlg(EditOfferDialog::EditOffer, offerGUID, certGUID, identity);
     dlg.setModel(walletModel, model);
     QModelIndex origIndex = proxyModel->mapToSource(indexes.at(0));
     dlg.loadRow(origIndex.row());
@@ -265,7 +265,7 @@ void MyOfferListPage::on_refreshButton_clicked()
 {
     if(!model)
         return;
-	loadAliasList();
+	loadIdentityList();
     model->refreshOfferTable();
 }
 void MyOfferListPage::on_newOffer_clicked()
@@ -350,8 +350,8 @@ void MyOfferListPage::on_exportButton_clicked()
 	writer.addColumn(tr("Sold"), OfferTableModel::Sold, Qt::EditRole);
 	writer.addColumn(tr("Private"), OfferTableModel::Private, Qt::EditRole);
 	writer.addColumn(tr("Expired"), OfferTableModel::Expired, Qt::EditRole);
-	writer.addColumn(tr("Seller Alias"), OfferTableModel::Alias, Qt::EditRole);
-	writer.addColumn(tr("Seller Rating"), OfferTableModel::AliasRating, OfferTableModel::AliasRatingRole);
+	writer.addColumn(tr("Seller Identity"), OfferTableModel::Identity, Qt::EditRole);
+	writer.addColumn(tr("Seller Rating"), OfferTableModel::IdentityRating, OfferTableModel::IdentityRatingRole);
 	writer.addColumn(tr("Payment Options"), OfferTableModel::PaymentOptions, Qt::EditRole);
     if(!writer.write())
     {

@@ -4,18 +4,18 @@
 #include "certtablemodel.h"
 #include "guiutil.h"
 #include "walletmodel.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "ui_interface.h"
 #include <QDataWidgetMapper>
 #include <QMessageBox>
-#include "rpc/server.h"
+#include "rpcserver.h"
 #include <QStandardItemModel>
 #include "qcomboboxdelegate.h"
 #include <boost/algorithm/string.hpp>
 #include <QSettings>
 using namespace std;
 
-extern CRPCTable tableRPC;
+extern const CRPCTable tableRPC;
 extern bool getCategoryList(vector<string>& categoryList);
 EditCertDialog::EditCertDialog(Mode mode, QWidget *parent) :
     QDialog(parent),
@@ -31,29 +31,29 @@ EditCertDialog::EditCertDialog(Mode mode, QWidget *parent) :
 	ui->certDataEdit->setStyleSheet("color: rgb(0, 0, 0); background-color: rgb(255, 255, 255)");
 	ui->transferLabel->setVisible(false);
 	ui->transferEdit->setVisible(false);
-	ui->transferDisclaimer->setText(QString("<font color='blue'>") + tr("Enter the alias of the recipient of this certificate") + QString("</font>"));
+	ui->transferDisclaimer->setText(QString("<font color='blue'>") + tr("Enter the identity of the recipient of this certificate") + QString("</font>"));
     ui->transferDisclaimer->setVisible(false);
 	ui->viewOnlyDisclaimer->setText(QString("<font color='blue'>") + tr("Select Yes if you do not want this certificate to be editable/transferable by the recipient") + QString("</font>"));
 	ui->viewOnlyBox->setVisible(false);
 	ui->viewOnlyLabel->setVisible(false);
 	ui->viewOnlyDisclaimer->setVisible(false);
-	loadAliases();
+	loadIdentities();
 	loadCategories();
-	connect(ui->aliasEdit,SIGNAL(currentIndexChanged(const QString&)),this,SLOT(aliasChanged(const QString&)));
+	connect(ui->identityEdit,SIGNAL(currentIndexChanged(const QString&)),this,SLOT(identityChanged(const QString&)));
 	
 	QSettings settings;
-	QString defaultCertAlias;
-	int aliasIndex;
+	QString defaultCertIdentity;
+	int identityIndex;
 	switch(mode)
     {
     case NewCert:
 		ui->certLabel->setVisible(false);
 		ui->certEdit->setVisible(false);
 		
-		defaultCertAlias = settings.value("defaultCertAlias", "").toString();
-		aliasIndex = ui->aliasEdit->findText(defaultCertAlias);
-		if(aliasIndex >= 0)
-			ui->aliasEdit->setCurrentIndex(aliasIndex);
+		defaultCertIdentity = settings.value("defaultCertIdentity", "").toString();
+		identityIndex = ui->identityEdit->findText(defaultCertIdentity);
+		if(identityIndex >= 0)
+			ui->identityEdit->setCurrentIndex(identityIndex);
         setWindowTitle(tr("New Cert"));
         break;
     case EditCert:
@@ -69,8 +69,8 @@ EditCertDialog::EditCertDialog(Mode mode, QWidget *parent) :
 		ui->transferLabel->setVisible(true);
 		ui->transferEdit->setVisible(true);
 		ui->transferDisclaimer->setVisible(true);
-		ui->aliasDisclaimer->setVisible(false);
-		ui->aliasEdit->setEnabled(false);
+		ui->identityDisclaimer->setVisible(false);
+		ui->identityEdit->setEnabled(false);
 		ui->viewOnlyBox->setVisible(true);
 		ui->viewOnlyLabel->setVisible(true);
 		ui->viewOnlyDisclaimer->setVisible(true);
@@ -78,7 +78,7 @@ EditCertDialog::EditCertDialog(Mode mode, QWidget *parent) :
     }
     mapper = new QDataWidgetMapper(this);
     mapper->setSubmitPolicy(QDataWidgetMapper::ManualSubmit);
-	aliasChanged(ui->aliasEdit->currentText());
+	identityChanged(ui->identityEdit->currentText());
 	if(mode == TransferCert)
 	{
 		ui->safeSearchEdit->setEnabled(false);
@@ -150,11 +150,11 @@ void EditCertDialog::loadCategories()
     ui->categoryEdit->setItemDelegate(new ComboBoxDelegate);
 }
 
-void EditCertDialog::aliasChanged(const QString& alias)
+void EditCertDialog::identityChanged(const QString& identity)
 {
-	string strMethod = string("aliasinfo");
+	string strMethod = string("identityinfo");
     UniValue params(UniValue::VARR); 
-	params.push_back(alias.toStdString());
+	params.push_back(identity.toStdString());
 	UniValue result ;
 	string name_str;
 	int expired = 0;
@@ -189,40 +189,40 @@ void EditCertDialog::aliasChanged(const QString& alias)
 				safetyLevel = sl_value.get_int();
 			if(!safeSearch || safetyLevel > 0)
 			{
-				setCertNotSafeBecauseOfAlias(QString::fromStdString(name_str));
+				setCertNotSafeBecauseOfIdentity(QString::fromStdString(name_str));
 			}
 			else
 				resetSafeSearch();
 
 			if(expired != 0)
 			{
-				ui->aliasDisclaimer->setText(QString("<font color='red'>") + tr("This alias has expired, please choose another one") + QString("</font>"));				
+				ui->identityDisclaimer->setText(QString("<font color='red'>") + tr("This identity has expired, please choose another one") + QString("</font>"));				
 			}
 			else
-				ui->aliasDisclaimer->setText(QString("<font color='blue'>") + tr("Select an alias to own this certificate") + QString("</font>"));
+				ui->identityDisclaimer->setText(QString("<font color='blue'>") + tr("Select an identity to own this certificate") + QString("</font>"));
 		}
 		else
 		{
 			resetSafeSearch();
-			ui->aliasDisclaimer->setText(QString("<font color='blue'>") + tr("Select an alias to own this certificate") + QString("</font>"));
+			ui->identityDisclaimer->setText(QString("<font color='blue'>") + tr("Select an identity to own this certificate") + QString("</font>"));
 		}
 	}
 	catch (UniValue& objError)
 	{
 		resetSafeSearch();
-		ui->aliasDisclaimer->setText(QString("<font color='blue'>") + tr("Select an alias to own this certificate") + QString("</font>"));
+		ui->identityDisclaimer->setText(QString("<font color='blue'>") + tr("Select an identity to own this certificate") + QString("</font>"));
 	}
 	catch(std::exception& e)
 	{
 		resetSafeSearch();
-		ui->aliasDisclaimer->setText(QString("<font color='blue'>") + tr("Select an alias to own this certificate") + QString("</font>"));
+		ui->identityDisclaimer->setText(QString("<font color='blue'>") + tr("Select an identity to own this certificate") + QString("</font>"));
 	}  
 }
-void EditCertDialog::setCertNotSafeBecauseOfAlias(const QString &alias)
+void EditCertDialog::setCertNotSafeBecauseOfIdentity(const QString &identity)
 {
 	ui->safeSearchEdit->setCurrentIndex(ui->safeSearchEdit->findText("No"));
 	ui->safeSearchEdit->setEnabled(false);
-	ui->safeSearchDisclaimer->setText(QString("<font color='red'><b>%1</b>").arg(alias) + tr(" is not safe to search so this setting can only be set to 'No'") + QString("</font>"));
+	ui->safeSearchDisclaimer->setText(QString("<font color='red'><b>%1</b>").arg(identity) + tr(" is not safe to search so this setting can only be set to 'No'") + QString("</font>"));
 }
 void EditCertDialog::resetSafeSearch()
 {
@@ -230,10 +230,10 @@ void EditCertDialog::resetSafeSearch()
 	ui->safeSearchDisclaimer->setText(QString("<font color='blue'>") + tr("Is this cert safe to search? Anything that can be considered offensive to someone should be set to 'No' here. If you do create a cert that is offensive and do not set this option to 'No' your cert will be banned!") + QString("</font>"));
 	
 }
-void EditCertDialog::loadAliases()
+void EditCertDialog::loadIdentities()
 {
-	ui->aliasEdit->clear();
-	string strMethod = string("aliaslist");
+	ui->identityEdit->clear();
+	string strMethod = string("identitylist");
     UniValue params(UniValue::VARR); 
 	UniValue result ;
 	string name_str;
@@ -266,7 +266,7 @@ void EditCertDialog::loadAliases()
 				if(expired == 0)
 				{
 					QString name = QString::fromStdString(name_str);
-					ui->aliasEdit->addItem(name);					
+					ui->identityEdit->addItem(name);					
 				}				
 			}
 		}
@@ -275,13 +275,13 @@ void EditCertDialog::loadAliases()
 	{
 		string strError = find_value(objError, "message").get_str();
 		QMessageBox::critical(this, windowTitle(),
-			tr("Could not refresh alias list: ") + QString::fromStdString(strError),
+			tr("Could not refresh identity list: ") + QString::fromStdString(strError),
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
 	catch(std::exception& e)
 	{
 		QMessageBox::critical(this, windowTitle(),
-			tr("There was an exception trying to refresh the alias list: ") + QString::fromStdString(e.what()),
+			tr("There was an exception trying to refresh the identity list: ") + QString::fromStdString(e.what()),
 				QMessageBox::Ok, QMessageBox::Ok);
 	}         
  
@@ -312,7 +312,7 @@ void EditCertDialog::loadRow(int row)
 	const QModelIndex tmpIndex;
 	if(model)
 	{
-		QModelIndex indexAlias = model->index(row, CertTableModel::Alias, tmpIndex);
+		QModelIndex indexIdentity = model->index(row, CertTableModel::Identity, tmpIndex);
 		QModelIndex indexSafeSearch= model->index(row, CertTableModel::SafeSearch, tmpIndex);
 		QModelIndex indexCategory = model->index(row, CertTableModel::Category, tmpIndex);
 		QModelIndex indexExpired = model->index(row, CertTableModel::Expired, tmpIndex);
@@ -320,13 +320,13 @@ void EditCertDialog::loadRow(int row)
 		{
 			expiredStr = indexExpired.data(CertTableModel::ExpiredRole).toString();
 		}
-		if(indexAlias.isValid())
+		if(indexIdentity.isValid())
 		{
-			QString aliasStr = indexAlias.data(CertTableModel::AliasRole).toString();
-			int indexInComboBox = ui->aliasEdit->findText(aliasStr);
+			QString identityStr = indexIdentity.data(CertTableModel::IdentityRole).toString();
+			int indexInComboBox = ui->identityEdit->findText(identityStr);
 			if(indexInComboBox < 0)
 				indexInComboBox = 0;
-			ui->aliasEdit->setCurrentIndex(indexInComboBox);
+			ui->identityEdit->setCurrentIndex(indexInComboBox);
 		}
 		if(indexSafeSearch.isValid() && ui->safeSearchEdit->isEnabled())
 		{
@@ -380,7 +380,7 @@ bool EditCertDialog::saveCurrentRow()
             return false;
         }
 		strMethod = string("certnew");
-		params.push_back(ui->aliasEdit->currentText().toStdString());
+		params.push_back(ui->identityEdit->currentText().toStdString());
 		params.push_back(ui->nameEdit->text().toStdString());
 		params.push_back(ui->certDataEdit->toPlainText().toStdString());
 		params.push_back(ui->certPubDataEdit->toPlainText().toStdString());
@@ -437,7 +437,7 @@ bool EditCertDialog::saveCurrentRow()
         {
 			strMethod = string("certupdate");
 			params.push_back(ui->certEdit->text().toStdString());
-			params.push_back(ui->aliasEdit->currentText().toStdString());
+			params.push_back(ui->identityEdit->currentText().toStdString());
 			params.push_back(ui->nameEdit->text().toStdString());
 			params.push_back(ui->certDataEdit->toPlainText().toStdString());
 			params.push_back(ui->certPubDataEdit->toPlainText().toStdString());
@@ -558,7 +558,7 @@ void EditCertDialog::accept()
             break;
         case CertTableModel::INVALID_CERT:
             QMessageBox::warning(this, windowTitle(),
-                tr("The entered cert is not a valid Syscoin cert."),
+                tr("The entered cert is not a valid Dynamic cert."),
                 QMessageBox::Ok, QMessageBox::Ok);
             break;
         case CertTableModel::WALLET_UNLOCK_FAILURE:

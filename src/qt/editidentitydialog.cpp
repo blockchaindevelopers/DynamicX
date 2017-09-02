@@ -1,33 +1,33 @@
-#include "editaliasdialog.h"
-#include "ui_editaliasdialog.h"
+#include "editidentitydialog.h"
+#include "ui_editidentitydialog.h"
 
-#include "aliastablemodel.h"
+#include "identitytablemodel.h"
 #include "guiutil.h"
 #include "walletmodel.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "ui_interface.h"
 #include <QDataWidgetMapper>
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QSettings>
-#include "rpc/server.h"
+#include "rpcserver.h"
 #include <QDateTime>
 using namespace std;
 
-extern CRPCTable tableRPC;
-EditAliasDialog::EditAliasDialog(Mode mode, QWidget *parent) :
+extern const CRPCTable tableRPC;
+EditIdentityDialog::EditIdentityDialog(Mode mode, QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::EditAliasDialog), mapper(0), mode(mode), model(0)
+    ui(new Ui::EditIdentityDialog), mapper(0), mode(mode), model(0)
 {
     ui->setupUi(this);
 
 	ui->transferEdit->setVisible(false);
 	ui->transferLabel->setVisible(false);
-	ui->aliasPegDisclaimer->setText(QString("<font color='blue'>") + tr("Choose an alias which has peg information. Consumers will pay conversion amounts and network fees based on this peg.") + QString("</font>"));
-	ui->expiryDisclaimer->setText(QString("<font color='blue'>") + tr("Choose a standard expiration time(in UTC) for this alias from 1 to 5 years or check the 'Use Custom Expire Time' check box to enter an expiration timestamp. It is exponentially more expensive per year, calculation is FEERATE*(2.88^years). FEERATE is the dynamic satoshi per byte fee set in the rate peg alias used for this alias.") + QString("</font>"));
-	ui->transferDisclaimer->setText(QString("<font color='red'>") + tr("Warning: transferring your alias will transfer ownership all of your syscoin services that use this alias.") + QString("</font>"));
+	ui->identityPegDisclaimer->setText(QString("<font color='blue'>") + tr("Choose an identity which has peg information. Consumers will pay conversion amounts and network fees based on this peg.") + QString("</font>"));
+	ui->expiryDisclaimer->setText(QString("<font color='blue'>") + tr("Choose a standard expiration time(in UTC) for this identity from 1 to 5 years or check the 'Use Custom Expire Time' check box to enter an expiration timestamp. It is exponentially more expensive per year, calculation is FEERATE*(2.88^years). FEERATE is the dynamic satoshi per byte fee set in the rate peg identity used for this identity.") + QString("</font>"));
+	ui->transferDisclaimer->setText(QString("<font color='red'>") + tr("Warning: transferring your identity will transfer ownership all of your dynamic services that use this identity.") + QString("</font>"));
 	ui->transferDisclaimer->setVisible(false);
-	ui->safeSearchDisclaimer->setText(QString("<font color='blue'>") + tr("Is this alias safe to search? Anything that can be considered offensive to someone should be set to 'No' here. If you do create an alias that is offensive and do not set this option to 'No' your alias will be banned!") + QString("</font>"));
+	ui->safeSearchDisclaimer->setText(QString("<font color='blue'>") + tr("Is this identity safe to search? Anything that can be considered offensive to someone should be set to 'No' here. If you do create an identity that is offensive and do not set this option to 'No' your identity will be banned!") + QString("</font>"));
 	ui->expiryEdit->clear();
 	QDateTime dateTime = QDateTime::currentDateTimeUtc();	
 	dateTime = dateTime.addYears(1);
@@ -45,39 +45,39 @@ EditAliasDialog::EditAliasDialog(Mode mode, QWidget *parent) :
 	ui->expireTimeEdit->setEnabled(false);
 
     ui->privateDisclaimer->setText(QString("<font color='blue'>") + tr("This is to private profile information which is encrypted and only available to you. This is useful for when sending notes to a merchant through the payment screen so you don't have to type it out everytime.") + QString("</font>"));
-	ui->passwordDisclaimer->setText(QString("<font color='blue'>") + tr("Enter a password or passphrase that will be used to unlock this alias via webservices such as BlockMarket. Important: Do not forget or misplace this password, it is the lock to your alias.") + QString("</font>"));
+	ui->passwordDisclaimer->setText(QString("<font color='blue'>") + tr("Enter a password or passphrase that will be used to unlock this identity via webservices such as BlockMarket. Important: Do not forget or misplace this password, it is the lock to your identity.") + QString("</font>"));
 	ui->publicDisclaimer->setText(QString("<font color='blue'>") + tr("This is public profile information that anyone on the network can see. Fill this in with things you would like others to know about you.") + QString("</font>"));
-	ui->reqsigsDisclaimer->setText(QString("<font color='blue'>") + tr("The number of required signatures ensures that not one person can control this alias and anything service that this alias uses (certificates, messages, offers, escrows).") + QString("</font>"));
-	ui->acceptCertTransfersDisclaimer->setText(QString("<font color='blue'>") + tr("Would you like to accept certificates transferred to this alias? Select 'Yes' otherwise if you want to block others from sending certificates to this alias select 'No'.") + QString("</font>"));	
-	ui->multisigTitle->setText(QString("<font color='blue'>") + tr("Set up your multisig alias here with the required number of signatures and the aliases that are capable of signing when this alias is updated. A user from this list can request an update to the alias and the other signers must sign the raw multisig transaction using the 'Sign Multisig Tx' button in order for the alias to complete the update. Services that use this alias require alias updates prior to updating those services which allows all services to benefit from alias multisig technology.") + QString("</font>"));
+	ui->reqsigsDisclaimer->setText(QString("<font color='blue'>") + tr("The number of required signatures ensures that not one person can control this identity and anything service that this identity uses (certificates, messages, offers, escrows).") + QString("</font>"));
+	ui->acceptCertTransfersDisclaimer->setText(QString("<font color='blue'>") + tr("Would you like to accept certificates transferred to this identity? Select 'Yes' otherwise if you want to block others from sending certificates to this identity select 'No'.") + QString("</font>"));	
+	ui->multisigTitle->setText(QString("<font color='blue'>") + tr("Set up your multisig identity here with the required number of signatures and the identities that are capable of signing when this identity is updated. A user from this list can request an update to the identity and the other signers must sign the raw multisig transaction using the 'Sign Multisig Tx' button in order for the identity to complete the update. Services that use this identity require identity updates prior to updating those services which allows all services to benefit from identity multisig technology.") + QString("</font>"));
 	ui->reqSigsEdit->setValidator( new QIntValidator(0, 50, this) );
 	connect(ui->reqSigsEdit, SIGNAL(textChanged(QString)), this, SLOT(reqSigsChanged()));
 	connect(ui->customExpireBox,SIGNAL(clicked(bool)),SLOT(onCustomExpireCheckBoxChanged(bool)));
 	connect(ui->expiryEdit,SIGNAL(currentIndexChanged(const QString&)),this,SLOT(expiryChanged(const QString&)));
-	QString defaultPegAlias;
+	QString defaultPegIdentity;
 	QSettings settings;
 	switch(mode)
     {
-	case NewDataAlias:
+	case NewDataIdentity:
 		break;
-	case NewAlias:
-		setWindowTitle(tr("New Alias"));
-		defaultPegAlias = settings.value("defaultPegAlias", "").toString();
-		ui->aliasPegEdit->setText(defaultPegAlias);
+	case NewIdentity:
+		setWindowTitle(tr("New Identity"));
+		defaultPegIdentity = settings.value("defaultPegIdentity", "").toString();
+		ui->identityPegEdit->setText(defaultPegIdentity);
         break;
-    case EditDataAlias:
-        setWindowTitle(tr("Edit Data Alias"));
-		ui->aliasEdit->setEnabled(false);
+    case EditDataIdentity:
+        setWindowTitle(tr("Edit Data Identity"));
+		ui->identityEdit->setEnabled(false);
         break;
-    case EditAlias:
-        setWindowTitle(tr("Edit Alias"));
-		ui->aliasEdit->setEnabled(false);
+    case EditIdentity:
+        setWindowTitle(tr("Edit Identity"));
+		ui->identityEdit->setEnabled(false);
         break;
-    case TransferAlias:
-        setWindowTitle(tr("Transfer Alias"));
-		ui->aliasEdit->setEnabled(false);
-		ui->aliasPegEdit->setEnabled(false);
-		ui->aliasPegDisclaimer->setVisible(false);
+    case TransferIdentity:
+        setWindowTitle(tr("Transfer Identity"));
+		ui->identityEdit->setEnabled(false);
+		ui->identityPegEdit->setEnabled(false);
+		ui->identityPegDisclaimer->setVisible(false);
 		ui->nameEdit->setEnabled(false);
 		ui->safeSearchEdit->setEnabled(false);
 		ui->acceptCertTransfersEdit->setEnabled(false);
@@ -90,44 +90,44 @@ EditAliasDialog::EditAliasDialog(Mode mode, QWidget *parent) :
 		ui->transferDisclaimer->setVisible(true);
 		ui->passwordDisclaimer->setVisible(false);
 		ui->passwordEdit->setEnabled(false);
-		ui->EditAliasDialogTab->setCurrentIndex(1);
+		ui->EditIdentityDialogTab->setCurrentIndex(1);
         break;
     }
     mapper = new QDataWidgetMapper(this);
     mapper->setSubmitPolicy(QDataWidgetMapper::ManualSubmit);
 }
 
-EditAliasDialog::~EditAliasDialog()
+EditIdentityDialog::~EditIdentityDialog()
 {
     delete ui;
 }
-void EditAliasDialog::onCustomExpireCheckBoxChanged(bool toggled)
+void EditIdentityDialog::onCustomExpireCheckBoxChanged(bool toggled)
 {
 	ui->expireTimeEdit->setEnabled(toggled);
 }
-void EditAliasDialog::expiryChanged(const QString& alias)
+void EditIdentityDialog::expiryChanged(const QString& identity)
 {
 	ui->expireTimeEdit->setText(QString::number(ui->expiryEdit->itemData(ui->expiryEdit->currentIndex()).toInt()));
 }
-void EditAliasDialog::reqSigsChanged()
+void EditIdentityDialog::reqSigsChanged()
 {
 	if(ui->multisigList->count() > 0)
 	{
-		ui->multisigDisclaimer->setText(QString("<font color='blue'>") + tr("This is a") + QString(" <b>%1</b> ").arg(ui->reqSigsEdit->text()) + tr("of") + QString(" <b>%1</b> ").arg(QString::number(ui->multisigList->count()+1)) + tr("multisig alias.") + QString(" <b>%1</b> ").arg(ui->aliasEdit->text()) + QString("is assumed to also be a signer.") + QString("</font>"));
+		ui->multisigDisclaimer->setText(QString("<font color='blue'>") + tr("This is a") + QString(" <b>%1</b> ").arg(ui->reqSigsEdit->text()) + tr("of") + QString(" <b>%1</b> ").arg(QString::number(ui->multisigList->count()+1)) + tr("multisig identity.") + QString(" <b>%1</b> ").arg(ui->identityEdit->text()) + QString("is assumed to also be a signer.") + QString("</font>"));
 	}
 }
-void EditAliasDialog::loadAliasDetails()
+void EditIdentityDialog::loadIdentityDetails()
 {
-	string strMethod = string("aliasinfo");
+	string strMethod = string("identityinfo");
     UniValue params(UniValue::VARR); 
-	params.push_back(ui->aliasEdit->text().toStdString());
+	params.push_back(ui->identityEdit->text().toStdString());
 	UniValue result ;
 	try {
 		result = tableRPC.execute(strMethod, params);
 		if (result.type() == UniValue::VOBJ)
 		{
-			const UniValue& aliasPegValue = find_value(result.get_obj(), "alias_peg");
-			ui->aliasPegEdit->setText(QString::fromStdString(aliasPegValue.get_str()));
+			const UniValue& identityPegValue = find_value(result.get_obj(), "identity_peg");
+			ui->identityPegEdit->setText(QString::fromStdString(identityPegValue.get_str()));
 			const UniValue& acceptTransferValue = find_value(result.get_obj(), "acceptcerttransfers");
 			ui->acceptCertTransfersEdit->setCurrentIndex(ui->acceptCertTransfersEdit->findText(QString::fromStdString(acceptTransferValue.get_str())));
 			const UniValue& multisigValue = find_value(result.get_obj(), "multisiginfo");
@@ -159,19 +159,19 @@ void EditAliasDialog::loadAliasDetails()
 	}  
 	if(ui->multisigList->count() > 0)
 	{
-		ui->multisigDisclaimer->setText(QString("<font color='blue'>") + tr("This is a") + QString(" <b>%1</b> ").arg(ui->reqSigsEdit->text()) + tr("of") + QString(" <b>%1</b> ").arg(QString::number(ui->multisigList->count()+1)) + tr("multisig alias.") + QString(" <b>%1</b> ").arg(ui->aliasEdit->text()) + QString("is assumed to also be a signer.") + QString("</font>"));
+		ui->multisigDisclaimer->setText(QString("<font color='blue'>") + tr("This is a") + QString(" <b>%1</b> ").arg(ui->reqSigsEdit->text()) + tr("of") + QString(" <b>%1</b> ").arg(QString::number(ui->multisigList->count()+1)) + tr("multisig identity.") + QString(" <b>%1</b> ").arg(ui->identityEdit->text()) + QString("is assumed to also be a signer.") + QString("</font>"));
 	}
 }
-void EditAliasDialog::on_cancelButton_clicked()
+void EditIdentityDialog::on_cancelButton_clicked()
 {
     reject();
 }
-void EditAliasDialog::on_addButton_clicked()
+void EditIdentityDialog::on_addButton_clicked()
 {
 	
     bool ok;
-    QString text = QInputDialog::getText(this, tr("Enter an alias"),
-                                         tr("Alias:"), QLineEdit::Normal,
+    QString text = QInputDialog::getText(this, tr("Enter an identity"),
+                                         tr("Identity:"), QLineEdit::Normal,
                                          "", &ok);
     if (ok && !text.isEmpty())
 	{
@@ -179,10 +179,10 @@ void EditAliasDialog::on_addButton_clicked()
 	}
 	if(ui->multisigList->count() > 0)
 	{
-		ui->multisigDisclaimer->setText(QString("<font color='blue'>") + tr("This is a") + QString(" <b>%1</b> ").arg(ui->reqSigsEdit->text()) + tr("of") + QString(" <b>%1</b> ").arg(QString::number(ui->multisigList->count()+1)) + tr("multisig alias.") + QString(" <b>%1</b> ").arg(ui->aliasEdit->text()) + QString("is assumed to also be a signer.") + QString("</font>"));
+		ui->multisigDisclaimer->setText(QString("<font color='blue'>") + tr("This is a") + QString(" <b>%1</b> ").arg(ui->reqSigsEdit->text()) + tr("of") + QString(" <b>%1</b> ").arg(QString::number(ui->multisigList->count()+1)) + tr("multisig identity.") + QString(" <b>%1</b> ").arg(ui->identityEdit->text()) + QString("is assumed to also be a signer.") + QString("</font>"));
 	}
 }
-void EditAliasDialog::on_deleteButton_clicked()
+void EditIdentityDialog::on_deleteButton_clicked()
 {
     QModelIndexList selected = ui->multisigList->selectionModel()->selectedIndexes();    
 	for (int i = selected.count() - 1; i > -1; --i)
@@ -190,51 +190,51 @@ void EditAliasDialog::on_deleteButton_clicked()
 
 	if(ui->multisigList->count() > 0)
 	{
-		ui->multisigDisclaimer->setText(QString("<font color='blue'>") + tr("This is a") + QString(" <b>%1</b> ").arg(ui->reqSigsEdit->text()) + tr("of") + QString(" <b>%1</b> ").arg(QString::number(ui->multisigList->count()+1)) + tr("multisig alias.") + QString(" <b>%1</b> ").arg(ui->aliasEdit->text()) + QString("is assumed to also be a signer.") + QString("</font>"));
+		ui->multisigDisclaimer->setText(QString("<font color='blue'>") + tr("This is a") + QString(" <b>%1</b> ").arg(ui->reqSigsEdit->text()) + tr("of") + QString(" <b>%1</b> ").arg(QString::number(ui->multisigList->count()+1)) + tr("multisig identity.") + QString(" <b>%1</b> ").arg(ui->identityEdit->text()) + QString("is assumed to also be a signer.") + QString("</font>"));
 	}
 }
 
-void EditAliasDialog::on_okButton_clicked()
+void EditIdentityDialog::on_okButton_clicked()
 {
     mapper->submit();
     accept();
 }
-void EditAliasDialog::setModel(WalletModel* walletModel, AliasTableModel *model)
+void EditIdentityDialog::setModel(WalletModel* walletModel, IdentityTableModel *model)
 {
     this->model = model;
 	this->walletModel = walletModel;
     if(!model) return;
 
     mapper->setModel(model);
-	mapper->addMapping(ui->aliasEdit, AliasTableModel::Name);
-    mapper->addMapping(ui->nameEdit, AliasTableModel::Value);
-	mapper->addMapping(ui->privateEdit, AliasTableModel::PrivValue);
+	mapper->addMapping(ui->identityEdit, IdentityTableModel::Name);
+    mapper->addMapping(ui->nameEdit, IdentityTableModel::Value);
+	mapper->addMapping(ui->privateEdit, IdentityTableModel::PrivValue);
 	
     
 }
 
-void EditAliasDialog::loadRow(int row)
+void EditIdentityDialog::loadRow(int row)
 {
     mapper->setCurrentIndex(row);
 	const QModelIndex tmpIndex;
 	if(model)
 	{
-		QModelIndex indexSafeSearch= model->index(row, AliasTableModel::SafeSearch, tmpIndex);
-		QModelIndex indexExpired = model->index(row, AliasTableModel::Expired, tmpIndex);
+		QModelIndex indexSafeSearch= model->index(row, IdentityTableModel::SafeSearch, tmpIndex);
+		QModelIndex indexExpired = model->index(row, IdentityTableModel::Expired, tmpIndex);
 		if(indexExpired.isValid())
 		{
-			expiredStr = indexExpired.data(AliasTableModel::ExpiredRole).toString();
+			expiredStr = indexExpired.data(IdentityTableModel::ExpiredRole).toString();
 		}
 		if(indexSafeSearch.isValid())
 		{
-			QString safeSearchStr = indexSafeSearch.data(AliasTableModel::SafeSearchRole).toString();
+			QString safeSearchStr = indexSafeSearch.data(IdentityTableModel::SafeSearchRole).toString();
 			ui->safeSearchEdit->setCurrentIndex(ui->safeSearchEdit->findText(safeSearchStr));
 		}
 	}
-	loadAliasDetails();
+	loadIdentityDetails();
 }
 
-bool EditAliasDialog::saveCurrentRow()
+bool EditIdentityDialog::saveCurrentRow()
 {
 	UniValue params(UniValue::VARR);
 	UniValue arraySendParams(UniValue::VARR);
@@ -243,14 +243,14 @@ bool EditAliasDialog::saveCurrentRow()
     WalletModel::UnlockContext ctx(walletModel->requestUnlock());
     if(!ctx.isValid())
     {
-		model->editStatus = AliasTableModel::WALLET_UNLOCK_FAILURE;
+		model->editStatus = IdentityTableModel::WALLET_UNLOCK_FAILURE;
         return false;
     }
 	uint32_t expiryFiveYear = ui->expiryEdit->itemData(4).toInt();
 	if(ui->expireTimeEdit->text().trimmed().toInt() > expiryFiveYear)
 	{
-        QMessageBox::StandardButton retval = QMessageBox::question(this, tr("Confirm Alias with large expiration"),
-                 tr("Warning: Using creating an alias expiring later than 5 years increases costs exponentially, you may spend a large amount of coins in doing so!") + "<br><br>" + tr("Are you sure you wish to continue?"),
+        QMessageBox::StandardButton retval = QMessageBox::question(this, tr("Confirm Identity with large expiration"),
+                 tr("Warning: Using creating an identity expiring later than 5 years increases costs exponentially, you may spend a large amount of coins in doing so!") + "<br><br>" + tr("Are you sure you wish to continue?"),
                  QMessageBox::Yes|QMessageBox::Cancel,
                  QMessageBox::Cancel);
         if(retval == QMessageBox::Cancel)
@@ -258,22 +258,22 @@ bool EditAliasDialog::saveCurrentRow()
 	}
 	if(expiredStr == "Expired")
 	{
-		mode = NewAlias;
+		mode = NewIdentity;
 	}
     switch(mode)
     {
-    case NewDataAlias:
-    case NewAlias:
-        if (ui->aliasEdit->text().trimmed().isEmpty()) {
-            ui->aliasEdit->setText("");
+    case NewDataIdentity:
+    case NewIdentity:
+        if (ui->identityEdit->text().trimmed().isEmpty()) {
+            ui->identityEdit->setText("");
             QMessageBox::information(this, windowTitle(),
-            tr("Empty name for Alias not allowed. Please try again"),
+            tr("Empty name for Identity not allowed. Please try again"),
                 QMessageBox::Ok, QMessageBox::Ok);
             return false;
         }
-		strMethod = string("aliasnew");
-		params.push_back(ui->aliasPegEdit->text().trimmed().toStdString());
-        params.push_back(ui->aliasEdit->text().trimmed().toStdString());
+		strMethod = string("identitynew");
+		params.push_back(ui->identityPegEdit->text().trimmed().toStdString());
+        params.push_back(ui->identityEdit->text().trimmed().toStdString());
 		params.push_back(ui->passwordEdit->text().trimmed().toStdString());
 		params.push_back(ui->nameEdit->toPlainText().toStdString());
 		params.push_back(ui->privateEdit->toPlainText().toStdString());
@@ -295,7 +295,7 @@ bool EditAliasDialog::saveCurrentRow()
             UniValue result = tableRPC.execute(strMethod, params);
 			const UniValue &arr = result.get_array();
 			string strResult = arr[0].get_str();
-			alias = ui->nameEdit->toPlainText() + ui->aliasEdit->text();
+			identity = ui->nameEdit->toPlainText() + ui->identityEdit->text();
 			const UniValue& resArray = result.get_array();
 			if(resArray.size() > 2)
 			{
@@ -318,26 +318,26 @@ bool EditAliasDialog::saveCurrentRow()
 		{
 			string strError = find_value(objError, "message").get_str();
 			QMessageBox::critical(this, windowTitle(),
-			tr("Error creating new Alias: ") + QString::fromStdString(strError),
+			tr("Error creating new Identity: ") + QString::fromStdString(strError),
 				QMessageBox::Ok, QMessageBox::Ok);
 			break;
 		}
 		catch(std::exception& e)
 		{
 			QMessageBox::critical(this, windowTitle(),
-				tr("General exception creating new Alias"),
+				tr("General exception creating new Identity"),
 				QMessageBox::Ok, QMessageBox::Ok);
 			break;
 		}							
 
         break;
-    case EditDataAlias:
-    case EditAlias:
+    case EditDataIdentity:
+    case EditIdentity:
         if(mapper->submit())
         {
-			strMethod = string("aliasupdate");
-			params.push_back(ui->aliasPegEdit->text().trimmed().toStdString());
-			params.push_back(ui->aliasEdit->text().toStdString());
+			strMethod = string("identityupdate");
+			params.push_back(ui->identityPegEdit->text().trimmed().toStdString());
+			params.push_back(ui->identityEdit->text().toStdString());
 			params.push_back(ui->nameEdit->toPlainText().toStdString());
 			params.push_back(ui->privateEdit->toPlainText().toStdString());
 			params.push_back(ui->safeSearchEdit->currentText().toStdString());	
@@ -360,7 +360,7 @@ bool EditAliasDialog::saveCurrentRow()
 				if (result.type() != UniValue::VNULL)
 				{
 				
-					alias = ui->nameEdit->toPlainText() + ui->aliasEdit->text();
+					identity = ui->nameEdit->toPlainText() + ui->identityEdit->text();
 						
 				}
 				const UniValue& resArray = result.get_array();
@@ -386,25 +386,25 @@ bool EditAliasDialog::saveCurrentRow()
 			{
 				string strError = find_value(objError, "message").get_str();
 				QMessageBox::critical(this, windowTitle(),
-				tr("Error updating Alias: ") + QString::fromStdString(strError),
+				tr("Error updating Identity: ") + QString::fromStdString(strError),
 					QMessageBox::Ok, QMessageBox::Ok);
 				break;
 			}
 			catch(std::exception& e)
 			{
 				QMessageBox::critical(this, windowTitle(),
-					tr("General exception updating Alias"),
+					tr("General exception updating Identity"),
 					QMessageBox::Ok, QMessageBox::Ok);
 				break;
 			}	
         }
         break;
-    case TransferAlias:
+    case TransferIdentity:
         if(mapper->submit())
         {
-			strMethod = string("aliasupdate");
-			params.push_back(ui->aliasPegEdit->text().trimmed().toStdString());
-			params.push_back(ui->aliasEdit->text().toStdString());
+			strMethod = string("identityupdate");
+			params.push_back(ui->identityPegEdit->text().trimmed().toStdString());
+			params.push_back(ui->identityEdit->text().toStdString());
 			params.push_back(ui->nameEdit->toPlainText().toStdString());
 			params.push_back(ui->privateEdit->toPlainText().toStdString());
 			params.push_back(ui->safeSearchEdit->currentText().toStdString());
@@ -427,7 +427,7 @@ bool EditAliasDialog::saveCurrentRow()
 				if (result.type() != UniValue::VNULL)
 				{
 
-					alias = ui->nameEdit->toPlainText() + ui->aliasEdit->text()+ui->transferEdit->text();
+					identity = ui->nameEdit->toPlainText() + ui->identityEdit->text()+ui->transferEdit->text();
 						
 				}
 				const UniValue& resArray = result.get_array();
@@ -452,24 +452,24 @@ bool EditAliasDialog::saveCurrentRow()
 			{
 				string strError = find_value(objError, "message").get_str();
 				QMessageBox::critical(this, windowTitle(),
-                tr("Error transferring Alias: ") + QString::fromStdString(strError),
+                tr("Error transferring Identity: ") + QString::fromStdString(strError),
 					QMessageBox::Ok, QMessageBox::Ok);
 				break;
 			}
 			catch(std::exception& e)
 			{
 				QMessageBox::critical(this, windowTitle(),
-                    tr("General exception transferring Alias"),
+                    tr("General exception transferring Identity"),
 					QMessageBox::Ok, QMessageBox::Ok);
 				break;
 			}	
         }
         break;
     }
-    return !alias.isEmpty();
+    return !identity.isEmpty();
 }
 
-void EditAliasDialog::accept()
+void EditIdentityDialog::accept()
 {
     if(!model) return;
 
@@ -477,18 +477,18 @@ void EditAliasDialog::accept()
     {
         switch(model->getEditStatus())
         {
-        case AliasTableModel::OK:
+        case IdentityTableModel::OK:
             // Failed with unknown reason. Just reject.
             break;
-        case AliasTableModel::NO_CHANGES:
+        case IdentityTableModel::NO_CHANGES:
             // No changes were made during edit operation. Just reject.
             break;
-        case AliasTableModel::INVALID_ALIAS:
+        case IdentityTableModel::INVALID_IDENTITY:
             QMessageBox::warning(this, windowTitle(),
-				tr("The entered alias is not a valid Syscoin alias. Alias: ") + ui->aliasEdit->text(),
+				tr("The entered identity is not a valid Dynamic identity. Identity: ") + ui->identityEdit->text(),
                 QMessageBox::Ok, QMessageBox::Ok);
             break;
-        case AliasTableModel::WALLET_UNLOCK_FAILURE:
+        case IdentityTableModel::WALLET_UNLOCK_FAILURE:
             QMessageBox::critical(this, windowTitle(),
                 tr("Could not unlock wallet."),
                 QMessageBox::Ok, QMessageBox::Ok);
@@ -500,13 +500,13 @@ void EditAliasDialog::accept()
     QDialog::accept();
 }
 
-QString EditAliasDialog::getAlias() const
+QString EditIdentityDialog::getIdentity() const
 {
-    return alias;
+    return identity;
 }
 
-void EditAliasDialog::setAlias(const QString &alias)
+void EditIdentityDialog::setIdentity(const QString &identity)
 {
-    this->alias = alias;
-    ui->aliasEdit->setText(alias);
+    this->identity = identity;
+    ui->identityEdit->setText(identity);
 }

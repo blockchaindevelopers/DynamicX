@@ -29,7 +29,7 @@ void RpcClient::setPassword(const QString &password) {
     m_password = password;
 }
 void RpcClient::sendRequest(QNetworkAccessManager *nam, const QString &method, const QString &param, const QString &param1) {
-	QString data = "{\"jsonrpc\": \"1.0\", \"id\":\"SyscoinRPCClient\", ""\"method\": \"" + method + "\", \"params\": [";
+	QString data = "{\"jsonrpc\": \"1.0\", \"id\":\"DynamicRPCClient\", ""\"method\": \"" + method + "\", \"params\": [";
 	if(param.size() > 0)
 		data += "\"" + param + "\"";
 	if(param1.size() > 0)

@@ -233,3 +233,37 @@ void WalletFrame::gotoDNSPage()
         i.value()->gotoDNSPage();
 } 
 */
+
+// SYSCOIN
+void WalletFrame::gotoIdentityListPage()
+{
+    WalletView *walletView = currentWalletView();
+    if (walletView)
+        walletView->gotoIdentityListPage();
+}
+void WalletFrame::gotoMessageListPage()
+{
+    WalletView *walletView = currentWalletView();
+    if (walletView)
+        walletView->gotoMessageListPage();
+}
+void WalletFrame::gotoEscrowListPage()
+{
+    WalletView *walletView = currentWalletView();
+    if (walletView)
+        walletView->gotoEscrowListPage();
+}
+
+void WalletFrame::gotoOfferListPage()
+{
+    WalletView *walletView = currentWalletView();
+    if (walletView)
+        walletView->gotoOfferListPage();
+}
+
+void WalletFrame::gotoCertListPage()
+{
+    WalletView *walletView = currentWalletView();
+    if (walletView)
+        walletView->gotoCertListPage();
+}

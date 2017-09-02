@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>AliasListPage</class>
- <widget class="QWidget" name="AliasListPage">
+ <class>MyIdentityListPage</class>
+ <widget class="QWidget" name="MyIdentityListPage">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>760</width>
-    <height>380</height>
+    <width>845</width>
+    <height>381</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Aliases</string>
+   <string>My Identities</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -23,26 +23,6 @@
       <bool>true</bool>
      </property>
     </widget>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
-     <item>
-      <widget class="QLineEdit" name="lineEditAliasSearch"/>
-     </item>
-     <item>
-      <widget class="QPushButton" name="searchAlias">
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>48</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>Search</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
    </item>
    <item>
     <widget class="QTableView" name="tableView">
@@ -73,45 +53,80 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_3">
-     <item>
-      <spacer name="horizontalSpacer_2">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QLabel" name="labelPage">
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <widget class="QPushButton" name="copyAlias">
+      <widget class="QPushButton" name="refreshButton">
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>48</height>
+        </size>
+       </property>
        <property name="toolTip">
-        <string>Copy the currently selected alias to the system clipboard</string>
+        <string>Refresh identity list</string>
        </property>
        <property name="text">
-        <string>Copy Alias ID</string>
+        <string>Refresh</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="messageButton">
+      <widget class="QPushButton" name="newIdentity">
+       <property name="toolTip">
+        <string>Create a new identity</string>
+       </property>
        <property name="text">
-        <string>Send Msg</string>
+        <string>New Identity</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="copyIdentity">
+       <property name="toolTip">
+        <string>Copy the currently selected identity to the system clipboard</string>
+       </property>
+       <property name="text">
+        <string>Copy Identity ID</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="editButton">
+       <property name="toolTip">
+        <string>Edit selected identity</string>
+       </property>
+       <property name="text">
+        <string>Edit</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="transferButton">
+       <property name="toolTip">
+        <string>Transfer selected identity</string>
+       </property>
+       <property name="text">
+        <string>Transfer</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="newPubKey">
+       <property name="toolTip">
+        <string>Create a new public key used for transferring identities</string>
+       </property>
+       <property name="text">
+        <string>New Public Key</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="whitelistButton">
+       <property name="toolTip">
+        <string>Open list of affiliates associated with this identity</string>
+       </property>
+       <property name="text">
+        <string>Affiliations</string>
        </property>
       </widget>
      </item>
@@ -136,16 +151,12 @@
       </spacer>
      </item>
      <item>
-      <widget class="QToolButton" name="prevButton">
-       <property name="text">
-        <string>&lt;&lt;</string>
+      <widget class="QPushButton" name="exportButton">
+       <property name="toolTip">
+        <string>Export the data in the current tab to a file</string>
        </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QToolButton" name="nextButton">
        <property name="text">
-        <string>&gt;&gt;</string>
+        <string>Export</string>
        </property>
       </widget>
      </item>
@@ -154,7 +165,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../syscoin.qrc"/>
+  <include location="../dynamic.qrc"/>
  </resources>
  <connections/>
 </ui>

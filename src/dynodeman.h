@@ -7,7 +7,6 @@
 #define DYNAMIC_DYNODEMAN_H
 
 #include "dynode.h"
-#include "sync.h"
 
 class CDynodeMan;
 

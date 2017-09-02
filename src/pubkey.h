@@ -9,11 +9,7 @@
 #define DYNAMIC_PUBKEY_H
 
 #include "hash.h"
-#include "serialize.h"
-#include "uint256.h"
 
-#include <stdexcept>
-#include <vector>
 
 /** 
  * secp256k1:

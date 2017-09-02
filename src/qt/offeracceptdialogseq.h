@@ -1,5 +1,5 @@
-#ifndef OFFERACCEPTDIALOGZEC_H
-#define OFFERACCEPTDIALOGZEC_H
+#ifndef OFFERACCEPTDIALOGSEQ_H
+#define OFFERACCEPTDIALOGSEQ_H
 #include "walletmodel.h"
 #include <QDialog>
 #include <QImage>
@@ -11,16 +11,16 @@ QT_BEGIN_NAMESPACE
 class QNetworkReply;
 QT_END_NAMESPACE
 namespace Ui {
-    class OfferAcceptDialogZEC;
+    class OfferAcceptDialogSEQ;
 }
-class OfferAcceptDialogZEC : public QDialog
+class OfferAcceptDialogSEQ : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit OfferAcceptDialogZEC(WalletModel* model, const PlatformStyle *platformStyle, QString strAliasPeg, QString alias, QString offer, QString quantity, QString notes, QString title, QString currencyCode, QString sysPrice, QString sellerAlias, QString address, QString arbiter, QWidget *parent=0);
-    ~OfferAcceptDialogZEC();
-	void CheckPaymentInZEC();
+    explicit OfferAcceptDialogSEQ(WalletModel* model, const PlatformStyle *platformStyle, QString strIdentityPeg, QString identity, QString offer, QString quantity, QString notes, QString title, QString currencyCode, QString sysPrice, QString sellerIdentity, QString address, QString arbiter, QWidget *parent=0);
+    ~OfferAcceptDialogSEQ();
+	void CheckPaymentInSEQ();
     bool getPaymentStatus();
 	void SetupQRCode(const QString&price);
 	void convertAddress();
@@ -28,7 +28,7 @@ private:
 	bool setupEscrowCheckboxState(bool state);
 	WalletModel* walletModel;
 	const PlatformStyle *platformStyle;
-    Ui::OfferAcceptDialogZEC *ui;
+    Ui::OfferAcceptDialogSEQ *ui;
 	SendCoinsRecipient info;
 	QString quantity;
 	QString notes;
@@ -37,17 +37,17 @@ private:
 	QString offer;
 	QString arbiter;
 	QString acceptGuid;
-	QString sellerAlias;
+	QString sellerIdentity;
 	QString address;
 	QString zaddress;
 	QString multisigaddress;
-	QString alias;
+	QString identity;
 	QString m_buttonText;
 	QString m_address;
 	double dblPrice;
 	bool offerPaid; 
 	QString m_redeemScript;	
-	QString priceZec;
+	QString priceSeq;
 	qint64 m_height;
 
 private Q_SLOTS:
@@ -56,10 +56,10 @@ private Q_SLOTS:
 	void onEscrowCheckBoxChanged(bool);
     void acceptOffer();
 	void acceptEscrow();
-	void openZECWallet();
+	void openSEQWallet();
 	void slotConfirmedFinished(QNetworkReply *);
 	void on_escrowEdit_textChanged(const QString & text);
 	
 };
 
-#endif // OFFERACCEPTDIALOGZEC_H
+#endif // OFFERACCEPTDIALOGSEQ_H

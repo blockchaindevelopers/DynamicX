@@ -9,29 +9,15 @@
 #define DYNAMIC_MAIN_H
 
 #if defined(HAVE_CONFIG_H)
-#include "config/dynamic-config.h"
 #endif
 
-#include "amount.h"
-#include "chain.h"
 #include "coins.h"
 #include "net.h"
 #include "script/script_error.h"
 #include "api/bitcore/addressindex.h"
 #include "api/bitcore/spentindex.h"
-#include "api/bitcore/timestampindex.h"
-#include "sync.h"
 #include "versionbits.h"
 
-#include <algorithm>
-#include <exception>
-#include <map>
-#include <set>
-#include <stdint.h>
-#include <string>
-#include <unordered_map>
-#include <utility>
-#include <vector>
 
 class CBloomFilter;
 class CBlockIndex;

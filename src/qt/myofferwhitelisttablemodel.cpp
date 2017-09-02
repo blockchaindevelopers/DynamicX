@@ -12,13 +12,13 @@ using namespace std;
 struct MyOfferWhitelistTableEntry
 {
 	QString offer;
-    QString alias;
+    QString identity;
 	QString expires;
 	QString discount;	
 
     MyOfferWhitelistTableEntry() {}
-    MyOfferWhitelistTableEntry(const QString &offer, const QString &alias, const QString &expires,const QString &discount):
-        offer(offer), alias(alias), expires(expires),discount(discount) {}
+    MyOfferWhitelistTableEntry(const QString &offer, const QString &identity, const QString &expires,const QString &discount):
+        offer(offer), identity(identity), expires(expires),discount(discount) {}
 };
 
 struct MyOfferWhitelistTableEntryLessThan
@@ -48,7 +48,7 @@ public:
         parent(parent) {}
 
 
-    void updateEntry(const QString &offer, const QString &alias, const QString &expires,const QString &discount, int status)
+    void updateEntry(const QString &offer, const QString &identity, const QString &expires,const QString &discount, int status)
     {
 		if(!parent)
 		{
@@ -68,12 +68,12 @@ public:
         case CT_NEW:
 
             parent->beginInsertRows(QModelIndex(), lowerIndex, lowerIndex);
-            cachedEntryTable.insert(lowerIndex, MyOfferWhitelistTableEntry(offer, alias, expires, discount));
+            cachedEntryTable.insert(lowerIndex, MyOfferWhitelistTableEntry(offer, identity, expires, discount));
             parent->endInsertRows();
             break;
         case CT_UPDATED:
 			lower->offer = offer;
-			lower->alias = alias;
+			lower->identity = identity;
 			lower->expires = expires;
 			lower->discount = discount;
             parent->emitDataChanged(lowerIndex);
@@ -108,7 +108,7 @@ public:
 MyOfferWhitelistTableModel::MyOfferWhitelistTableModel(WalletModel *parent) :
     QAbstractTableModel(parent)
 {
-    columns << tr("Offer") << tr("Alias") << tr("Discount") << tr("Expires On");
+    columns << tr("Offer") << tr("Identity") << tr("Discount") << tr("Expires On");
     priv = new MyOfferWhitelistTablePriv(this);
 
 }
@@ -142,17 +142,17 @@ QVariant MyOfferWhitelistTableModel::data(const QModelIndex &index, int role) co
         {
         case Offer:
             return rec->offer;
-        case Alias:
-            return rec->alias;
+        case Identity:
+            return rec->identity;
         case Discount:
             return rec->discount;
         case Expires:
             return rec->expires;
         }
     }
-    else if (role == AliasRole)
+    else if (role == IdentityRole)
     {
-        return rec->alias;
+        return rec->identity;
     }
     return QVariant();
 }
@@ -178,9 +178,9 @@ bool MyOfferWhitelistTableModel::setData(const QModelIndex &index, const QVarian
             }
            
             break;
-        case Alias:
+        case Identity:
             // Do nothing, if old value == new value
-            if(rec->alias == value.toString())
+            if(rec->identity == value.toString())
             {
                 editStatus = NO_CHANGES;
                 return false;
@@ -244,16 +244,16 @@ QModelIndex MyOfferWhitelistTableModel::index(int row, int column, const QModelI
     }
 }
 
-void MyOfferWhitelistTableModel::updateEntry(const QString &offer, const QString &alias, const QString &expires,const QString &discount, int status)
+void MyOfferWhitelistTableModel::updateEntry(const QString &offer, const QString &identity, const QString &expires,const QString &discount, int status)
 {
-    priv->updateEntry(offer, alias, expires, discount, status);
+    priv->updateEntry(offer, identity, expires, discount, status);
 }
 
-QString MyOfferWhitelistTableModel::addRow(const QString &offer, const QString &alias, const QString &expires,const QString &discount)
+QString MyOfferWhitelistTableModel::addRow(const QString &offer, const QString &identity, const QString &expires,const QString &discount)
 {
-    std::string strAlias = alias.toStdString();
+    std::string strIdentity = identity.toStdString();
     editStatus = OK;
-    return QString::fromStdString(strAlias);
+    return QString::fromStdString(strIdentity);
 }
 void MyOfferWhitelistTableModel::clear()
 {

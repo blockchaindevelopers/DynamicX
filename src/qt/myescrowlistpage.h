@@ -35,10 +35,10 @@ public:
     void setOptionsModel(ClientModel* clientmodel, OptionsModel *optionsModel);
     const QString &getReturnValue() const { return returnValue; }
 	void showEvent ( QShowEvent * event );
-	void loadAliasList();
+	void loadIdentityList();
 	bool lookup(const QString &escrow, QString& address, QString& price, QString& extTxId, QString& redeemTxId, QString& paymentOption);
 	void CheckPaymentInBTC(const QString &strExtTxId, const QString& address, const QString& price);
-	void CheckPaymentInZEC(const QString &strExtTxId, const QString& address, const QString& price);
+	void CheckPaymentInSEQ(const QString &strExtTxId, const QString& address, const QString& price);
 private:
 	ClientModel* clientModel;
 	WalletModel *walletModel;
@@ -74,7 +74,7 @@ private Q_SLOTS:
     /** New entry/entries were added to cert table */
     void selectNewEscrow(const QModelIndex &parent, int begin, int /*end*/);
 	void on_ackButton_clicked();
-	void displayListChanged(const QString& alias);
+	void displayListChanged(const QString& identity);
 
 };
 

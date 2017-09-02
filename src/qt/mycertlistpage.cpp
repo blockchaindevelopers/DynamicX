@@ -1,5 +1,5 @@
 /*
- * Syscoin Developers 2015
+ * Dynamic Developers 2015
  */
 #include "mycertlistpage.h"
 #include "ui_mycertlistpage.h"
@@ -8,7 +8,7 @@
 #include "optionsmodel.h"
 #include "walletmodel.h"
 #include "platformstyle.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "editcertdialog.h"
 #include "editofferdialog.h"
 #include "csvmodelwriter.h"
@@ -50,7 +50,7 @@ MyCertListPage::MyCertListPage(const PlatformStyle *platformStyle, QWidget *pare
 		
 	}
 
-    ui->labelExplanation->setText(tr("These are your registered Syscoin Certificates. Certificate operations (create, update, transfer) take 2-5 minutes to become active.  You can choose which aliases to view related certificates using the dropdown to the right."));
+    ui->labelExplanation->setText(tr("These are your registered Dynamic Certificates. Certificate operations (create, update, transfer) take 2-5 minutes to become active.  You can choose which identities to view related certificates using the dropdown to the right."));
 	
 	
     // Context menu actions
@@ -78,34 +78,34 @@ MyCertListPage::MyCertListPage(const PlatformStyle *platformStyle, QWidget *pare
 	connect(ui->tableView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(on_editButton_clicked()));
     connect(ui->tableView, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextualMenu(QPoint)));
 
-	connect(ui->displayListAlias,SIGNAL(currentIndexChanged(const QString&)),this,SLOT(displayListChanged(const QString&)));
-	loadAliasList();
+	connect(ui->displayListIdentity,SIGNAL(currentIndexChanged(const QString&)),this,SLOT(displayListChanged(const QString&)));
+	loadIdentityList();
 
 }
-void MyCertListPage::loadAliasList()
+void MyCertListPage::loadIdentityList()
 {
 	QSettings settings;
-	QString oldListAlias = settings.value("defaultListAlias", "").toString();
-	ui->displayListAlias->clear();
-	ui->displayListAlias->addItem(tr("All"));
+	QString oldListIdentity = settings.value("defaultListIdentity", "").toString();
+	ui->displayListIdentity->clear();
+	ui->displayListIdentity->addItem(tr("All"));
 	
 	
-	UniValue aliasList(UniValue::VARR);
-	appendListAliases(aliasList, true);
-	for(unsigned int i = 0;i<aliasList.size();i++)
+	UniValue identityList(UniValue::VARR);
+	appendListIdentities(identityList, true);
+	for(unsigned int i = 0;i<identityList.size();i++)
 	{
-		const QString& aliasName = QString::fromStdString(aliasList[i].get_str());
-		ui->displayListAlias->addItem(aliasName);
+		const QString& identityName = QString::fromStdString(identityList[i].get_str());
+		ui->displayListIdentity->addItem(identityName);
 	}
-	int currentIndex = ui->displayListAlias->findText(oldListAlias);
+	int currentIndex = ui->displayListIdentity->findText(oldListIdentity);
 	if(currentIndex >= 0)
-		ui->displayListAlias->setCurrentIndex(currentIndex);
-	settings.setValue("defaultListAlias", oldListAlias);
+		ui->displayListIdentity->setCurrentIndex(currentIndex);
+	settings.setValue("defaultListIdentity", oldListIdentity);
 }
-void MyCertListPage::displayListChanged(const QString& alias)
+void MyCertListPage::displayListChanged(const QString& identity)
 {
 	QSettings settings;
-	settings.setValue("defaultListAlias", alias);
+	settings.setValue("defaultListIdentity", identity);
 	settings.sync();
 }
 MyCertListPage::~MyCertListPage()
@@ -125,7 +125,7 @@ void MyCertListPage::on_sellCertButton_clicked()
 	QString certGUID = indexes.at(0).data(CertTableModel::NameRole).toString();
 	QString status = indexes.at(0).data(CertTableModel::ExpiredRole).toString();
 	QString category = indexes.at(0).data(CertTableModel::CategoryRole).toString();
-	QString alias = indexes.at(0).data(CertTableModel::AliasRole).toString();
+	QString identity = indexes.at(0).data(CertTableModel::IdentityRole).toString();
 	if(status == QString("expired"))
 	{
            QMessageBox::information(this, windowTitle(),
@@ -133,7 +133,7 @@ void MyCertListPage::on_sellCertButton_clicked()
                QMessageBox::Ok, QMessageBox::Ok);
 		   return;
 	}
-    EditOfferDialog dlg(EditOfferDialog::NewCertOffer, "", certGUID, alias, category);
+    EditOfferDialog dlg(EditOfferDialog::NewCertOffer, "", certGUID, identity, category);
     dlg.setModel(walletModel,0);
     dlg.exec();
 }
@@ -142,7 +142,7 @@ void MyCertListPage::showEvent ( QShowEvent * event )
     if(!walletModel) return;
     /*if(walletModel->getEncryptionStatus() == WalletModel::Locked)
 	{
-        ui->labelExplanation->setText(tr("<font color='blue'>WARNING: Your wallet is currently locked. For security purposes you'll need to enter your passphrase in order to interact with Syscoin Certs. Because your wallet is locked you must manually refresh this table after creating or updating an Cert. </font> <a href=\"http://lockedwallet.syscoin.org\">more info</a><br><br>These are your registered Syscoin Certs. Cert updates take 1 confirmation to appear in this table."));
+        ui->labelExplanation->setText(tr("<font color='blue'>WARNING: Your wallet is currently locked. For security purposes you'll need to enter your passphrase in order to interact with Dynamic Certs. Because your wallet is locked you must manually refresh this table after creating or updating an Cert. </font> <a href=\"http://lockedwallet.dynamic.org\">more info</a><br><br>These are your registered Dynamic Certs. Cert updates take 1 confirmation to appear in this table."));
 		ui->labelExplanation->setTextFormat(Qt::RichText);
 		ui->labelExplanation->setTextInteractionFlags(Qt::TextBrowserInteraction);
 		ui->labelExplanation->setOpenExternalLinks(true);
@@ -253,7 +253,7 @@ void MyCertListPage::on_refreshButton_clicked()
 {
     if(!model)
         return;
-	loadAliasList();
+	loadIdentityList();
     model->refreshCertTable();
 }
 void MyCertListPage::on_newCert_clicked()
@@ -336,7 +336,7 @@ void MyCertListPage::on_exportButton_clicked()
 	writer.addColumn(tr("Category"), CertTableModel::Category, Qt::EditRole);
 	writer.addColumn(tr("Expires On"), CertTableModel::ExpiresOn, Qt::EditRole);
 	writer.addColumn(tr("Status"), CertTableModel::Expired, Qt::EditRole);
-	writer.addColumn(tr("Owner"), CertTableModel::Alias, Qt::EditRole);
+	writer.addColumn(tr("Owner"), CertTableModel::Identity, Qt::EditRole);
     if(!writer.write())
     {
 		QMessageBox::critical(this, tr("Error exporting"), tr("Could not write to file: ") + filename,

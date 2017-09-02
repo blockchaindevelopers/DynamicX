@@ -6,11 +6,7 @@
 #define DYNAMIC_MERKLE
 
 #include "primitives/block.h"
-#include "primitives/transaction.h"
-#include "uint256.h"
 
-#include <stdint.h>
-#include <vector>
 
 uint256 ComputeMerkleRoot(const std::vector<uint256>& leaves, bool* mutated = NULL);
 std::vector<uint256> ComputeMerkleBranch(const std::vector<uint256>& leaves, uint32_t position);

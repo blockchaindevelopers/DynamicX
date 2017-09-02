@@ -368,18 +368,42 @@ void DynamicGUI::createActions()
     dynodeAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_6));
 #endif
     tabGroup->addAction(dynodeAction);    
+	// SYSCOIN
+	identityListAction = new QAction(QIcon(":/icons/" + theme + "/identity"), tr("Identities"), this);
+    identityListAction->setStatusTip(tr("Manage identities"));
+    identityListAction->setToolTip(identityListAction->statusTip());
+    identityListAction->setCheckable(true);
+    identityListAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_4));
+    tabGroup->addAction(identityListAction);
 
-    /* dnsAction = new QAction(QIcon(":/icons/" + theme + "/decentralised"), tr("&dDNS"), this);
-    dnsAction->setStatusTip(tr("Manage values registered via Dynamic"));
-    dnsAction->setToolTip(dnsAction->statusTip());
-    dnsAction->setCheckable(true);
-#ifdef Q_OS_MAC
-    dnsAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_7));
-#else
-    dnsAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_7));
-#endif
-    tabGroup->addAction(dnsAction);
-	*/
+    messageListAction = new QAction(QIcon(":/icons/" + theme + "/message"), tr("Messages"), this);
+    messageListAction->setStatusTip(tr("Messages"));
+    messageListAction->setToolTip(messageListAction->statusTip());
+    messageListAction->setCheckable(true);
+    messageListAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_5));
+    tabGroup->addAction(messageListAction);
+
+    offerListAction = new QAction(QIcon(":/icons/" + theme + "/cart"), tr("Marketplace"), this);
+    offerListAction->setStatusTip(tr("Manage offers"));
+    offerListAction->setToolTip(offerListAction->statusTip());
+    offerListAction->setCheckable(true);
+    offerListAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_6));
+    tabGroup->addAction(offerListAction);
+
+	
+    certListAction = new QAction(QIcon(":/icons/" + theme + "/cert"), tr("Certificates"), this);
+    certListAction->setStatusTip(tr("Manage Certificates"));
+    certListAction->setToolTip(certListAction->statusTip());
+    certListAction->setCheckable(true);
+    certListAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_7));
+    tabGroup->addAction(certListAction);
+
+    escrowListAction = new QAction(QIcon(":/icons/" + theme + "/escrow"), tr("Escrow"), this);
+    escrowListAction->setStatusTip(tr("Escrows with offers"));
+    escrowListAction->setToolTip(escrowListAction->statusTip());
+    escrowListAction->setCheckable(true);
+    escrowListAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_8));
+    tabGroup->addAction(escrowListAction);
 
     // These showNormalIfMinimized are needed because Send Coins and Receive Coins
     // can be triggered from the tray menu, and need to show the GUI to be useful.
@@ -399,8 +423,17 @@ void DynamicGUI::createActions()
     connect(multiSigAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(dynodeAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(dynodeAction, SIGNAL(triggered()), this, SLOT(gotoDynodePage()));
-    // connect(dnsAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
-    // connect(dnsAction, SIGNAL(triggered()), this, SLOT(gotoDNSPage()));
+	// SYSCOIN
+    connect(identityListAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
+    connect(identityListAction, SIGNAL(triggered()), this, SLOT(gotoIdentityListPage()));
+    connect(messageListAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
+    connect(messageListAction, SIGNAL(triggered()), this, SLOT(gotoMessageListPage()));
+    connect(escrowListAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
+    connect(escrowListAction, SIGNAL(triggered()), this, SLOT(gotoEscrowListPage()));
+    connect(offerListAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
+    connect(offerListAction, SIGNAL(triggered()), this, SLOT(gotoOfferListPage()));
+    connect(certListAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
+    connect(certListAction, SIGNAL(triggered()), this, SLOT(gotoCertListPage()));
 
 #endif // ENABLE_WALLET
 
@@ -596,7 +629,13 @@ void DynamicGUI::createToolBars()
         toolbar->addAction(multiSigAction);
         toolbar->addAction(dynodeAction);
         // toolbar->addAction(dnsAction);
- 
+ 		// SYSCOIN
+		toolbar->addAction(identityListAction);
+		toolbar->addAction(messageListAction);
+		toolbar->addAction(escrowListAction);
+		toolbar->addAction(offerListAction);
+		toolbar->addAction(certListAction);
+		
         /** Create additional container for toolbar and walletFrame and make it the central widget.
             This is a workaround mostly for toolbar styling on Mac OS but should work fine for every other OSes too.
         */
@@ -726,6 +765,12 @@ void DynamicGUI::setWalletActionsEnabled(bool enabled)
     usedSendingAddressesAction->setEnabled(enabled);
     usedReceivingAddressesAction->setEnabled(enabled);
     openAction->setEnabled(enabled);
+	// SYSCOIN
+    identityListAction->setEnabled(enabled);
+    messageListAction->setEnabled(enabled);
+	escrowListAction->setEnabled(enabled);
+    offerListAction->setEnabled(enabled);
+    certListAction->setEnabled(enabled);
 }
 
 void DynamicGUI::createTrayIcon(const NetworkStyle *networkStyle)
@@ -756,6 +801,12 @@ void DynamicGUI::createIconMenu(QMenu *pmenu)
     pmenu->addAction(multiSigAction);
     pmenu->addAction(dynodeAction);
     // pmenu->addAction(dnsAction);
+    pmenu->addSeparator();
+    pmenu->addAction(identityListAction);
+    pmenu->addAction(messageListAction);
+    pmenu->addAction(offerListAction);
+    pmenu->addAction(certListAction);
+    pmenu->addAction(escrowListAction);
 	pmenu->addSeparator();
     pmenu->addAction(optionsAction);
     pmenu->addAction(openInfoAction);
@@ -921,6 +972,29 @@ void DynamicGUI::gotoDNSPage()
     dnsAction->setChecked(true);
     if (walletFrame) walletFrame->gotoDNSPage();
 } */
+
+void DynamicGUI::gotoIdentityListPage()
+{
+    if (walletFrame) walletFrame->gotoIdentityListPage();
+}
+
+void DynamicGUI::gotoMessageListPage()
+{
+    if (walletFrame) walletFrame->gotoMessageListPage();
+}
+void DynamicGUI::gotoEscrowListPage()
+{
+    if (walletFrame) walletFrame->gotoEscrowListPage();
+}
+void DynamicGUI::gotoOfferListPage()
+{
+    if (walletFrame) walletFrame->gotoOfferListPage();
+}
+
+void DynamicGUI::gotoCertListPage()
+{
+    if (walletFrame) walletFrame->gotoCertListPage();
+}
 
 void DynamicGUI::gotoSignMessageTab(QString addr)
 {

@@ -10,7 +10,7 @@ class BtcRpcClient
 {
 public:
  
-    explicit BtcRpcClient(const QString& zecEndPoint="", const QString& zecRPCLogin="", const QString& zecRPCPassword="");
+    explicit BtcRpcClient(const QString& seqEndPoint="", const QString& seqRPCLogin="", const QString& seqRPCPassword="");
     ~BtcRpcClient();
 	void sendRequest(QNetworkAccessManager *nam, const QString &request, const QString &param="");
 	void sendRawTxRequest(QNetworkAccessManager *nam, const QString &param);

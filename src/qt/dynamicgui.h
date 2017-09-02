@@ -151,7 +151,13 @@ private:
     QAction *openAction;
     QAction *showHelpMessageAction;
     QAction *showPrivateSendHelpAction;
-
+	// SYSCOIN
+    QAction *identityListAction;
+    QAction *escrowListAction;
+    QAction *messageListAction;
+    QAction *offerListAction;
+    QAction *certListAction;
+    
     QSystemTrayIcon *trayIcon;
     QMenu *trayIconMenu;
     QMenu *dockIconMenu;
@@ -247,6 +253,15 @@ private Q_SLOTS:
     void gotoDynodePage();
     /** Switch to DNS page */
     // void gotoDNSPage();
+	// SYSCOIN
+    /** Switch to identity list page */
+    void gotoIdentityListPage();
+    void gotoEscrowListPage();
+    void gotoMessageListPage();
+    /** Switch to offers page */
+    void gotoOfferListPage();
+    /** Switch to certificate  page */
+    void gotoCertListPage();
 
     /** Show Sign/Verify Message dialog and switch to sign message tab */
     void gotoSignMessageTab(QString addr = "");

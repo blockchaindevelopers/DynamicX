@@ -35,7 +35,7 @@ public Q_SLOTS:
 
 private:
     bool saveCurrentRow();
-	void loadAliases();
+	void loadIdentities();
     Ui::NewMessageDialog *ui;
     QDataWidgetMapper *mapper;
     Mode mode;

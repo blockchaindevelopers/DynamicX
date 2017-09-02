@@ -118,7 +118,7 @@ background-color:(255,255,255);</string>
              </attribute>
              <column>
               <property name="text">
-               <string>Alias</string>
+               <string>Identity</string>
               </property>
              </column>
              <column>
@@ -248,7 +248,7 @@ padding-bottom:5px;
 }</string>
                </property>
                <property name="text">
-                <string>S&amp;tart alias</string>
+                <string>S&amp;tart identity</string>
                </property>
               </widget>
              </item>

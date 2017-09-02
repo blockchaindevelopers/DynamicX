@@ -8,11 +8,6 @@
 #ifndef DYNAMIC_FLAT_DATABASE_H
 #define DYNAMIC_FLAT_DATABASE_H
 
-#include "chainparams.h"
-#include "clientversion.h"
-#include "hash.h"
-#include "streams.h"
-#include "util.h"
 
 #include <boost/filesystem.hpp>
 

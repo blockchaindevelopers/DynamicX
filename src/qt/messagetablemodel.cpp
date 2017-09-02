@@ -10,13 +10,13 @@
 #include <QFont>
 #include <QDateTime>
 #include <QSettings>
-#include "rpc/server.h"
+#include "rpcserver.h"
 #include "clientmodel.h"
 using namespace std;
 
 
 
-extern CRPCTable tableRPC;
+extern const CRPCTable tableRPC;
 struct MessageTableEntry
 {
 

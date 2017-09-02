@@ -9,12 +9,7 @@
 #define DYNAMIC_CACHEMULTIMAP_H
 
 #include "cachemap.h"
-#include "serialize.h"
 
-#include <cstddef>
-#include <list>
-#include <map>
-#include <set>
 
 /**
  * Map like container that keeps the N most recently added items

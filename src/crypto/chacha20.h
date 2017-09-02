@@ -5,7 +5,6 @@
 #ifndef DYNAMIC_CRYPTO_CHACHA20_H
 #define DYNAMIC_CRYPTO_CHACHA20_H
 
-#include <stdint.h>
 #include <stdlib.h>
 
 /** A PRNG class for ChaCha20. */

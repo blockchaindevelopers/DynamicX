@@ -9,8 +9,6 @@
 #define DYNAMIC_PREVECTOR_H
 
 #include <iterator>
-#include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
 
 #pragma pack(push, 1)

@@ -10,11 +10,7 @@
 
 #include "indirectmap.h"
 
-#include <stdlib.h>
 
-#include <map>
-#include <set>
-#include <vector>
 #include <unordered_map>
 #include <unordered_set>
 

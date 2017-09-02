@@ -1,16 +1,16 @@
 /*
- * Syscoin Developers 2016
+ * Dynamic Developers 2016
  */
-#ifndef ALIASVIEW_H
-#define ALIASVIEW_H
+#ifndef IDENTITYVIEW_H
+#define IDENTITYVIEW_H
 
 #include <QStackedWidget>
 
-class SyscoinGUI;
+class DynamicGUI;
 class ClientModel;
 class WalletModel;
-class MyAliasListPage;
-class AliasListPage;
+class MyIdentityListPage;
+class IdentityListPage;
 class PlatformStyle;
 
 QT_BEGIN_NAMESPACE
@@ -24,24 +24,24 @@ class QAction;
 QT_END_NAMESPACE
 
 /*
-  AliasView class. This class represents the view to the syscoin aliases
+  IdentityView class. This class represents the view to the dynamic identities
   
 */
-class AliasView: public QObject
+class IdentityView: public QObject
  {
      Q_OBJECT
 
 public:
-    explicit AliasView(const PlatformStyle *platformStyle, QStackedWidget *parent);
-    ~AliasView();
+    explicit IdentityView(const PlatformStyle *platformStyle, QStackedWidget *parent);
+    ~IdentityView();
 
-    void setSyscoinGUI(SyscoinGUI *gui);
+    void setDynamicGUI(DynamicGUI *gui);
     /** Set the client model.
         The client model represents the part of the core that communicates with the P2P network, and is wallet-agnostic.
     */
     void setClientModel(ClientModel *clientModel);
     /** Set the wallet model.
-        The wallet model represents a syscoin wallet, and offers access to the list of transactions, address book and sending
+        The wallet model represents a dynamic wallet, and offers access to the list of transactions, address book and sending
         functionality.
     */
     void setWalletModel(WalletModel *walletModel);
@@ -49,21 +49,21 @@ public:
 
 
 private:
-    SyscoinGUI *gui;
+    DynamicGUI *gui;
     ClientModel *clientModel;
     WalletModel *walletModel;
 
     QTabWidget *tabWidget;
-    MyAliasListPage *myAliasListPage;
-    AliasListPage *aliasListPage;
+    MyIdentityListPage *myIdentityListPage;
+    IdentityListPage *identityListPage;
 
 public:
     /** Switch to offer page */
-    void gotoAliasListPage();
+    void gotoIdentityListPage();
 
 Q_SIGNALS:
     /** Signal that we want to show the main window */
     void showNormalIfMinimized();
 };
 
-#endif // ALIASVIEW_H
+#endif // IDENTITYVIEW_H

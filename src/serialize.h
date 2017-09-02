@@ -8,20 +8,12 @@
 #ifndef DYNAMIC_SERIALIZE_H
 #define DYNAMIC_SERIALIZE_H
 
-#include "compat/endian.h"
 #include "prevector.h"
 
-#include <algorithm>
-#include <assert.h>
-#include <ios>
 #include <limits>
 #include <list>
 #include <map>
 #include <set>
-#include <stdint.h>
-#include <string>
-#include <string.h>
-#include <utility>
 #include <vector>
 
 static const unsigned int MAX_SIZE = 0x02000000;

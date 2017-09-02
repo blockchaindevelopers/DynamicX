@@ -4,23 +4,23 @@
 #include "offerwhitelisttablemodel.h"
 #include "guiutil.h"
 #include "walletmodel.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "ui_interface.h"
 #include <QDataWidgetMapper>
 #include <QMessageBox>
 #include <QStringList>
-#include "rpc/server.h"
+#include "rpcserver.h"
 using namespace std;
 
 
-extern CRPCTable tableRPC;
+extern const CRPCTable tableRPC;
 NewWhitelistDialog::NewWhitelistDialog(const QString &offerGUID, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::NewWhitelistDialog), model(0)
 {
     ui->setupUi(this);
 	ui->offerGUIDLabel->setText(offerGUID);
-	ui->discountDisclaimer->setText(QString("<font color='blue'>") + tr("Enter the alias and discount level of your affiliate. This is a percentage of price for your offer you want to allow your affiliate to purchase your offer for. Typically given to wholesalers or for special arrangements with an affiliate.") + QString("</font>"));
+	ui->discountDisclaimer->setText(QString("<font color='blue'>") + tr("Enter the identity and discount level of your affiliate. This is a percentage of price for your offer you want to allow your affiliate to purchase your offer for. Typically given to wholesalers or for special arrangements with an affiliate.") + QString("</font>"));
 }
 
 NewWhitelistDialog::~NewWhitelistDialog()
@@ -49,7 +49,7 @@ bool NewWhitelistDialog::saveCurrentRow()
 
 	strMethod = string("offeraddwhitelist");
 	params.push_back(ui->offerGUIDLabel->text().toStdString());
-	params.push_back(ui->aliasEdit->text().toStdString());
+	params.push_back(ui->identityEdit->text().toStdString());
 	params.push_back(ui->discountEdit->text().toStdString());
 
 	try {
@@ -71,7 +71,7 @@ bool NewWhitelistDialog::saveCurrentRow()
 				return true;
 			}
 		}
-		entry = ui->aliasEdit->text();
+		entry = ui->identityEdit->text();
 
 		QMessageBox::information(this, windowTitle(),
         tr("New affiliate added successfully!"),

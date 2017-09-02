@@ -8,15 +8,12 @@
 #ifndef DYNAMIC_SCHEDULER_H
 #define DYNAMIC_SCHEDULER_H
 
-#include <map>
 
 //
 // NOTE:
 // boost::thread / boost::function / boost::chrono should be ported to
 // std::thread / std::function / std::chrono when we support C++11.
 //
-#include <boost/chrono/chrono.hpp>
-#include <boost/function.hpp>
 #include <boost/thread.hpp>
 
 

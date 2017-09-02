@@ -8,8 +8,6 @@
 #ifndef DYNAMIC_ACTIVEDYNODE_H
 #define DYNAMIC_ACTIVEDYNODE_H
 
-#include "key.h"
-#include "net.h"
 #include "wallet/wallet.h"
 
 class CActiveDynode;

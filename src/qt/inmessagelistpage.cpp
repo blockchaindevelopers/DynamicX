@@ -44,7 +44,7 @@ InMessageListPage::InMessageListPage(const PlatformStyle *platformStyle, QWidget
 		
 	}
 
-    ui->labelExplanation->setText(tr("These are Syscoin messages you have received."));
+    ui->labelExplanation->setText(tr("These are Dynamic messages you have received."));
 	
     // Context menu actions
     QAction *copyGuidAction = new QAction(ui->copyMessage->text(), this);

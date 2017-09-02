@@ -8,8 +8,6 @@
 #ifndef DYNAMIC_UI_INTERFACE_H
 #define DYNAMIC_UI_INTERFACE_H
 
-#include <stdint.h>
-#include <string>
 
 #include <boost/signals2/last_value.hpp>
 #include <boost/signals2/signal.hpp>

@@ -8,9 +8,6 @@
 #ifndef DYNAMIC_GOVERNANCE_MISC_H
 #define DYNAMIC_GOVERNANCE_MISC_H
 
-#include "governance.h"
-#include "init.h"
-#include "main.h"
 
 class CGovernanceVote;
 

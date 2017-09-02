@@ -10,10 +10,7 @@
 
 #include "primitives/block.h"
 #include "bloom.h"
-#include "serialize.h"
-#include "uint256.h"
 
-#include <vector>
 
 /** Data structure that represents a partial merkle tree.
  *

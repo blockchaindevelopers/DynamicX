@@ -8,8 +8,6 @@
 
 #include "serialize.h"
 
-#include <stdlib.h>
-#include <string>
 
 typedef int64_t CAmount;
 

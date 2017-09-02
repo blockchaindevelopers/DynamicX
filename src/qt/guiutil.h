@@ -54,6 +54,10 @@ namespace GUIUtil
     bool parseDynamicURI(QString uri, SendCoinsRecipient *out);
     QString formatDynamicURI(const SendCoinsRecipient &info);
 
+	// SYSCOIN
+	QString formatBitcoinURI(const SendCoinsRecipient &info);
+	QString formatSequenceURI(const SendCoinsRecipient &info);
+	
     // Returns true if given address+amount meets "dust" definition
     bool isDust(const QString& address, const CAmount& amount);
 

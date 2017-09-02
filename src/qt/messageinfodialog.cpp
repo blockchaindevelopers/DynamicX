@@ -4,14 +4,14 @@
 #include "messagetablemodel.h"
 #include "guiutil.h"
 #include "walletmodel.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "ui_interface.h"
 #include <QDataWidgetMapper>
 #include <QMessageBox>
-#include "rpc/server.h"
+#include "rpcserver.h"
 using namespace std;
 
-extern CRPCTable tableRPC;
+extern const CRPCTable tableRPC;
 MessageInfoDialog::MessageInfoDialog( QWidget *parent) :
     QDialog(parent),
     ui(new Ui::MessageInfoDialog), mapper(0), model(0)

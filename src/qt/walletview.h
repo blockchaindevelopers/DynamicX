@@ -26,6 +26,11 @@ class TransactionView;
 class MultisigDialog;
 // class DNSPage;
 class WalletModel;
+class IdentityView;
+class CertView;
+class OfferView;
+class EscrowView;
+class MessageView;
 
 QT_BEGIN_NAMESPACE
 class QLabel;
@@ -77,6 +82,19 @@ private:
     DynodeList *dynodeListPage;
     // DNSPage *dnsPage;
 
+	// SYSCOIN
+    IdentityView *identityView;
+	EscrowView *escrowView;
+	MessageView *messageView;
+	CertView *certView;
+    OfferView *offerView;
+    
+    QStackedWidget* identityListPage;
+	QStackedWidget* escrowListPage;
+    QStackedWidget* messageListPage;
+	QStackedWidget* offerListPage;
+    QStackedWidget *certListPage;
+    
     QProgressDialog *progressDialog;
     QLabel *transactionSum;
     const PlatformStyle *platformStyle;
@@ -96,7 +114,14 @@ public Q_SLOTS:
     void gotoDynodePage();
     /** Switch to DNS page */
     // void gotoDNSPage();
-
+    
+	// SYSCOIN
+    void gotoIdentityListPage();
+    void gotoEscrowListPage();
+    void gotoMessageListPage();
+    void gotoOfferListPage();
+    void gotoCertListPage();
+    
     /** Show Sign/Verify Message dialog and switch to sign message tab */
     void gotoSignMessageTab(QString addr = "");
     /** Show Sign/Verify Message dialog and switch to verify message tab */

@@ -40,7 +40,7 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
-#if BOOST_FILESYSTEM_VERSION >= 3
+#if BOOST_FILEDYNTEM_VERSION >= 3
 #include <boost/filesystem/detail/utf8_codecvt_facet.hpp>
 #endif
 #include <boost/scoped_array.hpp>
@@ -70,7 +70,7 @@
 #include <QFontDatabase>
 #endif
 
-#if BOOST_FILESYSTEM_VERSION >= 3
+#if BOOST_FILEDYNTEM_VERSION >= 3
 static boost::filesystem::detail::utf8_codecvt_facet utf8;
 #endif
 
@@ -227,6 +227,64 @@ bool parseDynamicURI(QString uri, SendCoinsRecipient *out)
     }
     QUrl uriInstance(uri);
     return parseDynamicURI(uriInstance, out);
+}
+
+// SYSCOIN
+
+QString formatBitcoinURI(const SendCoinsRecipient &info)
+{
+    QString ret = QString("bitcoin:%1").arg(info.address);
+    int paramCount = 0;
+
+    if (info.amount)
+    {
+        ret += QString("?amount=%1").arg(DynamicUnits::format(DynamicUnits::DYN, info.amount, false, DynamicUnits::separatorNever));
+        paramCount++;
+    }
+
+    if (!info.label.isEmpty())
+    {
+        QString lbl(QUrl::toPercentEncoding(info.label));
+        ret += QString("%1label=%2").arg(paramCount == 0 ? "?" : "&").arg(lbl);
+        paramCount++;
+    }
+
+    if (!info.message.isEmpty())
+    {
+        QString msg(QUrl::toPercentEncoding(info.message));
+        ret += QString("%1message=%2").arg(paramCount == 0 ? "?" : "&").arg(msg);
+        paramCount++;
+    }
+
+    return ret;
+}
+
+QString formatSequenceURI(const SendCoinsRecipient &info)
+{
+    QString ret = QString("sequence:%1").arg(info.address);
+    int paramCount = 0;
+
+    if (info.amount)
+    {
+        ret += QString("?amount=%1").arg(DynamicUnits::format(DynamicUnits::DYN, info.amount, false, DynamicUnits::separatorNever));
+        paramCount++;
+    }
+
+    if (!info.label.isEmpty())
+    {
+        QString lbl(QUrl::toPercentEncoding(info.label));
+        ret += QString("%1label=%2").arg(paramCount == 0 ? "?" : "&").arg(lbl);
+        paramCount++;
+    }
+
+    if (!info.message.isEmpty())
+    {
+        QString msg(QUrl::toPercentEncoding(info.message));
+        ret += QString("%1message=%2").arg(paramCount == 0 ? "?" : "&").arg(msg);
+        paramCount++;
+    }
+
+    return ret;
 }
 
 QString formatDynamicURI(const SendCoinsRecipient &info)
@@ -938,7 +996,7 @@ void setClipboard(const QString& str)
     QApplication::clipboard()->setText(str, QClipboard::Selection);
 }
 
-#if BOOST_FILESYSTEM_VERSION >= 3
+#if BOOST_FILEDYNTEM_VERSION >= 3
 boost::filesystem::path qstringToBoostPath(const QString &path)
 {
     return boost::filesystem::path(path.toStdString(), utf8);

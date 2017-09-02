@@ -1,12 +1,12 @@
-#ifndef MYALIASLISTPAGE_H
-#define MYALIASLISTPAGE_H
+#ifndef MYIDENTITYLISTPAGE_H
+#define MYIDENTITYLISTPAGE_H
 
 #include <QDialog>
 class PlatformStyle;
 namespace Ui {
-    class MyAliasListPage;
+    class MyIdentityListPage;
 }
-class AliasTableModel;
+class IdentityTableModel;
 class OptionsModel;
 class ClientModel;
 class WalletModel;
@@ -18,19 +18,19 @@ class QMenu;
 class QModelIndex;
 QT_END_NAMESPACE
 
-/** Widget that shows a list of owned aliases.
+/** Widget that shows a list of owned identities.
   */
-class MyAliasListPage : public QDialog
+class MyIdentityListPage : public QDialog
 {
     Q_OBJECT
 
 public:
 
 
-    explicit MyAliasListPage(const PlatformStyle *platformStyle, QWidget *parent = 0);
-    ~MyAliasListPage();
+    explicit MyIdentityListPage(const PlatformStyle *platformStyle, QWidget *parent = 0);
+    ~MyIdentityListPage();
 
-    void setModel(WalletModel*, AliasTableModel *model);
+    void setModel(WalletModel*, IdentityTableModel *model);
     void setOptionsModel(ClientModel* clientmodel, OptionsModel *optionsModel);
     const QString &getReturnValue() const { return returnValue; }
 	void showEvent ( QShowEvent * event );
@@ -40,39 +40,39 @@ public Q_SLOTS:
 private:
 	ClientModel* clientModel;
 	WalletModel *walletModel;
-    Ui::MyAliasListPage *ui;
-    AliasTableModel *model;
+    Ui::MyIdentityListPage *ui;
+    IdentityTableModel *model;
     OptionsModel *optionsModel;
     QString returnValue;
     QSortFilterProxyModel *proxyModel;
     QMenu *contextMenu;
     QAction *deleteAction; // to be able to explicitly disable it
-    QString newAliasToSelect;
+    QString newIdentityToSelect;
 	const PlatformStyle *platformStyle;
 private Q_SLOTS:
-    /** Create a new alias */
-    void on_newAlias_clicked();
-    /** Copy alias of currently selected alias entry to clipboard */
-    void on_copyAlias_clicked();
+    /** Create a new identity */
+    void on_newIdentity_clicked();
+    /** Copy identity of currently selected identity entry to clipboard */
+    void on_copyIdentity_clicked();
 
-    /** Edit currently selected alias entry (no button) */
+    /** Edit currently selected identity entry (no button) */
     void on_editButton_clicked();
     /** Export button clicked */
     void on_exportButton_clicked();
-    /** transfer the alias to a syscoin address  */
+    /** transfer the identity to a dynamic address  */
     void on_transferButton_clicked();
 	void on_refreshButton_clicked();
 	void on_newPubKey_clicked();
 	void on_whitelistButton_clicked();
     /** Set button states based onf selected tab and selection */
     void selectionChanged();
-    /** Spawn contextual menu (right mouse menu) for alias book entry */
+    /** Spawn contextual menu (right mouse menu) for identity book entry */
     void contextualMenu(const QPoint &point);
-    /** New entry/entries were added to alias table */
-    void selectNewAlias(const QModelIndex &parent, int begin, int /*end*/);
+    /** New entry/entries were added to identity table */
+    void selectNewIdentity(const QModelIndex &parent, int begin, int /*end*/);
 
 Q_SIGNALS:
-    void transferAlias(QString addr);
+    void transferIdentity(QString addr);
 };
 
-#endif // MYALIASLISTPAGE_H
+#endif // MYIDENTITYLISTPAGE_H

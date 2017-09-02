@@ -1,5 +1,5 @@
-#include "offeracceptdialogzec.h"
-#include "ui_offeracceptdialogzec.h"
+#include "offeracceptdialogseq.h"
+#include "ui_offeracceptdialogseq.h"
 #include "init.h"
 #include "util.h"
 #include "offerpaydialog.h"
@@ -7,14 +7,15 @@
 #include "guiconstants.h"
 #include "guiutil.h"
 #include "platformstyle.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include <QMessageBox>
-#include "rpc/server.h"
+#include "rpcserver.h"
 #include "pubkey.h"
 #include "wallet/wallet.h"
 #include "walletmodel.h"
 #include "main.h"
 #include "utilmoneystr.h"
+#include "protocol/identity.h"
 #include <QDesktopServices>
 #if QT_VERSION < 0x050000
 #include <QUrl>
@@ -23,7 +24,7 @@
 #endif
 #include <QPixmap>
 #if defined(HAVE_CONFIG_H)
-#include "config/syscoin-config.h" /* for USE_QRCODE */
+#include "config/dynamic-config.h" /* for USE_QRCODE */
 #endif
 #ifdef USE_QRCODE
 #include <qrencode.h>
@@ -32,16 +33,16 @@ using namespace std;
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
-#include "qzecjsonrpcclient.h"
-extern CRPCTable tableRPC;
-OfferAcceptDialogZEC::OfferAcceptDialogZEC(WalletModel* model, const PlatformStyle *platformStyle, QString strAliasPeg, QString alias, QString offer, QString quantity, QString notes, QString title, QString currencyCode, QString sysPrice, QString sellerAlias, QString address, QString arbiter, QWidget *parent) :
+#include "qseqjsonrpcclient.h"
+extern const CRPCTable tableRPC;
+OfferAcceptDialogSEQ::OfferAcceptDialogSEQ(WalletModel* model, const PlatformStyle *platformStyle, QString strIdentityPeg, QString identity, QString offer, QString quantity, QString notes, QString title, QString currencyCode, QString sysPrice, QString sellerIdentity, QString address, QString arbiter, QWidget *parent) :
     QDialog(parent),
 	walletModel(model),
-    ui(new Ui::OfferAcceptDialogZEC), platformStyle(platformStyle), alias(alias), offer(offer), notes(notes), quantity(quantity), title(title), sellerAlias(sellerAlias), address(address), arbiter(arbiter)
+    ui(new Ui::OfferAcceptDialogSEQ), platformStyle(platformStyle), identity(identity), offer(offer), notes(notes), quantity(quantity), title(title), sellerIdentity(sellerIdentity), address(address), arbiter(arbiter)
 {
     ui->setupUi(this);
 	QString theme = GUIUtil::getThemeName();
-	ui->aboutShadeZEC->setPixmap(QPixmap(":/images/" + theme + "/about_zec"));
+	ui->aboutShadeSEQ->setPixmap(QPixmap(":/images/" + theme + "/about_seq"));
 	ui->checkBox->setEnabled(false);
 	ui->checkBox->setChecked(false);
 	if(arbiter.size() > 0)
@@ -50,62 +51,62 @@ OfferAcceptDialogZEC::OfferAcceptDialogZEC(WalletModel* model, const PlatformSty
 		ui->checkBox->setChecked(true);
 		ui->escrowEdit->setText(arbiter);
 	}
-    int zecprecision;
-    CAmount zecPrice = convertSyscoinToCurrencyCode(vchFromString(strAliasPeg.toStdString()), vchFromString("ZEC"), AmountFromValue(sysPrice.toStdString()), chainActive.Tip()->nHeight, zecprecision);
-	if(zecPrice > 0)
-		priceZec = QString::fromStdString(strprintf("%.*f", zecprecision, ValueFromAmount(zecPrice).get_real()*quantity.toUInt()));
+    int seqprecision;
+    CAmount seqPrice = convertDynamicToCurrencyCode(vchFromString(strIdentityPeg.toStdString()), vchFromString("SEQ"), AmountFromValue(sysPrice.toStdString()), chainActive.Tip()->nHeight, seqprecision);
+	if(seqPrice > 0)
+		priceSeq = QString::fromStdString(strprintf("%.*f", seqprecision, ValueFromAmount(seqPrice).get_real()*quantity.toUInt()));
 	else
 	{
         QMessageBox::critical(this, windowTitle(),
-            tr("Could not find ZEC currency in the rates peg for this offer")
+            tr("Could not find SEQ currency in the rates peg for this offer")
                 ,QMessageBox::Ok, QMessageBox::Ok);
 		reject();
 		return;
 	}
 
 	string strCurrencyCode = currencyCode.toStdString();
-	ui->zcashInstructionLabel->setText(tr("After paying for this item, please enter the ZCash Transaction ID and click on the confirm button below."));
+	ui->sequenceInstructionLabel->setText(tr("After paying for this item, please enter the Sequence Transaction ID and click on the confirm button below."));
 
-	ui->escrowDisclaimer->setText(QString("<font color='blue'>") + tr("Enter a Syscoin arbiter that is mutally trusted between yourself and the merchant. Then enable the 'Use Escrow' checkbox") + QString("</font>"));
+	ui->escrowDisclaimer->setText(QString("<font color='blue'>") + tr("Enter a Dynamic arbiter that is mutally trusted between yourself and the merchant. Then enable the 'Use Escrow' checkbox") + QString("</font>"));
 	ui->escrowDisclaimer->setVisible(true);
 	if (!platformStyle->getImagesOnButtons())
 	{
 		ui->confirmButton->setIcon(QIcon());
-		ui->openZecWalletButton->setIcon(QIcon());
+		ui->openSeqWalletButton->setIcon(QIcon());
 		ui->cancelButton->setIcon(QIcon());
 
 	}
 	else
 	{
 		ui->confirmButton->setIcon(platformStyle->SingleColorIcon(":/icons/" + theme + "/transaction_confirmed"));
-		ui->openZecWalletButton->setIcon(platformStyle->SingleColorIcon(":/icons/" + theme + "/send"));
+		ui->openSeqWalletButton->setIcon(platformStyle->SingleColorIcon(":/icons/" + theme + "/send"));
 		ui->cancelButton->setIcon(platformStyle->SingleColorIcon(":/icons/" + theme + "/quit"));
 	}
 	this->offerPaid = false;
 	connect(ui->checkBox,SIGNAL(clicked(bool)),SLOT(onEscrowCheckBoxChanged(bool)));
 	connect(ui->confirmButton, SIGNAL(clicked()), this, SLOT(tryAcceptOffer()));
-	connect(ui->openZecWalletButton, SIGNAL(clicked()), this, SLOT(openZECWallet()));
+	connect(ui->openSeqWalletButton, SIGNAL(clicked()), this, SLOT(openSEQWallet()));
 	setupEscrowCheckboxState(ui->checkBox->isChecked());
 	
 }
-void OfferAcceptDialogZEC::on_escrowEdit_textChanged(const QString & text)
+void OfferAcceptDialogSEQ::on_escrowEdit_textChanged(const QString & text)
 {
 	if(ui->escrowEdit->text().size() > 0)
 		ui->checkBox->setEnabled(true);
 	else
 		ui->checkBox->setEnabled(false);
 }
-void OfferAcceptDialogZEC::SetupQRCode(const QString& price)
+void OfferAcceptDialogSEQ::SetupQRCode(const QString& price)
 {
 
 #ifdef USE_QRCODE
-	QString message = tr("Payment on Syscoin Decentralized Marketplace. Offer ID: ") + this->offer;
+	QString message = tr("Payment on Dynamic Decentralized Marketplace. Offer ID: ") + this->offer;
 	SendCoinsRecipient info;
 	info.address = this->multisigaddress.size() > 0? this->multisigaddress: this->zaddress;
-	info.label = this->sellerAlias;
+	info.label = this->sellerIdentity;
 	info.message = message;
 	ParseMoney(price.toStdString(), info.amount);
-	QString uri = GUIUtil::formatZCashURI(info);
+	QString uri = GUIUtil::formatSequenceURI(info);
 
 	ui->lblQRCode->setText("");
     if(!uri.isEmpty())
@@ -138,26 +139,26 @@ void OfferAcceptDialogZEC::SetupQRCode(const QString& price)
     }
 #endif
 }
-void OfferAcceptDialogZEC::on_cancelButton_clicked()
+void OfferAcceptDialogSEQ::on_cancelButton_clicked()
 {
     reject();
 }
-OfferAcceptDialogZEC::~OfferAcceptDialogZEC()
+OfferAcceptDialogSEQ::~OfferAcceptDialogSEQ()
 {
     delete ui;
 }
-bool OfferAcceptDialogZEC::setupEscrowCheckboxState(bool desiredStateEnabled)
+bool OfferAcceptDialogSEQ::setupEscrowCheckboxState(bool desiredStateEnabled)
 {
 	double total = 0;
 	if(desiredStateEnabled)
 	{
 		// get new multisig address from escrow service
 		UniValue params(UniValue::VARR);
-		params.push_back(this->alias.toStdString());
+		params.push_back(this->identity.toStdString());
 		params.push_back(this->offer.toStdString());
 		params.push_back(this->quantity.toStdString());
 		params.push_back(ui->escrowEdit->text().trimmed().toStdString());
-		params.push_back("ZEC");
+		params.push_back("SEQ");
 		UniValue resCreate;
 		try
 		{
@@ -203,23 +204,23 @@ bool OfferAcceptDialogZEC::setupEscrowCheckboxState(bool desiredStateEnabled)
 			return false;
 		}
 		qstrPrice = QString::number(total);
-		ui->acceptMessage->setText(tr("Are you sure you want to purchase") + QString(" <b>%1</b> ").arg(quantity) + tr("of") +  QString(" <b>%1</b> ").arg(title) + tr("from merchant") + QString(" <b>%1</b>").arg(sellerAlias) + QString("? ") + tr("Follow the steps below to successfully pay via ZCash:") + QString("<br/><br/>") + tr("1. If you are using escrow, please enter your escrow arbiter in the input box below and check the 'Use Escrow' checkbox. Leave the escrow checkbox unchecked if you do not wish to use escrow.") + QString("<br/>") + tr("2. Open your ZCash wallet. You may use the QR Code to the left to scan the payment request into your wallet or click on 'Open ZEC Wallet' if you are on the desktop and have ZCash Core installed.") + QString("<br/>") + tr("3. Pay") + QString(" <b>%1 ZEC</b> ").arg(qstrPrice) + tr("to") + QString(" <b>%5</b> ").arg(multisigaddress) + tr("using your ZCash wallet. Please enable dynamic fees in your ZEC wallet upon payment for confirmation in a timely manner.") + QString("<br/>") + tr("4. Enter the Transaction ID and then click on the 'Confirm Payment' button once you have paid."));
-		ui->escrowDisclaimer->setText(QString("<font color='green'>") + tr("Escrow created successfully! Please fund using ZEC address ") + QString("<b>%1</b></font>").arg(multisigaddress));
+		ui->acceptMessage->setText(tr("Are you sure you want to purchase") + QString(" <b>%1</b> ").arg(quantity) + tr("of") +  QString(" <b>%1</b> ").arg(title) + tr("from merchant") + QString(" <b>%1</b>").arg(sellerIdentity) + QString("? ") + tr("Follow the steps below to successfully pay via Sequence:") + QString("<br/><br/>") + tr("1. If you are using escrow, please enter your escrow arbiter in the input box below and check the 'Use Escrow' checkbox. Leave the escrow checkbox unchecked if you do not wish to use escrow.") + QString("<br/>") + tr("2. Open your Sequence wallet. You may use the QR Code to the left to scan the payment request into your wallet or click on 'Open SEQ Wallet' if you are on the desktop and have Sequence Core installed.") + QString("<br/>") + tr("3. Pay") + QString(" <b>%1 SEQ</b> ").arg(qstrPrice) + tr("to") + QString(" <b>%5</b> ").arg(multisigaddress) + tr("using your Sequence wallet. Please enable dynamic fees in your SEQ wallet upon payment for confirmation in a timely manner.") + QString("<br/>") + tr("4. Enter the Transaction ID and then click on the 'Confirm Payment' button once you have paid."));
+		ui->escrowDisclaimer->setText(QString("<font color='green'>") + tr("Escrow created successfully! Please fund using SEQ address ") + QString("<b>%1</b></font>").arg(multisigaddress));
 
 	}
 	else
 	{
 		convertAddress();
-		ui->escrowDisclaimer->setText(QString("<font color='blue'>") + tr("Enter a Syscoin arbiter that is mutally trusted between yourself and the merchant. Then enable the 'Use Escrow' checkbox") + QString("</font>"));
-		qstrPrice = priceZec;
-		ui->acceptMessage->setText(tr("Are you sure you want to purchase") + QString(" <b>%1</b> ").arg(quantity) + tr("of") +  QString(" <b>%1</b> ").arg(title) + tr("from merchant") + QString(" <b>%1</b>").arg(sellerAlias) + QString("? ") + tr("Follow the steps below to successfully pay via ZCash:") + QString("<br/><br/>") + tr("1. If you are using escrow, please enter your escrow arbiter in the input box below and check the 'Use Escrow' checkbox. Leave the escrow checkbox unchecked if you do not wish to use escrow.") + QString("<br/>") + tr("2. Open your ZCash wallet. You may use the QR Code to the left to scan the payment request into your wallet or click on 'Open ZEC Wallet' if you are on the desktop and have ZCash Core installed.") + QString("<br/>") + tr("3. Pay") + QString(" <b>%1 ZEC</b> ").arg(qstrPrice) + tr("to") + QString(" <b>%5</b> ").arg(zaddress) + tr("using your ZCash wallet. Please enable dynamic fees in your ZEC wallet upon payment for confirmation in a timely manner.") + QString("<br/>") + tr("4. Enter the Transaction ID and then click on the 'Confirm Payment' button once you have paid."));
+		ui->escrowDisclaimer->setText(QString("<font color='blue'>") + tr("Enter a Dynamic arbiter that is mutally trusted between yourself and the merchant. Then enable the 'Use Escrow' checkbox") + QString("</font>"));
+		qstrPrice = priceSeq;
+		ui->acceptMessage->setText(tr("Are you sure you want to purchase") + QString(" <b>%1</b> ").arg(quantity) + tr("of") +  QString(" <b>%1</b> ").arg(title) + tr("from merchant") + QString(" <b>%1</b>").arg(sellerIdentity) + QString("? ") + tr("Follow the steps below to successfully pay via Sequence:") + QString("<br/><br/>") + tr("1. If you are using escrow, please enter your escrow arbiter in the input box below and check the 'Use Escrow' checkbox. Leave the escrow checkbox unchecked if you do not wish to use escrow.") + QString("<br/>") + tr("2. Open your Sequence wallet. You may use the QR Code to the left to scan the payment request into your wallet or click on 'Open SEQ Wallet' if you are on the desktop and have Sequence Core installed.") + QString("<br/>") + tr("3. Pay") + QString(" <b>%1 SEQ</b> ").arg(qstrPrice) + tr("to") + QString(" <b>%5</b> ").arg(zaddress) + tr("using your Sequence wallet. Please enable dynamic fees in your SEQ wallet upon payment for confirmation in a timely manner.") + QString("<br/>") + tr("4. Enter the Transaction ID and then click on the 'Confirm Payment' button once you have paid."));
 		SetupQRCode(qstrPrice);
 		return false;
 	}
 	SetupQRCode(qstrPrice);
 	return true;
 }
-void OfferAcceptDialogZEC::convertAddress()
+void OfferAcceptDialogSEQ::convertAddress()
 {
 	UniValue params(UniValue::VARR);
 	params.push_back(this->address.toStdString());
@@ -232,22 +233,22 @@ void OfferAcceptDialogZEC::convertAddress()
 	catch (UniValue& objError)
 	{
 		QMessageBox::critical(this, windowTitle(),
-			tr("Failed to generate ZCash address, please close this screen and try again"),
+			tr("Failed to generate Sequence address, please close this screen and try again"),
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
 	catch(std::exception& e)
 	{
 		QMessageBox::critical(this, windowTitle(),
-			tr("There was an exception trying to generate ZCash address, please close this screen and try again: ") + QString::fromStdString(e.what()),
+			tr("There was an exception trying to generate Sequence address, please close this screen and try again: ") + QString::fromStdString(e.what()),
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
 
 }
-void OfferAcceptDialogZEC::onEscrowCheckBoxChanged(bool toggled)
+void OfferAcceptDialogSEQ::onEscrowCheckBoxChanged(bool toggled)
 {
 	ui->checkBox->setChecked(setupEscrowCheckboxState(toggled));
 }
-void OfferAcceptDialogZEC::slotConfirmedFinished(QNetworkReply * reply){
+void OfferAcceptDialogSEQ::slotConfirmedFinished(QNetworkReply * reply){
 	if(reply->error() != QNetworkReply::NoError) {
 		ui->confirmButton->setText(m_buttonText);
 		ui->confirmButton->setEnabled(true);
@@ -298,7 +299,7 @@ void OfferAcceptDialogZEC::slotConfirmedFinished(QNetworkReply * reply){
 								ui->confirmButton->setText(m_buttonText);
 								ui->confirmButton->setEnabled(true);
 								QMessageBox::information(this, windowTitle(),
-									tr("Transaction was found in the ZCash blockchain! Full payment has been detected. TXID: ") + ui->exttxidEdit->text().trimmed(),
+									tr("Transaction was found in the Sequence blockchain! Full payment has been detected. TXID: ") + ui->exttxidEdit->text().trimmed(),
 									QMessageBox::Ok, QMessageBox::Ok);
 								reply->deleteLater();
 								if(ui->checkBox->isChecked())
@@ -329,36 +330,36 @@ void OfferAcceptDialogZEC::slotConfirmedFinished(QNetworkReply * reply){
 	ui->confirmButton->setText(m_buttonText);
 	ui->confirmButton->setEnabled(true);
 	QMessageBox::warning(this, windowTitle(),
-		tr("Payment not found in the ZCash blockchain! Please try again later"),
+		tr("Payment not found in the Sequence blockchain! Please try again later"),
 			QMessageBox::Ok, QMessageBox::Ok);
 }
-void OfferAcceptDialogZEC::CheckPaymentInZEC()
+void OfferAcceptDialogSEQ::CheckPaymentInSEQ()
 {
 	if(!ui->checkBox->isChecked())
 		m_address = this->zaddress;
 	else
 		m_address = this->multisigaddress;
-	ZecRpcClient zecClient;
+	SeqRpcClient seqClient;
 	m_buttonText = ui->confirmButton->text();
 	ui->confirmButton->setText(tr("Please Wait..."));	
 	ui->confirmButton->setEnabled(false);
 	QNetworkAccessManager *nam = new QNetworkAccessManager(this);  
 	connect(nam, SIGNAL(finished(QNetworkReply *)), this, SLOT(slotConfirmedFinished(QNetworkReply *)));
-	zecClient.sendRawTxRequest(nam, ui->exttxidEdit->text().trimmed());
+	seqClient.sendRawTxRequest(nam, ui->exttxidEdit->text().trimmed());
 }
 // send offeraccept with offer guid/qty as params and then send offerpay with wtxid (first param of response) as param, using RPC commands.
-void OfferAcceptDialogZEC::tryAcceptOffer()
+void OfferAcceptDialogSEQ::tryAcceptOffer()
 {
 	if (ui->exttxidEdit->text().trimmed().isEmpty()) {
         ui->exttxidEdit->setText("");
         QMessageBox::critical(this, windowTitle(),
-        tr("Please enter a valid ZCash Transaction ID into the input box and try again"),
+        tr("Please enter a valid Sequence Transaction ID into the input box and try again"),
             QMessageBox::Ok, QMessageBox::Ok);
         return;
     }
-	CheckPaymentInZEC();
+	CheckPaymentInSEQ();
 }
-void OfferAcceptDialogZEC::acceptOffer(){
+void OfferAcceptDialogSEQ::acceptOffer(){
 		if(!walletModel) return;
 		WalletModel::UnlockContext ctx(walletModel->requestUnlock());
 		if(!ctx.isValid())
@@ -382,12 +383,12 @@ void OfferAcceptDialogZEC::acceptOffer(){
 			return;
 		}
 		this->offerPaid = false;
-		params.push_back(this->alias.toStdString());
+		params.push_back(this->identity.toStdString());
 		params.push_back(this->offer.toStdString());
 		params.push_back(this->quantity.toStdString());
 		params.push_back(this->notes.toStdString());
 		params.push_back(ui->exttxidEdit->text().trimmed().toStdString());
-		params.push_back("ZEC");
+		params.push_back("SEQ");
 
 
 	    try {
@@ -416,10 +417,10 @@ void OfferAcceptDialogZEC::acceptOffer(){
 				QString offerAcceptTXID = QString::fromStdString(strResult);
 				if(offerAcceptTXID != QString(""))
 				{
-					OfferPayDialog dlg(platformStyle, this->title, this->quantity, this->qstrPrice, "ZEC", this);
+					OfferPayDialog dlg(platformStyle, this->title, this->quantity, this->qstrPrice, "SEQ", this);
 					dlg.exec();
 					this->offerPaid = true;
-					OfferAcceptDialogZEC::accept();
+					OfferAcceptDialogSEQ::accept();
 					return;
 
 				}
@@ -441,7 +442,7 @@ void OfferAcceptDialogZEC::acceptOffer(){
 			return;
 		}
 }
-void OfferAcceptDialogZEC::acceptEscrow()
+void OfferAcceptDialogSEQ::acceptEscrow()
 {
 		if(!walletModel) return;
 		WalletModel::UnlockContext ctx(walletModel->requestUnlock());
@@ -466,13 +467,13 @@ void OfferAcceptDialogZEC::acceptEscrow()
 			return;
 		}
 		this->offerPaid = false;
-		params.push_back(this->alias.toStdString());
+		params.push_back(this->identity.toStdString());
 		params.push_back(this->offer.toStdString());
 		params.push_back(this->quantity.toStdString());
 		params.push_back(this->notes.toStdString());
 		params.push_back(ui->escrowEdit->text().toStdString());
 		params.push_back(ui->exttxidEdit->text().trimmed().toStdString());
-		params.push_back("ZEC");
+		params.push_back("SEQ");
 		params.push_back(m_redeemScript.toStdString());
 		params.push_back(QString::number(m_height).toStdString());
 
@@ -502,10 +503,10 @@ void OfferAcceptDialogZEC::acceptEscrow()
 				QString escrowTXID = QString::fromStdString(strResult);
 				if(escrowTXID != QString(""))
 				{
-					OfferEscrowDialog dlg(platformStyle, this->title, this->quantity, this->qstrPrice, "ZEC", this);
+					OfferEscrowDialog dlg(platformStyle, this->title, this->quantity, this->qstrPrice, "SEQ", this);
 					dlg.exec();
 					this->offerPaid = true;
-					OfferAcceptDialogZEC::accept();
+					OfferAcceptDialogSEQ::accept();
 					return;
 
 				}
@@ -530,18 +531,18 @@ void OfferAcceptDialogZEC::acceptEscrow()
 
 
 }
-void OfferAcceptDialogZEC::openZECWallet()
+void OfferAcceptDialogSEQ::openSEQWallet()
 {
-	QString message = tr("Payment on Syscoin Decentralized Marketplace. Offer ID: ") + this->offer;
+	QString message = tr("Payment on Dynamic Decentralized Marketplace. Offer ID: ") + this->offer;
 	SendCoinsRecipient info;
 	info.address = this->multisigaddress.size() > 0? this->multisigaddress: this->zaddress;
-	info.label = this->sellerAlias;
+	info.label = this->sellerIdentity;
 	info.message = message;
 	ParseMoney(this->qstrPrice.toStdString(), info.amount);
-	QString uri = GUIUtil::formatZCashURI(info);
+	QString uri = GUIUtil::formatSequenceURI(info);
 	QDesktopServices::openUrl(QUrl(uri, QUrl::TolerantMode));
 }
-bool OfferAcceptDialogZEC::getPaymentStatus()
+bool OfferAcceptDialogSEQ::getPaymentStatus()
 {
 	return this->offerPaid;
 }

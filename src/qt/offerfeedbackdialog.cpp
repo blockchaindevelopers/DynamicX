@@ -2,15 +2,15 @@
 #include "ui_offerfeedbackdialog.h"
 
 #include "guiutil.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "platformstyle.h"
 #include "ui_interface.h"
 #include <QMessageBox>
-#include "rpc/server.h"
+#include "rpcserver.h"
 #include "walletmodel.h"
 using namespace std;
 
-extern CRPCTable tableRPC;
+extern const CRPCTable tableRPC;
 OfferFeedbackDialog::OfferFeedbackDialog(WalletModel* model, const QString &offerStr, const QString &acceptStr, QWidget *parent) :
     QDialog(parent),
 	walletModel(model),
@@ -29,12 +29,12 @@ OfferFeedbackDialog::OfferFeedbackDialog(WalletModel* model, const QString &offe
 		ui->primaryFeedback->setVisible(false);
 		return;
 	}
-	ui->manageInfo->setText(tr("This offer payment was for Offer ID") + QString(" <b>%1</b> ").arg(offer) + tr("for") + QString(" <b>%1</b> ").arg(offertitle) + tr("totalling") + QString(" <b>%1 %2 (%3 SYS)</b>.").arg(total).arg(currency).arg(systotal) + tr("Buyer:") + QString(" <b>%1</b>, ").arg(buyer) + tr("merchant:") + QString(" <b>%1</b> ").arg(seller));
-	OfferType offerType = findYourOfferRoleFromAliases(buyer, seller);
+	ui->manageInfo->setText(tr("This offer payment was for Offer ID") + QString(" <b>%1</b> ").arg(offer) + tr("for") + QString(" <b>%1</b> ").arg(offertitle) + tr("totalling") + QString(" <b>%1 %2 (%3 DYN)</b>.").arg(total).arg(currency).arg(systotal) + tr("Buyer:") + QString(" <b>%1</b>, ").arg(buyer) + tr("merchant:") + QString(" <b>%1</b> ").arg(seller));
+	OfferType offerType = findYourOfferRoleFromIdentities(buyer, seller);
 	
 	if(offerType == None)
 	{
-		ui->manageInfo2->setText(tr("You cannot leave feedback this offer purchase because you do not own either the buyer or merchant aliases."));
+		ui->manageInfo2->setText(tr("You cannot leave feedback this offer purchase because you do not own either the buyer or merchant identities."));
 		ui->feedbackButton->setEnabled(false);
 		ui->primaryLabel->setVisible(false);
 		ui->primaryRating->setVisible(false);
@@ -62,7 +62,7 @@ bool OfferFeedbackDialog::lookup(const QString &offer, const QString &acceptGuid
 
 		if (result.type() == UniValue::VOBJ)
 		{
-			seller = QString::fromStdString(find_value(result.get_obj(), "alias").get_str());
+			seller = QString::fromStdString(find_value(result.get_obj(), "identity").get_str());
 			offertitle = QString::fromStdString(find_value(result.get_obj(), "title").get_str());
 		}
 		 
@@ -151,23 +151,23 @@ void OfferFeedbackDialog::on_feedbackButton_clicked()
 	}	
 }
 
-OfferFeedbackDialog::OfferType OfferFeedbackDialog::findYourOfferRoleFromAliases(const QString &buyer, const QString &seller)
+OfferFeedbackDialog::OfferType OfferFeedbackDialog::findYourOfferRoleFromIdentities(const QString &buyer, const QString &seller)
 {
-	if(isYourAlias(buyer))
+	if(isYourIdentity(buyer))
 		return Buyer;
-	else if(isYourAlias(seller))
+	else if(isYourIdentity(seller))
 		return Seller;
 	else
 		return None;
     
  
 }
-bool OfferFeedbackDialog::isYourAlias(const QString &alias)
+bool OfferFeedbackDialog::isYourIdentity(const QString &identity)
 {
-	string strMethod = string("aliasinfo");
+	string strMethod = string("identityinfo");
     UniValue params(UniValue::VARR); 
 	UniValue result ;
-	params.push_back(alias.toStdString());	
+	params.push_back(identity.toStdString());	
 	try {
 		result = tableRPC.execute(strMethod, params);
 
@@ -184,13 +184,13 @@ bool OfferFeedbackDialog::isYourAlias(const QString &alias)
 	{
 		string strError = find_value(objError, "message").get_str();
 		QMessageBox::critical(this, windowTitle(),
-			tr("Could find alias: ") + QString::fromStdString(strError),
+			tr("Could find identity: ") + QString::fromStdString(strError),
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
 	catch(std::exception& e)
 	{
 		QMessageBox::critical(this, windowTitle(),
-			tr("There was an exception trying to refresh get alias: ") + QString::fromStdString(e.what()),
+			tr("There was an exception trying to refresh get identity: ") + QString::fromStdString(e.what()),
 				QMessageBox::Ok, QMessageBox::Ok);
 	}   
 	return false;

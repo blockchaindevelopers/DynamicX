@@ -1,12 +1,12 @@
 /*
- * Syscoin Developers 2016
+ * Dynamic Developers 2016
  */
 #ifndef ESCROWVIEW_H
 #define ESCROWVIEW_H
 
 #include <QStackedWidget>
 
-class SyscoinGUI;
+class DynamicGUI;
 class ClientModel;
 class WalletModel;
 class EscrowListPage;
@@ -24,7 +24,7 @@ class QAction;
 QT_END_NAMESPACE
 
 /*
-  EscrowView class. This class represents the view to the syscoin Escrows
+  EscrowView class. This class represents the view to the dynamic Escrows
   
 */
 class EscrowView: public QObject
@@ -35,13 +35,13 @@ public:
     explicit EscrowView(const PlatformStyle *platformStyle, QStackedWidget *parent);
     ~EscrowView();
 
-    void setSyscoinGUI(SyscoinGUI *gui);
+    void setDynamicGUI(DynamicGUI *gui);
     /** Set the client model.
         The client model represents the part of the core that communicates with the P2P network, and is wallet-agnostic.
     */
     void setClientModel(ClientModel *clientModel);
     /** Set the wallet model.
-        The wallet model represents a syscoin wallet, and offers access to the list of transactions, address book and sending
+        The wallet model represents a dynamic wallet, and offers access to the list of transactions, address book and sending
         functionality.
     */
     void setWalletModel(WalletModel *walletModel);
@@ -49,7 +49,7 @@ public:
 
 
 private:
-    SyscoinGUI *gui;
+    DynamicGUI *gui;
     ClientModel *clientModel;
     WalletModel *walletModel;
 

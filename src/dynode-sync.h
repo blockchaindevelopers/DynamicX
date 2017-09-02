@@ -9,7 +9,6 @@
 #include "chain.h"
 #include "net.h"
 
-#include <univalue.h>
 
 class CDynodeSync;
 

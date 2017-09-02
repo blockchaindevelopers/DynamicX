@@ -11,14 +11,8 @@
 #include "coins.h"
 #include "dbwrapper.h"
 
-#include "api/bitcore/addressindex.h"
-#include "api/bitcore/spentindex.h"
 #include "api/bitcore/timestampindex.h"
 
-#include <map>
-#include <string>
-#include <utility>
-#include <vector>
 
 class CCoinsViewDBCursor;
 class CBlockFileInfo;

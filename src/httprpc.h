@@ -8,8 +8,6 @@
 #ifndef DYNAMIC_HTTPRPC_H
 #define DYNAMIC_HTTPRPC_H
 
-#include <map>
-#include <string>
 
 class HTTPRequest;
 

@@ -2,15 +2,15 @@
 #include "ui_resellofferdialog.h"
 #include "offertablemodel.h"
 #include "guiutil.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "ui_interface.h"
 #include <QDataWidgetMapper>
 #include <QMessageBox>
 #include <QStringList>
-#include "rpc/server.h"
+#include "rpcserver.h"
 #include "walletmodel.h"
 using namespace std;
-extern CRPCTable tableRPC;
+extern const CRPCTable tableRPC;
 ResellOfferDialog::ResellOfferDialog(QModelIndex *idx, WalletModel* model, QWidget *parent) :
     QDialog(parent),
 	walletModel(model),
@@ -22,7 +22,7 @@ ResellOfferDialog::ResellOfferDialog(QModelIndex *idx, WalletModel* model, QWidg
 	ui->descriptionEdit->setPlainText(idx->data(OfferTableModel::DescriptionRole).toString());
 	ui->offerGUIDLabel->setText(offerGUID);
 	ui->commissionDisclaimer->setText(QString("<font color='blue'>") + tr("Enter the 'percentage' amount(without the % sign) that you would like to mark-up the price to") + QString("</font>"));
-	loadAliases();
+	loadIdentities();
 }
 
 ResellOfferDialog::~ResellOfferDialog()
@@ -42,7 +42,7 @@ bool ResellOfferDialog::saveCurrentRow()
 	string strMethod;
 
 	strMethod = string("offerlink");
-	params.push_back(ui->aliasEdit->currentText().toStdString());
+	params.push_back(ui->identityEdit->currentText().toStdString());
 	params.push_back(ui->offerGUIDLabel->text().toStdString());
 	params.push_back(ui->commissionEdit->text().toStdString());
 	params.push_back(ui->descriptionEdit->toPlainText().toStdString());
@@ -72,10 +72,10 @@ bool ResellOfferDialog::saveCurrentRow()
 
     return false;
 }
-void ResellOfferDialog::loadAliases()
+void ResellOfferDialog::loadIdentities()
 {
-	ui->aliasEdit->clear();
-	string strMethod = string("aliaslist");
+	ui->identityEdit->clear();
+	string strMethod = string("identitylist");
     UniValue params(UniValue::VARR); 
 	UniValue result ;
 	string name_str;
@@ -113,7 +113,7 @@ void ResellOfferDialog::loadAliases()
 				if(expired == 0)
 				{
 					QString name = QString::fromStdString(name_str);
-					ui->aliasEdit->addItem(name);					
+					ui->identityEdit->addItem(name);					
 				}
 				
 			}
@@ -123,13 +123,13 @@ void ResellOfferDialog::loadAliases()
 	{
 		string strError = find_value(objError, "message").get_str();
 		QMessageBox::critical(this, windowTitle(),
-			tr("Could not refresh alias list: ") + QString::fromStdString(strError),
+			tr("Could not refresh identity list: ") + QString::fromStdString(strError),
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
 	catch(std::exception& e)
 	{
 		QMessageBox::critical(this, windowTitle(),
-			tr("There was an exception trying to refresh the alias list: ") + QString::fromStdString(e.what()),
+			tr("There was an exception trying to refresh the identity list: ") + QString::fromStdString(e.what()),
 				QMessageBox::Ok, QMessageBox::Ok);
 	}         
  

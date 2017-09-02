@@ -2,9 +2,9 @@
 #include "ui_offeracceptinfodialog.h"
 #include "init.h"
 #include "util.h"
-#include "offer.h"
+#include "protocol/offer.h"
 #include "guiutil.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "offeraccepttablemodel.h"
 #include "platformstyle.h"
 #include <QMessageBox>
@@ -17,10 +17,10 @@
 #include <QLabel>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
-#include "rpc/server.h"
+#include "rpcserver.h"
 using namespace std;
 
-extern CRPCTable tableRPC;
+extern const CRPCTable tableRPC;
 
 OfferAcceptInfoDialog::OfferAcceptInfoDialog(const PlatformStyle *platformStyle, const QModelIndex &idx, QWidget *parent) :
     QDialog(parent),
@@ -158,7 +158,7 @@ bool OfferAcceptInfoDialog::lookup()
 		if (result.type() == UniValue::VOBJ)
 		{
 			
-			sellerStr = QString::fromStdString(find_value(result.get_obj(), "alias").get_str());
+			sellerStr = QString::fromStdString(find_value(result.get_obj(), "identity").get_str());
 			ui->sellerEdit->setText(sellerStr);
 			QString linkedStr = QString::fromStdString(find_value(result.get_obj(), "offerlink").get_str());
 			if(linkedStr == QString("true"))

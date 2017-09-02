@@ -5,24 +5,24 @@
 #include "offerpaydialog.h"
 #include "platformstyle.h"
 #include "offeracceptdialogbtc.h"
-#include "offeracceptdialogzec.h"
+#include "offeracceptdialogseq.h"
 #include "offerescrowdialog.h"
-#include "offer.h"
-#include "alias.h"
+#include "protocol/offer.h"
+#include "protocol/identity.h"
 #include "guiutil.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include <QMessageBox>
-#include "rpc/server.h"
+#include "rpcserver.h"
 #include "pubkey.h"
 #include "wallet/wallet.h"
 #include "main.h"
 using namespace std;
 
-extern CRPCTable tableRPC;
-OfferAcceptDialog::OfferAcceptDialog(WalletModel* model, const PlatformStyle *platformStyle, QString aliaspeg, QString alias, QString offer, QString quantity, QString notes, QString title, QString currencyCode, QString qstrPrice, QString sellerAlias, QString address, unsigned char paymentOptions, QWidget *parent) :
+extern const CRPCTable tableRPC;
+OfferAcceptDialog::OfferAcceptDialog(WalletModel* model, const PlatformStyle *platformStyle, QString identitypeg, QString identity, QString offer, QString quantity, QString notes, QString title, QString currencyCode, QString qstrPrice, QString sellerIdentity, QString address, unsigned char paymentOptions, QWidget *parent) :
     QDialog(parent),
 	walletModel(model),
-    ui(new Ui::OfferAcceptDialog), platformStyle(platformStyle), aliaspeg(aliaspeg), qstrPrice(qstrPrice), alias(alias), offer(offer), notes(notes), quantity(quantity), title(title), currency(currencyCode), seller(sellerAlias), address(address)
+    ui(new Ui::OfferAcceptDialog), platformStyle(platformStyle), identitypeg(identitypeg), qstrPrice(qstrPrice), identity(identity), offer(offer), notes(notes), quantity(quantity), title(title), currency(currencyCode), seller(sellerIdentity), address(address)
 {
     ui->setupUi(this);
 	QString theme = GUIUtil::getThemeName();
@@ -30,7 +30,7 @@ OfferAcceptDialog::OfferAcceptDialog(WalletModel* model, const PlatformStyle *pl
 	{
 		ui->acceptButton->setIcon(QIcon());
 		ui->acceptBtcButton->setIcon(QIcon());
-		ui->acceptZecButton->setIcon(QIcon());
+		ui->acceptSeqButton->setIcon(QIcon());
 		ui->cancelButton->setIcon(QIcon());
 
 	}
@@ -38,19 +38,19 @@ OfferAcceptDialog::OfferAcceptDialog(WalletModel* model, const PlatformStyle *pl
 	{
 		ui->acceptButton->setIcon(platformStyle->SingleColorIcon(":/icons/" + theme + "/send"));
 		ui->acceptBtcButton->setIcon(platformStyle->SingleColorIcon(":/icons/" + theme + "/send"));
-		ui->acceptZecButton->setIcon(platformStyle->SingleColorIcon(":/icons/" + theme + "/send"));
+		ui->acceptSeqButton->setIcon(platformStyle->SingleColorIcon(":/icons/" + theme + "/send"));
 		ui->cancelButton->setIcon(platformStyle->SingleColorIcon(":/icons/" + theme + "/quit"));
 	}
 	ui->aboutShade->setPixmap(QPixmap(":/images/" + theme + "/about_horizontal"));
 	int sysprecision = 0;
 	double dblPrice = qstrPrice.toDouble();
 	string strCurrencyCode = currencyCode.toStdString();
-	string strAliasPeg = aliaspeg.toStdString();
+	string strIdentityPeg = identitypeg.toStdString();
 	ui->acceptBtcButton->setEnabled(false);
 	ui->acceptBtcButton->setVisible(false);
-	ui->acceptZecButton->setEnabled(false);
-	ui->acceptZecButton->setVisible(false);
-	CAmount sysPrice = convertCurrencyCodeToSyscoin(vchFromString(strAliasPeg), vchFromString(strCurrencyCode), dblPrice, chainActive.Tip()->nHeight, sysprecision);
+	ui->acceptSeqButton->setEnabled(false);
+	ui->acceptSeqButton->setVisible(false);
+	CAmount sysPrice = convertCurrencyCodeToDynamic(vchFromString(strIdentityPeg), vchFromString(strCurrencyCode), dblPrice, chainActive.Tip()->nHeight, sysprecision);
 	if(sysPrice == 0)
 	{
         QMessageBox::critical(this, windowTitle(),
@@ -59,15 +59,15 @@ OfferAcceptDialog::OfferAcceptDialog(WalletModel* model, const PlatformStyle *pl
 		reject();
 		return;
 	}
-	strSYSPrice = QString::fromStdString(strprintf("%.*f", 8, ValueFromAmount(sysPrice).get_real()));
-	QString strTotalSYSPrice = QString::fromStdString(strprintf("%.*f", sysprecision, ValueFromAmount(sysPrice).get_real()*quantity.toUInt()));
-	ui->escrowDisclaimer->setText(QString("<font color='blue'>") + tr("Enter a Syscoin arbiter that is mutally trusted between yourself and the merchant") + QString("</font>"));
+	strDYNPrice = QString::fromStdString(strprintf("%.*f", 8, ValueFromAmount(sysPrice).get_real()));
+	QString strTotalDYNPrice = QString::fromStdString(strprintf("%.*f", sysprecision, ValueFromAmount(sysPrice).get_real()*quantity.toUInt()));
+	ui->escrowDisclaimer->setText(QString("<font color='blue'>") + tr("Enter a Dynamic arbiter that is mutally trusted between yourself and the merchant") + QString("</font>"));
 		
-	ui->acceptMessage->setText(tr("Are you sure you want to purchase") + QString(" <b>%1</b> ").arg(quantity) + tr("of") +  QString(" <b>%1</b> ").arg(title) + tr("from merchant") + QString(" <b>%1</b>").arg(sellerAlias) + QString("? ") + tr("You will be charged") + QString(" <b>%1 %2 (%3 SYS)</b>").arg(qstrPrice).arg(currencyCode).arg(strTotalSYSPrice));
-	if(IsPaymentOptionInMask(paymentOptions, PAYMENTOPTION_ZEC))
+	ui->acceptMessage->setText(tr("Are you sure you want to purchase") + QString(" <b>%1</b> ").arg(quantity) + tr("of") +  QString(" <b>%1</b> ").arg(title) + tr("from merchant") + QString(" <b>%1</b>").arg(sellerIdentity) + QString("? ") + tr("You will be charged") + QString(" <b>%1 %2 (%3 DYN)</b>").arg(qstrPrice).arg(currencyCode).arg(strTotalDYNPrice));
+	if(IsPaymentOptionInMask(paymentOptions, PAYMENTOPTION_SEQ))
 	{
-		ui->acceptZecButton->setEnabled(true);
-		ui->acceptZecButton->setVisible(true);
+		ui->acceptSeqButton->setEnabled(true);
+		ui->acceptSeqButton->setVisible(true);
 	}
 	if(IsPaymentOptionInMask(paymentOptions, PAYMENTOPTION_BTC))
 	{
@@ -78,7 +78,7 @@ OfferAcceptDialog::OfferAcceptDialog(WalletModel* model, const PlatformStyle *pl
 	this->offerPaid = false;
 	connect(ui->acceptButton, SIGNAL(clicked()), this, SLOT(acceptPayment()));
 	connect(ui->acceptBtcButton, SIGNAL(clicked()), this, SLOT(acceptBTCPayment()));
-	connect(ui->acceptZecButton, SIGNAL(clicked()), this, SLOT(acceptZECPayment()));
+	connect(ui->acceptSeqButton, SIGNAL(clicked()), this, SLOT(acceptSEQPayment()));
 	setupEscrowCheckboxState();
 
 }
@@ -111,11 +111,11 @@ void OfferAcceptDialog::onEscrowCheckBoxChanged(bool toggled)
 	ui->cancelButton->setDefault(false);
 	ui->acceptButton->setDefault(true);
 }
-void OfferAcceptDialog::acceptZECPayment()
+void OfferAcceptDialog::acceptSEQPayment()
 {
 	if(!walletModel)
 		return;
-	OfferAcceptDialogZEC dlg(walletModel, platformStyle, this->aliaspeg, this->alias, this->offer, this->quantity, this->notes, this->title, this->currency, this->strSYSPrice, this->seller, this->address, ui->checkBox->isChecked()? ui->escrowEdit->text(): "", this);
+	OfferAcceptDialogSEQ dlg(walletModel, platformStyle, this->identitypeg, this->identity, this->offer, this->quantity, this->notes, this->title, this->currency, this->strDYNPrice, this->seller, this->address, ui->checkBox->isChecked()? ui->escrowEdit->text(): "", this);
 	if(dlg.exec())
 	{
 		this->offerPaid = dlg.getPaymentStatus();
@@ -129,7 +129,7 @@ void OfferAcceptDialog::acceptBTCPayment()
 {
 	if(!walletModel)
 		return;
-	OfferAcceptDialogBTC dlg(walletModel, platformStyle, this->aliaspeg, this->alias, this->offer, this->quantity, this->notes, this->title, this->currency, this->strSYSPrice, this->seller, this->address, ui->checkBox->isChecked()? ui->escrowEdit->text(): "", this);
+	OfferAcceptDialogBTC dlg(walletModel, platformStyle, this->identitypeg, this->identity, this->offer, this->quantity, this->notes, this->title, this->currency, this->strDYNPrice, this->seller, this->address, ui->checkBox->isChecked()? ui->escrowEdit->text(): "", this);
 	if(dlg.exec())
 	{
 		this->offerPaid = dlg.getPaymentStatus();
@@ -172,7 +172,7 @@ void OfferAcceptDialog::acceptOffer()
 			return;
 		}
 		this->offerPaid = false;
-		params.push_back(this->alias.toStdString());
+		params.push_back(this->identity.toStdString());
 		params.push_back(this->offer.toStdString());
 		params.push_back(this->quantity.toStdString());
 		params.push_back(this->notes.toStdString());
@@ -257,7 +257,7 @@ void OfferAcceptDialog::acceptEscrow()
 			return;
 		}
 		this->offerPaid = false;
-		params.push_back(this->alias.toStdString());
+		params.push_back(this->identity.toStdString());
 		params.push_back(this->offer.toStdString());
 		params.push_back(this->quantity.toStdString());
 		params.push_back(this->notes.toStdString());

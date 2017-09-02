@@ -34,14 +34,14 @@
       </widget>
      </item>
      <item row="2" column="0">
-      <widget class="QLabel" name="aliasLabel">
+      <widget class="QLabel" name="identityLabel">
        <property name="text">
-        <string>Alias</string>
+        <string>Identity</string>
        </property>
       </widget>
      </item>
       <item row="2" column="1">
-        <widget class="QLineEdit" name="aliasEdit"/>
+        <widget class="QLineEdit" name="identityEdit"/>
       </item> 
      <item row="4" column="0">
       <widget class="QLabel" name="categoryLabel">

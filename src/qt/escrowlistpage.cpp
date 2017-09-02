@@ -6,7 +6,7 @@
 #include "escrowtablemodel.h"
 #include "optionsmodel.h"
 #include "walletmodel.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "csvmodelwriter.h"
 #include "guiutil.h"
 #include "ui_interface.h"
@@ -19,12 +19,12 @@
 #include <QDateTime>
 #include <QMenu>
 #include "main.h"
-#include "rpc/server.h"
+#include "rpcserver.h"
 
 using namespace std;
 
 
-extern CRPCTable tableRPC;
+extern const CRPCTable tableRPC;
 
 EscrowListPage::EscrowListPage(const PlatformStyle *platformStyle, QWidget *parent) :
     QDialog(parent),
@@ -52,7 +52,7 @@ EscrowListPage::EscrowListPage(const PlatformStyle *platformStyle, QWidget *pare
 		ui->manageButton->setIcon(platformStyle->SingleColorIcon(":/icons/" + theme + "/escrow1"));
 		ui->ackButton->setIcon(platformStyle->SingleColorIcon(":/icons/" + theme + "/synced"));
 	}
-    ui->labelExplanation->setText(tr("Search for Syscoin Escrows."));
+    ui->labelExplanation->setText(tr("Search for Dynamic Escrows."));
 	
     // Context menu actions
     QAction *copyEscrowAction = new QAction(ui->copyEscrow->text(), this);
@@ -143,7 +143,7 @@ void EscrowListPage::on_ackButton_clicked()
     }
 	QString escrow = selection.at(0).data(EscrowTableModel::EscrowRole).toString();
     QMessageBox::StandardButton retval = QMessageBox::question(this, tr("Confirm Escrow Acknowledgement"),
-         tr("Warning: You are about to acknowledge this payment from the buyer. If you are shipping an item, please communicate a tracking number to the buyer via a Syscoin message.") + "<br><br>" + tr("Are you sure you wish to acknowledge this payment?"),
+         tr("Warning: You are about to acknowledge this payment from the buyer. If you are shipping an item, please communicate a tracking number to the buyer via a Dynamic message.") + "<br><br>" + tr("Are you sure you wish to acknowledge this payment?"),
          QMessageBox::Yes|QMessageBox::Cancel,
          QMessageBox::Cancel);
     if(retval == QMessageBox::Yes)

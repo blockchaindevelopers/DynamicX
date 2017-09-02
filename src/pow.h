@@ -10,10 +10,6 @@
 
 #include <consensus/params.h>
 #include <arith_uint256.h>
-#include <chain.h>
-#include <sync.h>
-#include <util.h>
-#include <stdint.h>
 
 class arith_uint256;
 class CBlockHeader;

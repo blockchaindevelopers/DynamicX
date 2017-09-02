@@ -16,7 +16,7 @@
 
 #include <map>
 #include <vector>
-
+#include <univalue.h>
 #include <QObject>
 
 class AddressTableModel;
@@ -26,6 +26,14 @@ class PlatformStyle;
 class RecentRequestsTableModel;
 class TransactionTableModel;
 class WalletModelTransaction;
+
+// SYSCOIN
+class IdentityTableModel;
+class MessageTableModel;
+class EscrowTableModel;
+class CertTableModel;
+class OfferTableModel;
+class OfferAcceptTableModel;
 
 class CCoinControl;
 class CKeyID;
@@ -140,6 +148,20 @@ public:
     RecentRequestsTableModel *getRecentRequestsTableModel();
     NameTableModel *getNameTableModel();
 
+	// SYSCOIN
+    IdentityTableModel *getIdentityTableModelMine();
+    IdentityTableModel *getIdentityTableModelAll();
+	MessageTableModel *getMessageTableModelIn();
+	MessageTableModel *getMessageTableModelOut();
+	EscrowTableModel *getEscrowTableModelMine();
+	EscrowTableModel *getEscrowTableModelAll();
+    CertTableModel *getCertTableModelMine();
+    CertTableModel *getCertTableModelAll();
+    OfferTableModel *getOfferTableModelMine();
+    OfferTableModel *getOfferTableModelAll();
+    OfferAcceptTableModel *getOfferTableModelAccept();
+    OfferAcceptTableModel *getOfferTableModelMyAccept();
+    
     CAmount getBalance(const CCoinControl *coinControl = NULL) const;
     CAmount getUnconfirmedBalance() const;
     CAmount getImmatureBalance() const;
@@ -229,6 +251,20 @@ private:
     RecentRequestsTableModel *recentRequestsTableModel;
     NameTableModel *nameTableModel;
 
+	// SYSCOIN
+	IdentityTableModel *identityTableModelMine;
+    IdentityTableModel *identityTableModelAll;
+    EscrowTableModel *escrowTableModelMine;
+	EscrowTableModel *escrowTableModelAll;
+    MessageTableModel *inMessageTableModel;
+	MessageTableModel *outMessageTableModel;
+    CertTableModel *certTableModelMine;
+    CertTableModel *certTableModelAll;
+    OfferTableModel *offerTableModelMine;
+    OfferTableModel *offerTableModelAll;
+	OfferAcceptTableModel *offerTableModelAccept;
+    OfferAcceptTableModel *offerTableModelMyAccept;
+    
     // Cache some values to be able to detect changes
     CAmount cachedBalance;
     CAmount cachedUnconfirmedBalance;
@@ -284,6 +320,14 @@ public Q_SLOTS:
     void updateWatchOnlyFlag(bool fHaveWatchonly);
     /* Current, immature or unconfirmed balance might have changed - emit 'balanceChanged' if so */
     void pollBalanceChanged();
+	// SYSCOIN
+    void updateIdentity();
+    void updateCert();
+	void updateEscrow();
+	void updateOffer();
+	void updateMessage();
 };
+
+extern void appendListIdentities(UniValue& defaultIdentityArray, bool allIdentities=false);
 
 #endif // DYNAMIC_QT_WALLETMODEL_H

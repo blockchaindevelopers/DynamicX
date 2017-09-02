@@ -13,7 +13,6 @@
 #include "consensus/params.h"
 #include "protocol.h"
 
-#include <vector>
 
 struct CDNSSeedData {
     std::string name, host;

@@ -10,9 +10,7 @@
 
 #include "primitives/block.h"
 
-#include <stdint.h>
 #include <memory>
-#include <cstddef>
 
 class CBlockIndex;
 class CChainParams;

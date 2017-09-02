@@ -7,11 +7,7 @@
 #define DYNAMIC_GOVERNANCE_VOTEDB_H
 
 #include "governance-vote.h"
-#include "serialize.h"
-#include "uint256.h"
 
-#include <list>
-#include <map>
 
 /**
  * Represents the collection of votes associated with a given CGovernanceObject

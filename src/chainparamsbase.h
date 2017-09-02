@@ -9,7 +9,6 @@
 #define DYNAMIC_CHAINPARAMSBASE_H
 
 #include <string>
-#include <vector>
 
 /**
  * CBaseChainParams defines the base parameters (shared between dynamic-cli and dynamicd)

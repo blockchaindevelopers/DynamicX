@@ -1,8 +1,8 @@
 /*
- * Syscoin Developers 2016
+ * Dynamic Developers 2016
  */
 #include "escrowview.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "guiutil.h"
 #include "platformstyle.h"
 #include "clientmodel.h"
@@ -43,7 +43,7 @@ EscrowView::~EscrowView()
 {
 }
 
-void EscrowView::setSyscoinGUI(SyscoinGUI *gui)
+void EscrowView::setDynamicGUI(DynamicGUI *gui)
 {
     this->gui = gui;
 }

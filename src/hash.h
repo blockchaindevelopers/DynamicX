@@ -9,7 +9,6 @@
 #define DYNAMIC_HASH_H
 
 #include "crypto/argon2d/argon2.h"
-#include "crypto/blake2/blake2.h"
 #include "crypto/ripemd160.h"
 #include "crypto/sha256.h"
 #include "crypto/sha512.h"
@@ -19,7 +18,6 @@
 #include "uint256.h"
 #include "version.h"
 
-#include <vector>
 
 typedef uint256 ChainCode;
 

@@ -9,14 +9,9 @@
 #define DYNAMIC_KEYSTORE_H
 
 #include "hdchain.h"
-#include "key.h"
-#include "pubkey.h"
-#include "script/script.h"
 #include "script/standard.h"
-#include "sync.h"
 
 #include <boost/signals2/signal.hpp>
-#include <boost/variant.hpp>
 
 /** A virtual base class for key stores */
 class CKeyStore

@@ -1,17 +1,17 @@
-#ifndef ZECRPCCLIENT_H
-#define ZECRPCCLIENT_H
+#ifndef SEQRPCCLIENT_H
+#define SEQRPCCLIENT_H
 
 #include "qjsonrpcclient.h"
 QT_BEGIN_NAMESPACE
 class QNetworkAccessManager;
 QT_END_NAMESPACE
 
-class ZecRpcClient
+class SeqRpcClient
 {
 public:
  
-    explicit ZecRpcClient(const QString& zecEndPoint="", const QString& zecRPCLogin="", const QString& zecRPCPassword="");
-    ~ZecRpcClient();
+    explicit SeqRpcClient(const QString& seqEndPoint="", const QString& seqRPCLogin="", const QString& seqRPCPassword="");
+    ~SeqRpcClient();
 	void sendRequest(QNetworkAccessManager *nam, const QString &request, const QString &param="");
 	void sendRawTxRequest(QNetworkAccessManager *nam, const QString &param);
 private:
@@ -19,4 +19,4 @@ private:
 
 };
 
-#endif // ZECRPCCLIENT_H
+#endif // SEQRPCCLIENT_H

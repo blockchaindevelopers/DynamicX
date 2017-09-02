@@ -44,7 +44,7 @@ public:
 
     void setClientModel(ClientModel *clientModel);
     void setWalletModel(WalletModel *walletModel);
-    void StartAlias(std::string strAlias);
+    void StartIdentity(std::string strIdentity);
     void StartAll(std::string strCommand = "start-all");
 
 private:
@@ -53,7 +53,7 @@ private:
     bool fFilterUpdated;
 
 public Q_SLOTS:
-    void updateMyDynodeInfo(QString strAlias, QString strAddr, dynode_info_t& infoDn);
+    void updateMyDynodeInfo(QString strIdentity, QString strAddr, dynode_info_t& infoDn);
     void updateMyNodeList(bool fForce = false);
     void updateNodeList();
 

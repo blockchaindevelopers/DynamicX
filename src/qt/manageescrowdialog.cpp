@@ -2,13 +2,13 @@
 #include "ui_manageescrowdialog.h"
 
 #include "guiutil.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "platformstyle.h"
 #include "ui_interface.h"
 #include <QMessageBox>
-#include "rpc/server.h"
+#include "rpcserver.h"
 #include "walletmodel.h"
-#include "qzecjsonrpcclient.h"
+#include "qseqjsonrpcclient.h"
 #include "qbtcjsonrpcclient.h"
 #if QT_VERSION < 0x050000
 #include <QUrl>
@@ -19,7 +19,7 @@ using namespace std;
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QSettings>
-extern CRPCTable tableRPC;
+extern const CRPCTable tableRPC;
 ManageEscrowDialog::ManageEscrowDialog(WalletModel* model, const QString &escrow, QWidget *parent) :
     QDialog(parent),
 	walletModel(model),
@@ -44,11 +44,11 @@ ManageEscrowDialog::ManageEscrowDialog(WalletModel* model, const QString &escrow
 		return;
 	}
 
-	escrowRoleType = findYourEscrowRoleFromAliases(buyer, seller, reseller, arbiter);
+	escrowRoleType = findYourEscrowRoleFromIdentities(buyer, seller, reseller, arbiter);
 	ui->manageInfo->setText(tr("You are managing escrow ID") + QString(" <b>%1</b>. ").arg(escrow) + tr("Offer:") + QString(" <b>%1</b> ").arg(offertitle) + tr("totalling") + QString(" <b>%1</b>. ").arg(total) + tr("The buyer:") + QString(" <b>%1</b>, ").arg(buyer) + tr("merchant:") + QString(" <b>%1</b>, ").arg(reseller.size() == 0? seller: reseller) + tr("arbiter:") + QString(" <b>%1</b>.").arg(arbiter));
 	if(escrowRoleType == None)
 	{
-		ui->manageInfo2->setText(tr("You cannot manage this escrow because you do not own one of either the buyer, merchant or arbiter aliases."));
+		ui->manageInfo2->setText(tr("You cannot manage this escrow because you do not own one of either the buyer, merchant or arbiter identities."));
 		ui->releaseButton->setEnabled(false);
 		ui->refundButton->setEnabled(false);
 	}
@@ -66,7 +66,7 @@ ManageEscrowDialog::ManageEscrowDialog(WalletModel* model, const QString &escrow
 		}
 		else if(escrowRoleType == Arbiter)
 		{
-			ui->manageInfo2->setText(tr("You are the 'arbiter' of the offer held in escrow, you may refund the coins back to the buyer if you have evidence that the merchant did not honour the agreement to ship the offer item. You may also release the coins to the merchant if the buyer has not released in a timely manor. You may use Syscoin messages to communicate with the buyer and merchant to ensure you have adequate proof for your decision."));
+			ui->manageInfo2->setText(tr("You are the 'arbiter' of the offer held in escrow, you may refund the coins back to the buyer if you have evidence that the merchant did not honour the agreement to ship the offer item. You may also release the coins to the merchant if the buyer has not released in a timely manor. You may use Dynamic messages to communicate with the buyer and merchant to ensure you have adequate proof for your decision."));
 		}
 
 	}
@@ -74,7 +74,7 @@ ManageEscrowDialog::ManageEscrowDialog(WalletModel* model, const QString &escrow
 	{
 		if(escrowRoleType == Buyer)
 		{
-			ui->manageInfo2->setText(tr("You are the 'buyer' of the offer held in escrow. The escrow has been released to the merchant. You may communicate with your arbiter or merchant via Syscoin messages. You may leave feedback after the money is claimed by the merchant."));
+			ui->manageInfo2->setText(tr("You are the 'buyer' of the offer held in escrow. The escrow has been released to the merchant. You may communicate with your arbiter or merchant via Dynamic messages. You may leave feedback after the money is claimed by the merchant."));
 			ui->refundButton->setEnabled(false);
 			ui->releaseButton->setEnabled(false);
 		}
@@ -177,7 +177,7 @@ ManageEscrowDialog::ManageEscrowDialog(WalletModel* model, const QString &escrow
 	}
 	else
 	{
-		ui->manageInfo2->setText(tr("The escrow status was not recognized. Please contact the Syscoin team."));
+		ui->manageInfo2->setText(tr("The escrow status was not recognized. Please contact the Dynamic team."));
 		ui->refundButton->setEnabled(false);
 		ui->releaseButton->setEnabled(false);
 	}
@@ -269,8 +269,8 @@ void ManageEscrowDialog::on_extButton_clicked()
 {
 	if(m_paymentOption == QString("BTC"))
     	CheckPaymentInBTC();
-	else if(m_paymentOption == QString("ZEC"))
-		CheckPaymentInZEC();
+	else if(m_paymentOption == QString("SEQ"))
+		CheckPaymentInSEQ();
 }
 
 ManageEscrowDialog::~ManageEscrowDialog()
@@ -330,8 +330,8 @@ bool ManageEscrowDialog::CompleteEscrowRelease()
 	QString chain;
 	if(m_paymentOption == "BTC")
 		chain = tr("Bitcoin");
-	else if(m_paymentOption == "ZEC")
-		chain = tr("ZCash");
+	else if(m_paymentOption == "SEQ")
+		chain = tr("Sequence");
 	UniValue params(UniValue::VARR);
 	string strMethod = string("escrowcompleterelease");
 	params.push_back(escrow.toStdString());
@@ -393,8 +393,8 @@ bool ManageEscrowDialog::CompleteEscrowRefund()
 	QString chain;
 	if(m_paymentOption == "BTC")
 		chain = tr("Bitcoin");
-	else if(m_paymentOption == "ZEC")
-		chain = tr("ZCash");
+	else if(m_paymentOption == "SEQ")
+		chain = tr("Sequence");
 	UniValue params(UniValue::VARR);
 	string strMethod = string("escrowcompleterefund");
 	params.push_back(escrow.toStdString());
@@ -454,8 +454,8 @@ void ManageEscrowDialog::slotConfirmedFinished(QNetworkReply * reply){
 	QString chain;
 	if(m_paymentOption == "BTC")
 		chain = tr("Bitcoin");
-	else if(m_paymentOption == "ZEC")
-		chain = tr("ZCash");
+	else if(m_paymentOption == "SEQ")
+		chain = tr("Sequence");
 	QByteArray bytes = reply->readAll();
 	QString str = QString::fromUtf8(bytes.data(), bytes.size());
 	UniValue outerValue;
@@ -557,19 +557,19 @@ void ManageEscrowDialog::SendRawTxBTC()
 	connect(nam, SIGNAL(finished(QNetworkReply *)), this, SLOT(slotConfirmedFinished(QNetworkReply *)));
 	btcClient.sendRequest(nam, "sendrawtransaction", m_rawTx);
 }
-void ManageEscrowDialog::SendRawTxZEC()
+void ManageEscrowDialog::SendRawTxSEQ()
 {
-	ZecRpcClient zecClient;	
+	SeqRpcClient seqClient;	
 	QNetworkAccessManager *nam = new QNetworkAccessManager(this);  
 	connect(nam, SIGNAL(finished(QNetworkReply *)), this, SLOT(slotConfirmedFinished(QNetworkReply *)));
-	zecClient.sendRequest(nam, "sendrawtransaction", m_rawTx);
+	seqClient.sendRequest(nam, "sendrawtransaction", m_rawTx);
 }
 void ManageEscrowDialog::slotConfirmedFinishedCheck(QNetworkReply * reply){
 	QString chain;
 	if(m_paymentOption == "BTC")
 		chain = tr("Bitcoin");
-	else if(m_paymentOption == "ZEC")
-		chain = tr("ZCash");
+	else if(m_paymentOption == "SEQ")
+		chain = tr("Sequence");
 
 	if(reply->error() != QNetworkReply::NoError) {
 
@@ -665,14 +665,14 @@ void ManageEscrowDialog::CheckPaymentInBTC()
 	m_checkTxId = m_redeemTxId.size() > 0? m_redeemTxId: m_exttxid;
 	btcClient.sendRawTxRequest(nam, m_checkTxId);
 }
-void ManageEscrowDialog::CheckPaymentInZEC()
+void ManageEscrowDialog::CheckPaymentInSEQ()
 {
-	ZecRpcClient zecClient;
+	SeqRpcClient seqClient;
 
 	QNetworkAccessManager *nam = new QNetworkAccessManager(this);  
 	connect(nam, SIGNAL(finished(QNetworkReply *)), this, SLOT(slotConfirmedFinishedCheck(QNetworkReply *)));
 	m_checkTxId = m_redeemTxId.size() > 0? m_redeemTxId: m_exttxid;
-	zecClient.sendRawTxRequest(nam, m_checkTxId);
+	seqClient.sendRawTxRequest(nam, m_checkTxId);
 }
 void ManageEscrowDialog::onRelease()
 {
@@ -724,8 +724,8 @@ void ManageEscrowDialog::doRelease(const QString &rawTx)
 				m_redeemTxId = QString::fromStdString(retarray[1].get_str());
 				if(m_paymentOption == QString("BTC"))
 					SendRawTxBTC();
-				else if(m_paymentOption == QString("ZEC"))
-					SendRawTxZEC();
+				else if(m_paymentOption == QString("SEQ"))
+					SendRawTxSEQ();
 			}
 			else
 			{
@@ -823,8 +823,8 @@ void ManageEscrowDialog::doRefund(const QString &rawTx)
 				m_redeemTxId = QString::fromStdString(retarray[1].get_str());
 				if(m_paymentOption == QString("BTC"))
 					SendRawTxBTC();		
-				else if(m_paymentOption == QString("ZEC"))
-					SendRawTxZEC();	
+				else if(m_paymentOption == QString("SEQ"))
+					SendRawTxSEQ();	
 			}
 			else
 			{
@@ -888,30 +888,30 @@ void ManageEscrowDialog::on_refundButton_clicked()
 	}
 	onRefund();
 }
-EscrowRoleType ManageEscrowDialog::findYourEscrowRoleFromAliases(const QString &buyer, const QString &seller, const QString &reseller, const QString &arbiter)
+EscrowRoleType ManageEscrowDialog::findYourEscrowRoleFromIdentities(const QString &buyer, const QString &seller, const QString &reseller, const QString &arbiter)
 {
-	if(isYourAlias(buyer))
+	if(isYourIdentity(buyer))
 		return Buyer;
-	else if(isYourAlias(seller))
+	else if(isYourIdentity(seller))
 		return Seller;
-	else if(isYourAlias(reseller))
+	else if(isYourIdentity(reseller))
 		return ReSeller;
-	else if(isYourAlias(arbiter))
+	else if(isYourIdentity(arbiter))
 		return Arbiter;
 	else
 		return None;
     
  
 }
-bool ManageEscrowDialog::isYourAlias(const QString &alias)
+bool ManageEscrowDialog::isYourIdentity(const QString &identity)
 {
-	if(alias.size() <= 0)
+	if(identity.size() <= 0)
 		return false;
-	string strMethod = string("aliasinfo");
+	string strMethod = string("identityinfo");
     UniValue params(UniValue::VARR); 
 	UniValue result ;
 	string name_str;
-	params.push_back(alias.toStdString());	
+	params.push_back(identity.toStdString());	
 	try {
 		result = tableRPC.execute(strMethod, params);
 
@@ -928,13 +928,13 @@ bool ManageEscrowDialog::isYourAlias(const QString &alias)
 	{
 		string strError = find_value(objError, "message").get_str();
 		QMessageBox::critical(this, windowTitle(),
-			tr("Could not get alias information: ") + QString::fromStdString(strError),
+			tr("Could not get identity information: ") + QString::fromStdString(strError),
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
 	catch(std::exception& e)
 	{
 		QMessageBox::critical(this, windowTitle(),
-			tr("There was an exception trying to get alias information: ") + QString::fromStdString(e.what()),
+			tr("There was an exception trying to get identity information: ") + QString::fromStdString(e.what()),
 				QMessageBox::Ok, QMessageBox::Ok);
 	}   
 	return false;

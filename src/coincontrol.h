@@ -8,7 +8,6 @@
 #ifndef DYNAMIC_COINCONTROL_H
 #define DYNAMIC_COINCONTROL_H
 
-#include "primitives/transaction.h"
 
 /** Coin Control Features. */
 class CCoinControl

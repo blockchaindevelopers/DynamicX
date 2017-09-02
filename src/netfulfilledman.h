@@ -8,9 +8,7 @@
 #ifndef DYNAMIC_NETFULFILLEDMAN_H
 #define DYNAMIC_NETFULFILLEDMAN_H
 
-#include "netbase.h"
 #include "protocol.h"
-#include "serialize.h"
 #include "sync.h"
 
 class CNetFulfilledRequestManager;

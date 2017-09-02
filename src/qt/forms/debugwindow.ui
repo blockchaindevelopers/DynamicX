@@ -550,7 +550,7 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset resource="../syscoin.qrc">
+            <iconset resource="../dynamic.qrc">
              <normaloff>:/icons/shade/prompticon</normaloff>
              <disabledoff>:/icons/shade/prompticon</disabledoff>:/icons/prompticon</iconset>
            </property>
@@ -1397,7 +1397,7 @@
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="../syscoin.qrc"/>
+  <include location="../dynamic.qrc"/>
  </resources>
  <connections/>
 </ui>

@@ -7,7 +7,6 @@
 #define DYNAMIC_DYNODECONFIG_H
 
 #include "chainparams.h"
-#include "netbase.h"
 #include "util.h"
 
 class CDynodeConfig;

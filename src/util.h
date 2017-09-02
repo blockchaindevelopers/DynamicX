@@ -13,11 +13,9 @@
 #define DYNAMIC_UTIL_H
 
 #if defined(HAVE_CONFIG_H)
-#include "config/dynamic-config.h"
 #endif
 
-#include "amount.h"
-#include "compat.h"
+//REMOVEINCLUDE #include "compat.h"
 #include "tinyformat.h"
 #include "utiltime.h"
 

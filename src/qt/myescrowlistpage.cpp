@@ -1,5 +1,5 @@
 /*
- * Syscoin Developers 2016
+ * Dynamic Developers 2016
  */
 #include "myescrowlistpage.h"
 #include "ui_myescrowlistpage.h"
@@ -11,7 +11,7 @@
 #include "platformstyle.h"
 #include "optionsmodel.h"
 #include "walletmodel.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "csvmodelwriter.h"
 #include "guiutil.h"
 
@@ -23,13 +23,13 @@
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
-#include "rpc/server.h"
+#include "rpcserver.h"
 
-#include "qzecjsonrpcclient.h"
+#include "qseqjsonrpcclient.h"
 #include "qbtcjsonrpcclient.h"
 using namespace std;
 
-extern CRPCTable tableRPC;
+extern const CRPCTable tableRPC;
 MyEscrowListPage::MyEscrowListPage(const PlatformStyle *platformStyle, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::MyEscrowListPage),
@@ -66,7 +66,7 @@ MyEscrowListPage::MyEscrowListPage(const PlatformStyle *platformStyle, QWidget *
 		ui->extButton->setIcon(platformStyle->SingleColorIcon(":/icons/" + theme + "/search"));
 	}
 
-    ui->labelExplanation->setText(tr("These are your registered Syscoin Escrows. Escrow operations (create, release, refund, complete) take 2-5 minutes to become active. You can choose which aliases to view related escrows using the dropdown to the right."));
+    ui->labelExplanation->setText(tr("These are your registered Dynamic Escrows. Escrow operations (create, release, refund, complete) take 2-5 minutes to become active. You can choose which identities to view related escrows using the dropdown to the right."));
 	
 	connect(ui->tableView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(on_detailButton_clicked()));
     // Context menu actions
@@ -109,29 +109,29 @@ MyEscrowListPage::MyEscrowListPage(const PlatformStyle *platformStyle, QWidget *
     connect(ui->tableView, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextualMenu(QPoint)));
 	connect(ui->completeCheck,SIGNAL(clicked(bool)),SLOT(onToggleShowComplete(bool)));
 
-	connect(ui->displayListAlias,SIGNAL(currentIndexChanged(const QString&)),this,SLOT(displayListChanged(const QString&)));
-	loadAliasList();
+	connect(ui->displayListIdentity,SIGNAL(currentIndexChanged(const QString&)),this,SLOT(displayListChanged(const QString&)));
+	loadIdentityList();
 
 }
-void MyEscrowListPage::loadAliasList()
+void MyEscrowListPage::loadIdentityList()
 {
 	QSettings settings;
-	QString oldListAlias = settings.value("defaultListAlias", "").toString();
-	ui->displayListAlias->clear();
-	ui->displayListAlias->addItem(tr("All"));
+	QString oldListIdentity = settings.value("defaultListIdentity", "").toString();
+	ui->displayListIdentity->clear();
+	ui->displayListIdentity->addItem(tr("All"));
 	
 	
-	UniValue aliasList(UniValue::VARR);
-	appendListAliases(aliasList, true);
-	for(unsigned int i = 0;i<aliasList.size();i++)
+	UniValue identityList(UniValue::VARR);
+	appendListIdentities(identityList, true);
+	for(unsigned int i = 0;i<identityList.size();i++)
 	{
-		const QString& aliasName = QString::fromStdString(aliasList[i].get_str());
-		ui->displayListAlias->addItem(aliasName);
+		const QString& identityName = QString::fromStdString(identityList[i].get_str());
+		ui->displayListIdentity->addItem(identityName);
 	}
-	int currentIndex = ui->displayListAlias->findText(oldListAlias);
+	int currentIndex = ui->displayListIdentity->findText(oldListIdentity);
 	if(currentIndex >= 0)
-		ui->displayListAlias->setCurrentIndex(currentIndex);
-	settings.setValue("defaultListAlias", oldListAlias);
+		ui->displayListIdentity->setCurrentIndex(currentIndex);
+	settings.setValue("defaultListIdentity", oldListIdentity);
 }
 bool MyEscrowListPage::lookup(const QString &escrow, QString& address, QString& price, QString& extTxId, QString& redeemtxid, QString& paymentOption)
 {
@@ -183,10 +183,10 @@ bool MyEscrowListPage::lookup(const QString &escrow, QString& address, QString& 
 	}
 	return false;
 }
-void MyEscrowListPage::displayListChanged(const QString& alias)
+void MyEscrowListPage::displayListChanged(const QString& identity)
 {
 	QSettings settings;
-	settings.setValue("defaultListAlias", alias);
+	settings.setValue("defaultListIdentity", identity);
 	settings.sync();
 }
 MyEscrowListPage::~MyEscrowListPage()
@@ -255,8 +255,8 @@ void MyEscrowListPage::slotConfirmedFinished(QNetworkReply * reply){
 	QString chain;
 	if(m_paymentOption == "BTC")
 		chain = tr("Bitcoin");
-	else if(m_paymentOption == "ZEC")
-		chain = tr("ZCash");
+	else if(m_paymentOption == "SEQ")
+		chain = tr("Sequence");
 	if(reply->error() != QNetworkReply::NoError) {
 		ui->extButton->setText(m_buttonText);
 		ui->extButton->setEnabled(true);
@@ -399,7 +399,7 @@ void MyEscrowListPage::CheckPaymentInBTC(const QString &strExtTxId, const QStrin
 	connect(nam, SIGNAL(finished(QNetworkReply *)), this, SLOT(slotConfirmedFinished(QNetworkReply *)));
 	btcClient.sendRawTxRequest(nam, strExtTxId);
 }
-void MyEscrowListPage::CheckPaymentInZEC(const QString &strExtTxId, const QString& address, const QString& price)
+void MyEscrowListPage::CheckPaymentInSEQ(const QString &strExtTxId, const QString& address, const QString& price)
 {
 	dblPrice = price.toDouble();
 	m_buttonText = ui->extButton->text();
@@ -408,10 +408,10 @@ void MyEscrowListPage::CheckPaymentInZEC(const QString &strExtTxId, const QStrin
 	m_strAddress = address;
 	m_strExtTxId = strExtTxId;
 
-	ZecRpcClient zecClient;
+	SeqRpcClient seqClient;
 	QNetworkAccessManager *nam = new QNetworkAccessManager(this);  
 	connect(nam, SIGNAL(finished(QNetworkReply *)), this, SLOT(slotConfirmedFinished(QNetworkReply *)));
-	zecClient.sendRawTxRequest(nam, strExtTxId);
+	seqClient.sendRawTxRequest(nam, strExtTxId);
 
 }
 void MyEscrowListPage::on_extButton_clicked()
@@ -443,8 +443,8 @@ void MyEscrowListPage::on_extButton_clicked()
 	}
 	if(m_paymentOption == QString("BTC"))
 		CheckPaymentInBTC(redeemTxId.size() > 0? redeemTxId: extTxId, redeemTxId.size() > 0? "": address, price);
-	else if(m_paymentOption == QString("ZEC"))
-		CheckPaymentInZEC(redeemTxId.size() > 0? redeemTxId: extTxId, redeemTxId.size() > 0? "": address, price);
+	else if(m_paymentOption == QString("SEQ"))
+		CheckPaymentInSEQ(redeemTxId.size() > 0? redeemTxId: extTxId, redeemTxId.size() > 0? "": address, price);
 
 
 }
@@ -461,7 +461,7 @@ void MyEscrowListPage::on_ackButton_clicked()
     }
 	QString escrow = selection.at(0).data(EscrowTableModel::EscrowRole).toString();
     QMessageBox::StandardButton retval = QMessageBox::question(this, tr("Confirm Escrow Acknowledgement"),
-         tr("Warning: You are about to acknowledge this payment from the buyer. If you are shipping an item, please communicate a tracking number to the buyer via a Syscoin message.") + "<br><br>" + tr("Are you sure you wish to acknowledge this payment?"),
+         tr("Warning: You are about to acknowledge this payment from the buyer. If you are shipping an item, please communicate a tracking number to the buyer via a Dynamic message.") + "<br><br>" + tr("Are you sure you wish to acknowledge this payment?"),
          QMessageBox::Yes|QMessageBox::Cancel,
          QMessageBox::Cancel);
     if(retval == QMessageBox::Yes)
@@ -550,9 +550,9 @@ void MyEscrowListPage::on_sellerMessageButton_clicked()
     {
         return;
     }
-	QString sellerAlias = selection.at(0).data(EscrowTableModel::SellerRole).toString();
+	QString sellerIdentity = selection.at(0).data(EscrowTableModel::SellerRole).toString();
 	// send message to seller
-	NewMessageDialog dlg(NewMessageDialog::NewMessage, sellerAlias);   
+	NewMessageDialog dlg(NewMessageDialog::NewMessage, sellerIdentity);   
 	dlg.exec();
 }
 void MyEscrowListPage::on_arbiterMessageButton_clicked()
@@ -566,16 +566,16 @@ void MyEscrowListPage::on_arbiterMessageButton_clicked()
     {
         return;
     }
-	QString arbAlias = selection.at(0).data(EscrowTableModel::ArbiterRole).toString();
+	QString arbIdentity = selection.at(0).data(EscrowTableModel::ArbiterRole).toString();
 	// send message to arbiter
-	NewMessageDialog dlg(NewMessageDialog::NewMessage, arbAlias);   
+	NewMessageDialog dlg(NewMessageDialog::NewMessage, arbIdentity);   
 	dlg.exec();
 }
 void MyEscrowListPage::on_refreshButton_clicked()
 {
     if(!model)
         return;
-	loadAliasList();
+	loadIdentityList();
     model->refreshEscrowTable();
 }
 

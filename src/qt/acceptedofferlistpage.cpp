@@ -1,5 +1,5 @@
 /*
- * Syscoin Developers 2015
+ * Dynamic Developers 2015
  */
 #include "acceptedofferlistpage.h"
 #include "ui_acceptedofferlistpage.h"
@@ -10,7 +10,7 @@
 #include "clientmodel.h"
 #include "optionsmodel.h"
 #include "walletmodel.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "csvmodelwriter.h"
 #include "guiutil.h"
 #include "platformstyle.h"
@@ -56,7 +56,7 @@ AcceptedOfferListPage::AcceptedOfferListPage(const PlatformStyle *platformStyle,
 #endif
 
 
-    ui->labelExplanation->setText(tr("These are offers you have purchased. Offer operations take 2-5 minutes to become active. Right click on an offer to view more info such as the message you sent to the seller, quantity, date, etc.  You can choose which aliases to view sales information for using the dropdown to the right."));
+    ui->labelExplanation->setText(tr("These are offers you have purchased. Offer operations take 2-5 minutes to become active. Right click on an offer to view more info such as the message you sent to the seller, quantity, date, etc.  You can choose which identities to view sales information for using the dropdown to the right."));
 	
 	connect(ui->tableView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(on_detailButton_clicked()));
     // Context menu actions
@@ -82,35 +82,35 @@ AcceptedOfferListPage::AcceptedOfferListPage(const PlatformStyle *platformStyle,
 	connect(feedbackAction, SIGNAL(triggered()), this, SLOT(on_feedbackButton_clicked()));
 
     connect(ui->tableView, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextualMenu(QPoint)));
-	connect(ui->displayListAlias,SIGNAL(currentIndexChanged(const QString&)),this,SLOT(displayListChanged(const QString&)));
-	loadAliasList();
+	connect(ui->displayListIdentity,SIGNAL(currentIndexChanged(const QString&)),this,SLOT(displayListChanged(const QString&)));
+	loadIdentityList();
 
 }
-void AcceptedOfferListPage::loadAliasList()
+void AcceptedOfferListPage::loadIdentityList()
 {
 	QSettings settings;
 
-	QString oldListAlias = settings.value("defaultListAlias", "").toString();
-	ui->displayListAlias->clear();
-	ui->displayListAlias->addItem(tr("All"));
+	QString oldListIdentity = settings.value("defaultListIdentity", "").toString();
+	ui->displayListIdentity->clear();
+	ui->displayListIdentity->addItem(tr("All"));
 	
 	
-	UniValue aliasList(UniValue::VARR);
-	appendListAliases(aliasList, true);
-	for(unsigned int i = 0;i<aliasList.size();i++)
+	UniValue identityList(UniValue::VARR);
+	appendListIdentities(identityList, true);
+	for(unsigned int i = 0;i<identityList.size();i++)
 	{
-		const QString& aliasName = QString::fromStdString(aliasList[i].get_str());
-		ui->displayListAlias->addItem(aliasName);
+		const QString& identityName = QString::fromStdString(identityList[i].get_str());
+		ui->displayListIdentity->addItem(identityName);
 	}
-	int currentIndex = ui->displayListAlias->findText(oldListAlias);
+	int currentIndex = ui->displayListIdentity->findText(oldListIdentity);
 	if(currentIndex >= 0)
-		ui->displayListAlias->setCurrentIndex(currentIndex);
-	settings.setValue("defaultListAlias", oldListAlias);
+		ui->displayListIdentity->setCurrentIndex(currentIndex);
+	settings.setValue("defaultListIdentity", oldListIdentity);
 }
-void AcceptedOfferListPage::displayListChanged(const QString& alias)
+void AcceptedOfferListPage::displayListChanged(const QString& identity)
 {
 	QSettings settings;
-	settings.setValue("defaultListAlias", alias);
+	settings.setValue("defaultListIdentity", identity);
 	settings.sync();
 }
 AcceptedOfferListPage::~AcceptedOfferListPage()
@@ -162,7 +162,7 @@ void AcceptedOfferListPage::setModel(WalletModel *walletModel, OfferAcceptTableM
         ui->tableView->setColumnWidth(5, 75); //currency
         ui->tableView->setColumnWidth(6, 75); //qty
         ui->tableView->setColumnWidth(7, 50); //total
-        ui->tableView->setColumnWidth(8, 150); //seller alias
+        ui->tableView->setColumnWidth(8, 150); //seller identity
         ui->tableView->setColumnWidth(9, 150); //buyer
         ui->tableView->setColumnWidth(10, 40); //private
         ui->tableView->setColumnWidth(11, 0); //status
@@ -194,9 +194,9 @@ void AcceptedOfferListPage::on_messageButton_clicked()
     {
         return;
     }
-	QString offerAlias = selection.at(0).data(OfferAcceptTableModel::AliasRole).toString();
+	QString offerIdentity = selection.at(0).data(OfferAcceptTableModel::IdentityRole).toString();
 	// send message to seller
-	NewMessageDialog dlg(NewMessageDialog::NewMessage, offerAlias);   
+	NewMessageDialog dlg(NewMessageDialog::NewMessage, offerIdentity);   
 	dlg.exec();
 
 
@@ -232,7 +232,7 @@ void AcceptedOfferListPage::on_refreshButton_clicked()
 {
     if(!model)
         return;
-	loadAliasList();
+	loadIdentityList();
     model->refreshOfferTable();
 }
 
@@ -303,7 +303,7 @@ void AcceptedOfferListPage::on_exportButton_clicked()
 	writer.addColumn(tr("Currency"), OfferAcceptTableModel::Currency, Qt::EditRole);
 	writer.addColumn(tr("Qty"), OfferAcceptTableModel::Qty, Qt::EditRole);
 	writer.addColumn(tr("Total"), OfferAcceptTableModel::Total, Qt::EditRole);
-	writer.addColumn(tr("Seller"), OfferAcceptTableModel::Alias, Qt::EditRole);
+	writer.addColumn(tr("Seller"), OfferAcceptTableModel::Identity, Qt::EditRole);
 	writer.addColumn(tr("Buyer"), OfferAcceptTableModel::Buyer, Qt::EditRole);
 	writer.addColumn(tr("Status"), OfferAcceptTableModel::Status, Qt::EditRole);
     if(!writer.write())

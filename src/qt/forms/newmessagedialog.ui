@@ -97,7 +97,7 @@
       <widget class="QPlainTextEdit" name="messageEdit"/>
      </item>
      <item row="0" column="1">
-      <widget class="QComboBox" name="aliasEdit"/>
+      <widget class="QComboBox" name="identityEdit"/>
      </item>
      <item row="11" column="0">
       <widget class="QLabel" name="label_2">

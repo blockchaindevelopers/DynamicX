@@ -6,17 +6,13 @@
 #define DYNAMIC_COMPAT_ENDIAN_H
 
 #if defined(HAVE_CONFIG_H)
-#include "config/dynamic-config.h"
 #endif
 
-#include "compat/byteswap.h"
 
-#include <stdint.h>
 
 #if defined(HAVE_ENDIAN_H)
 #include <endian.h>
 #elif defined(HAVE_SYS_ENDIAN_H)
-#include <sys/endian.h>
 #endif
 
 #if defined(WORDS_BIGENDIAN)

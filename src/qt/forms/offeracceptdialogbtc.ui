@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Accept Syscoin Offer</string>
+   <string>Accept Dynamic Offer</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="1" column="0">
@@ -171,7 +171,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../syscoin.qrc"/>
+  <include location="../dynamic.qrc"/>
  </resources>
  <connections/>
 </ui>

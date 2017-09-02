@@ -10,11 +10,7 @@
 
 #include "pubkey.h"
 #include "support/allocators/secure.h"
-#include "serialize.h"
-#include "uint256.h"
 
-#include <stdexcept>
-#include <vector>
 
 
 /** 

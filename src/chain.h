@@ -8,13 +8,10 @@
 #ifndef DYNAMIC_CHAIN_H
 #define DYNAMIC_CHAIN_H
 
-#include "arith_uint256.h"
 #include "primitives/block.h"
 #include "pow.h"
 #include "tinyformat.h"
-#include "uint256.h"
 
-#include <vector>
 
 /**
  * Maximum amount of time that a block timestamp is allowed to exceed the

@@ -11,18 +11,7 @@
 #include "serialize.h"
 #include "support/allocators/zeroafterfree.h"
 
-#include <algorithm>
 #include <assert.h>
-#include <ios>
-#include <limits>
-#include <map>
-#include <set>
-#include <stdint.h>
-#include <stdio.h>
-#include <string>
-#include <string.h>
-#include <utility>
-#include <vector>
 
 /** Double ended buffer combining vector and stream-like interfaces.
  *

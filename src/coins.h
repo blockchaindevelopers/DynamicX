@@ -10,16 +10,8 @@
 
 #include "compressor.h"
 #include "core_memusage.h"
-#include "memusage.h"
-#include "serialize.h"
-#include "uint256.h"
-#include "crypto/muhash.h"
 
-#include <assert.h>
-#include <stdint.h>
 
-#include <boost/foreach.hpp>
-#include <unordered_map>
 
 /**
  * Pruned version of CTransaction: only retains metadata and unspent transaction outputs

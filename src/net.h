@@ -9,28 +9,21 @@
 #define DYNAMIC_NET_H
 
 #include "bloom.h"
-#include "compat.h"
 #include "limitedmap.h"
-#include "netbase.h"
 #include "protocol.h"
 #include "random.h"
 #include "streams.h"
 #include "sync.h"
-#include "uint256.h"
 #include "util.h"
 
 #include <atomic>
 #include <deque>
-#include <stdint.h>
 
 #ifndef WIN32
-#include <arpa/inet.h>
 #endif
 
 #include <boost/foreach.hpp>
 #include <boost/array.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/signals2/signal.hpp>
 
 class CAddrMan;
 class CNode;

@@ -8,17 +8,9 @@
 
 //#define ENABLE_DYNAMIC_DEBUG
 
-#include "bloom.h"
-#include "cachemap.h"
-#include "cachemultimap.h"
 #include "chain.h"
-#include "governance-exceptions.h"
 #include "governance-object.h"
-#include "governance-vote.h"
-#include "net.h"
-#include "sync.h"
 #include "timedata.h"
-#include "util.h"
 
 class CGovernanceManager;
 class CGovernanceObject;

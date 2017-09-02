@@ -9,12 +9,12 @@
 #include <QFont>
 #include <QDateTime>
 #include <QSettings>
-#include "rpc/server.h"
+#include "rpcserver.h"
 using namespace std;
 
 
 
-extern CRPCTable tableRPC;
+extern const CRPCTable tableRPC;
 struct EscrowTableEntry
 {
     enum Type {
@@ -86,9 +86,9 @@ public:
         {
 			string strMethod = string("escrowlist");
 			UniValue params(UniValue::VARR);
-			UniValue listAliases(UniValue::VARR);
-			appendListAliases(listAliases);
-			params.push_back(listAliases);
+			UniValue listIdentities(UniValue::VARR);
+			appendListIdentities(listIdentities);
+			params.push_back(listIdentities);
 			UniValue result ;
 			string name_str;
 			string time_str;
@@ -533,7 +533,7 @@ QModelIndex EscrowTableModel::index(int row, int column, const QModelIndex &pare
 
 void EscrowTableModel::updateEntry(const QString &escrow, const int itime, const QString &time, const QString &seller, const QString &arbiter, const QString &offer, const QString &offertitle, const QString &total, const QString &rating, const QString &status, const QString &buyer, EscrowModelType type, int statusi)
 {
-    // Update escrow book model from Syscoin core
+    // Update escrow book model from Dynamic core
     priv->updateEntry(escrow, itime, time, seller, arbiter, offer, offertitle, total, rating, status, buyer, type, statusi);
 }
 

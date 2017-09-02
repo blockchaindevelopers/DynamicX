@@ -8,9 +8,6 @@
 #ifndef DYNAMIC_UNDO_H
 #define DYNAMIC_UNDO_H
 
-#include "compressor.h" 
-#include "serialize.h"
-#include "primitives/transaction.h"
 
 /** Undo information for a CTxIn
  *

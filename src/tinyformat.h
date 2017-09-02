@@ -121,7 +121,6 @@ namespace tfm = tinyformat;
 #include <cassert>
 #include <iostream>
 #include <sstream>
-#include <stdexcept>
 
 #ifndef TINYFORMAT_ERROR
 #   define TINYFORMAT_ERROR(reason) assert(0 && reason)

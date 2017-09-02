@@ -2,9 +2,9 @@
 #include "ui_escrowinfodialog.h"
 #include "init.h"
 #include "util.h"
-#include "escrow.h"
+#include "protocol/escrow.h"
 #include "guiutil.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "escrowtablemodel.h"
 #include "platformstyle.h"
 #include <QMessageBox>
@@ -17,10 +17,10 @@
 #include <QLabel>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
-#include "rpc/server.h"
+#include "rpcserver.h"
 using namespace std;
 
-extern CRPCTable tableRPC;
+extern const CRPCTable tableRPC;
 
 EscrowInfoDialog::EscrowInfoDialog(const PlatformStyle *platformStyle, const QModelIndex &idx, QWidget *parent) :
     QDialog(parent),
@@ -184,7 +184,7 @@ bool EscrowInfoDialog::lookup()
 			dateTime.setTime_t(unixTime);	
 			ui->timeEdit->setText(dateTime.toString());
 			ui->priceEdit->setText(QString("%1 %2").arg(QString::fromStdString(find_value(result.get_obj(), "price").get_str())).arg(currency));
-			ui->feeEdit->setText(QString("%1 %2").arg(QString::fromStdString(find_value(result.get_obj(), "fee").get_str())).arg(exttxidStr != ""? paymentOption: tr("SYS")));
+			ui->feeEdit->setText(QString("%1 %2").arg(QString::fromStdString(find_value(result.get_obj(), "fee").get_str())).arg(exttxidStr != ""? paymentOption: tr("DYN")));
 			ui->totalEdit->setText(QString("%1 %2").arg(QString::fromStdString(find_value(result.get_obj(), "total").get_str())).arg(exttxidStr != ""? paymentOption: currency));
 			ui->paymessageEdit->setText(QString::fromStdString(find_value(result.get_obj(), "pay_message").get_str()));
 			ui->ratingEdit->setText(QString::fromStdString(find_value(result.get_obj(), "avg_rating_display").get_str()));

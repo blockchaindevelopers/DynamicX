@@ -4,12 +4,12 @@
 #include "offertablemodel.h"
 #include "guiutil.h"
 #include "walletmodel.h"
-#include "syscoingui.h"
+#include "dynamicgui.h"
 #include "ui_interface.h"
 #include <QDataWidgetMapper>
 #include <QMessageBox>
 #include <QStringList>
-#include "rpc/server.h"
+#include "rpcserver.h"
 #include "main.h"
 #include "qcomboboxdelegate.h"
 #include <QSettings>
@@ -18,25 +18,25 @@
 #include <boost/algorithm/string.hpp>
 using namespace std;
 
-extern CRPCTable tableRPC;
-string getCurrencyToSYSFromAlias(const vector<unsigned char> &vchAliasPeg, const vector<unsigned char> &vchCurrency, double &nFee, const unsigned int &nHeightToFind, vector<string>& rateList, int &precision, int &nFeePerByte, float &fEscrowFee);
+extern const CRPCTable tableRPC;
+string getCurrencyToDYNFromIdentity(const vector<unsigned char> &vchIdentityPeg, const vector<unsigned char> &vchCurrency, double &nFee, const unsigned int &nHeightToFind, vector<string>& rateList, int &precision, int &nFeePerByte, float &fEscrowFee);
 extern bool getCategoryList(vector<string>& categoryList);
 extern vector<unsigned char> vchFromString(const std::string &str);
-EditOfferDialog::EditOfferDialog(Mode mode,  const QString &strOffer,  const QString &strCert,  const QString &strAlias, const QString &strCategory, QWidget *parent) :
+EditOfferDialog::EditOfferDialog(Mode mode,  const QString &strOffer,  const QString &strCert,  const QString &strIdentity, const QString &strCategory, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::EditOfferDialog), mapper(0), mode(mode), model(0)
 {
 	overrideSafeSearch = false;
     ui->setupUi(this);
-	ui->aliasPegEdit->setEnabled(false);
+	ui->identityPegEdit->setEnabled(false);
 	
-	ui->aliasPegDisclaimer->setText(QString("<font color='blue'>") + tr("You may change the alias rate peg through your alias settings") + QString("</font>"));
+	ui->identityPegDisclaimer->setText(QString("<font color='blue'>") + tr("You may change the identity rate peg through your identity settings") + QString("</font>"));
 	ui->privateDisclaimer->setText(QString("<font color='blue'>") + tr("Choose if you would like the offer to be private or publicly listed on the marketplace") + QString("</font>"));
 	ui->offerLabel->setVisible(true);
 	ui->offerEdit->setVisible(true);
 	ui->offerEdit->setEnabled(false);
 	ui->rootOfferEdit->setEnabled(false);
-	ui->aliasEdit->setEnabled(true);
+	ui->identityEdit->setEnabled(true);
 	ui->commissionLabel->setVisible(false);
 	ui->commissionEdit->setVisible(false);
 	ui->commissionDisclaimer->setVisible(false);
@@ -47,33 +47,33 @@ EditOfferDialog::EditOfferDialog(Mode mode,  const QString &strOffer,  const QSt
 	ui->currencyEdit->addItem(QString("USD"));
 
 	ui->geolocationDisclaimer->setText(QString("<font color='blue'>") + tr("If you wish you may enter your merchant geolocation (latitude and longitude coordinates) to help track shipping rates and other logistics information") + QString("</font>"));
-	ui->currencyDisclaimer->setText(QString("<font color='blue'>") + tr("You will receive payment in Syscoin equivalent to the Market-value of the currency you have selected") + QString("</font>"));
-	ui->paymentOptionsDisclaimer->setText(QString("<font color='blue'>") + tr("Choose which crypto-currency you want to allow as a payment method for this offer. Your choices are any combination of SYS, BTC or ZEC. An example setting for all three: 'SYS+BTC+ZEC'. For SYS and ZEC: 'SYS+ZEC'. Please note that in order to spend coins paid to you via Syscoin Marketplace, you will need to import your Syscoin private key in external wallet(s) if BTC or ZEC are chosen.") + QString("</font>"));
+	ui->currencyDisclaimer->setText(QString("<font color='blue'>") + tr("You will receive payment in Dynamic equivalent to the Market-value of the currency you have selected") + QString("</font>"));
+	ui->paymentOptionsDisclaimer->setText(QString("<font color='blue'>") + tr("Choose which crypto-currency you want to allow as a payment method for this offer. Your choices are any combination of DYN, BTC or SEQ. An example setting for all three: 'DYN+BTC+SEQ'. For DYN and SEQ: 'DYN+SEQ'. Please note that in order to spend coins paid to you via Dynamic Marketplace, you will need to import your Dynamic private key in external wallet(s) if BTC or SEQ are chosen.") + QString("</font>"));
 	cert = strCert;
-	alias = strAlias;
+	identity = strIdentity;
 	ui->certEdit->clear();
 	ui->certEdit->addItem(tr("Select Certificate (optional)"));
-	loadAliases();
-	connect(ui->aliasEdit,SIGNAL(currentIndexChanged(const QString&)),this,SLOT(aliasChanged(const QString&)));
+	loadIdentities();
+	connect(ui->identityEdit,SIGNAL(currentIndexChanged(const QString&)),this,SLOT(identityChanged(const QString&)));
 	loadCategories();
 	ui->descriptionEdit->setStyleSheet("color: rgb(0, 0, 0); background-color: rgb(255, 255, 255)");
 	connect(ui->certEdit, SIGNAL(currentIndexChanged(int)), this, SLOT(certChanged(int)));
     QSettings settings;
-	QString defaultPegAlias, defaultOfferAlias;
-	int aliasIndex;
+	QString defaultPegIdentity, defaultOfferIdentity;
+	int identityIndex;
 	switch(mode)
     {
     case NewOffer:
 		ui->offerLabel->setVisible(false);
 		ui->offerEdit->setVisible(false);
-		defaultPegAlias = settings.value("defaultPegAlias", "").toString();
-		ui->aliasPegEdit->setText(defaultPegAlias);
-		defaultOfferAlias = settings.value("defaultAlias", "").toString();
-		aliasIndex = ui->aliasEdit->findText(defaultOfferAlias);
-		if(aliasIndex >= 0)
-			ui->aliasEdit->setCurrentIndex(aliasIndex);
+		defaultPegIdentity = settings.value("defaultPegIdentity", "").toString();
+		ui->identityPegEdit->setText(defaultPegIdentity);
+		defaultOfferIdentity = settings.value("defaultIdentity", "").toString();
+		identityIndex = ui->identityEdit->findText(defaultOfferIdentity);
+		if(identityIndex >= 0)
+			ui->identityEdit->setCurrentIndex(identityIndex);
 		
-		on_aliasPegEdit_editingFinished();
+		on_identityPegEdit_editingFinished();
         setWindowTitle(tr("New Offer"));
         break;
     case EditOffer:
@@ -95,11 +95,11 @@ EditOfferDialog::EditOfferDialog(Mode mode,  const QString &strOffer,  const QSt
 		 }
         break;
     case NewCertOffer:
-		ui->aliasEdit->setEnabled(false);
+		ui->identityEdit->setEnabled(false);
 		ui->offerLabel->setVisible(false);
-		defaultPegAlias = settings.value("defaultPegAlias", "").toString();
-		ui->aliasPegEdit->setText(defaultPegAlias);
-		on_aliasPegEdit_editingFinished();
+		defaultPegIdentity = settings.value("defaultPegIdentity", "").toString();
+		ui->identityPegEdit->setText(defaultPegIdentity);
+		on_identityPegEdit_editingFinished();
 		ui->offerEdit->setVisible(false);
         setWindowTitle(tr("New Offer(Certificate)"));
 		ui->qtyEdit->setText("1");
@@ -113,7 +113,7 @@ EditOfferDialog::EditOfferDialog(Mode mode,  const QString &strOffer,  const QSt
 
         break;
 	}
-	aliasChanged(ui->aliasEdit->currentText());
+	identityChanged(ui->identityEdit->currentText());
     mapper = new QDataWidgetMapper(this);
     mapper->setSubmitPolicy(QDataWidgetMapper::ManualSubmit);
 }
@@ -159,7 +159,7 @@ bool EditOfferDialog::isLinkedOffer(const QString& offerGUID)
 
 
 }
-void EditOfferDialog::on_aliasPegEdit_editingFinished()
+void EditOfferDialog::on_identityPegEdit_editingFinished()
 {
 	double nFee;
 	vector<string> rateList;
@@ -167,10 +167,10 @@ void EditOfferDialog::on_aliasPegEdit_editingFinished()
 	int nFeePerByte;
 	float fEscrowFee;
 	QString currentCurrency = ui->currencyEdit->currentText();
-	if(getCurrencyToSYSFromAlias(vchFromString(ui->aliasPegEdit->text().toStdString()), vchFromString(currentCurrency.toStdString()), nFee, chainActive.Tip()->nHeight, rateList, precision, nFeePerByte, fEscrowFee) == "1")
+	if(getCurrencyToDYNFromIdentity(vchFromString(ui->identityPegEdit->text().toStdString()), vchFromString(currentCurrency.toStdString()), nFee, chainActive.Tip()->nHeight, rateList, precision, nFeePerByte, fEscrowFee) == "1")
 	{
 		QMessageBox::warning(this, windowTitle(),
-			tr("Warning: alias peg not found. No currency information available for ") + ui->currencyEdit->currentText(),
+			tr("Warning: identity peg not found. No currency information available for ") + ui->currencyEdit->currentText(),
 				QMessageBox::Ok, QMessageBox::Ok);
 		return;
 	}
@@ -184,28 +184,28 @@ void EditOfferDialog::on_aliasPegEdit_editingFinished()
 		ui->currencyEdit->setCurrentIndex(currencyIndex);
 
 }
-void EditOfferDialog::setOfferNotSafeBecauseOfAlias(const QString &alias)
+void EditOfferDialog::setOfferNotSafeBecauseOfIdentity(const QString &identity)
 {
 	ui->safeSearchEdit->setCurrentIndex(ui->safeSearchEdit->findText("No"));
 	ui->safeSearchEdit->setEnabled(false);
-	ui->safeSearchDisclaimer->setText(QString("<font color='red'><b>%1</b>").arg(alias) + tr(" is not safe to search so this setting can only be set to 'No'") + QString("</font>"));
+	ui->safeSearchDisclaimer->setText(QString("<font color='red'><b>%1</b>").arg(identity) + tr(" is not safe to search so this setting can only be set to 'No'") + QString("</font>"));
 	overrideSafeSearch = true;
 }
 void EditOfferDialog::resetSafeSearch()
 {
 	ui->safeSearchEdit->setEnabled(true);
-	ui->safeSearchDisclaimer->setText(QString("<font color='blue'>") + tr("Is this offer safe to search? Anything that can be considered offensive to someone should be set to 'No' here. If you do create an offer that is offensive and do not set this option to 'No' your offer will be banned aswell as possibly your store alias!") + QString("</font>"));
+	ui->safeSearchDisclaimer->setText(QString("<font color='blue'>") + tr("Is this offer safe to search? Anything that can be considered offensive to someone should be set to 'No' here. If you do create an offer that is offensive and do not set this option to 'No' your offer will be banned aswell as possibly your store identity!") + QString("</font>"));
 		
 	
 }
-void EditOfferDialog::aliasChanged(const QString& alias)
+void EditOfferDialog::identityChanged(const QString& identity)
 {
-	string strMethod = string("aliasinfo");
+	string strMethod = string("identityinfo");
     UniValue params(UniValue::VARR); 
-	params.push_back(alias.toStdString());
+	params.push_back(identity.toStdString());
 	UniValue result ;
 	string name_str;
-	string alias_peg;
+	string identity_peg;
 	int expired = 0;
 	bool safeSearch;
 	int safetyLevel;
@@ -218,7 +218,7 @@ void EditOfferDialog::aliasChanged(const QString& alias)
 			safeSearch = false;
 			expired = safetyLevel = 0;
 			const UniValue& o = result.get_obj();
-			name_str = alias_peg = "";
+			name_str = identity_peg = "";
 			safeSearch = false;
 			expired = safetyLevel = 0;
 
@@ -233,46 +233,46 @@ void EditOfferDialog::aliasChanged(const QString& alias)
 			const UniValue& ss_value = find_value(o, "safesearch");
 			if (ss_value.type() == UniValue::VSTR)
 				safeSearch = ss_value.get_str() == "Yes";	
-			const UniValue& alias_peg_value = find_value(o, "alias_peg");
-			if (alias_peg_value.type() == UniValue::VSTR)
-				alias_peg = alias_peg_value.get_str();	
+			const UniValue& identity_peg_value = find_value(o, "identity_peg");
+			if (identity_peg_value.type() == UniValue::VSTR)
+				identity_peg = identity_peg_value.get_str();	
 			
 			const UniValue& sl_value = find_value(o, "safetylevel");
 			if (sl_value.type() == UniValue::VNUM)
 				safetyLevel = sl_value.get_int();
 			if(!safeSearch || safetyLevel > 0)
 			{
-				setOfferNotSafeBecauseOfAlias(QString::fromStdString(name_str));
+				setOfferNotSafeBecauseOfIdentity(QString::fromStdString(name_str));
 			}
 			else
 				resetSafeSearch();
 
 			if(expired != 0)
 			{
-				ui->aliasDisclaimer->setText(QString("<font color='red'>") + tr("This alias has expired, please choose another one") + QString("</font>"));				
+				ui->identityDisclaimer->setText(QString("<font color='red'>") + tr("This identity has expired, please choose another one") + QString("</font>"));				
 			}
 			else
-				ui->aliasDisclaimer->setText(QString("<font color='blue'>") + tr("Select an alias to own this offer") + QString("</font>"));		
-			ui->aliasPegEdit->setText(QString::fromStdString(alias_peg));
-			on_aliasPegEdit_editingFinished();
+				ui->identityDisclaimer->setText(QString("<font color='blue'>") + tr("Select an identity to own this offer") + QString("</font>"));		
+			ui->identityPegEdit->setText(QString::fromStdString(identity_peg));
+			on_identityPegEdit_editingFinished();
 		}
 		else
 		{
 			resetSafeSearch();
-			ui->aliasDisclaimer->setText(QString("<font color='blue'>") + tr("Select an alias to own this offer") + QString("</font>"));
+			ui->identityDisclaimer->setText(QString("<font color='blue'>") + tr("Select an identity to own this offer") + QString("</font>"));
 		}
 	}
 	catch (UniValue& objError)
 	{
 		resetSafeSearch();
-		ui->aliasDisclaimer->setText(QString("<font color='blue'>") + tr("Select an alias to own this offer") + QString("</font>"));
+		ui->identityDisclaimer->setText(QString("<font color='blue'>") + tr("Select an identity to own this offer") + QString("</font>"));
 	}
 	catch(std::exception& e)
 	{
 		resetSafeSearch();
-		ui->aliasDisclaimer->setText(QString("<font color='blue'>") + tr("Select an alias to own this offer") + QString("</font>"));
+		ui->identityDisclaimer->setText(QString("<font color='blue'>") + tr("Select an identity to own this offer") + QString("</font>"));
 	}  
-	loadCerts(alias);
+	loadCerts(identity);
 }
 void EditOfferDialog::certChanged(int index)
 {
@@ -280,14 +280,14 @@ void EditOfferDialog::certChanged(int index)
 	{
 		ui->qtyEdit->setText("1");
 		ui->qtyEdit->setEnabled(false);
-		ui->aliasEdit->setEnabled(false);
-		ui->aliasDisclaimer->setText(QString("<font color='blue'>") + tr("This will automatically use the alias which owns the certificate you are selling") + QString("</font>"));
+		ui->identityEdit->setEnabled(false);
+		ui->identityDisclaimer->setText(QString("<font color='blue'>") + tr("This will automatically use the identity which owns the certificate you are selling") + QString("</font>"));
 	}
 	else if(index == 0)
 	{
-		ui->aliasDisclaimer->setText(QString("<font color='blue'>") + tr("Select an alias to own this offer") + QString("</font>"));
+		ui->identityDisclaimer->setText(QString("<font color='blue'>") + tr("Select an identity to own this offer") + QString("</font>"));
 		ui->qtyEdit->setEnabled(true);
-		ui->aliasEdit->setEnabled(true);
+		ui->identityEdit->setEnabled(true);
 	}
 }
 
@@ -361,17 +361,17 @@ void EditOfferDialog::loadCategories()
     ui->categoryEdit->setModel(model);
     ui->categoryEdit->setItemDelegate(new ComboBoxDelegate);
 }
-void EditOfferDialog::loadCerts(const QString &alias)
+void EditOfferDialog::loadCerts(const QString &identity)
 {
 	ui->certEdit->clear();
 	ui->certEdit->addItem(tr("Select Certificate (optional)"));
 	string strMethod = string("certlist");
     UniValue params(UniValue::VARR); 
-	params.push_back(alias.toStdString());
+	params.push_back(identity.toStdString());
 	UniValue result;
 	string name_str;
 	string title_str;
-	string alias_str;
+	string identity_str;
 	int expired = 0;
 	
 	try {
@@ -381,7 +381,7 @@ void EditOfferDialog::loadCerts(const QString &alias)
 		{
 			name_str = "";
 			title_str = "";
-			alias_str = "";
+			identity_str = "";
 			expired = 0;
 
 
@@ -404,9 +404,9 @@ void EditOfferDialog::loadCerts(const QString &alias)
 				const UniValue& title_value = find_value(o, "title");
 				if (title_value.type() == UniValue::VSTR)
 					title_str = title_value.get_str();	
-				const UniValue& alias_value = find_value(o, "alias");
-				if (alias_value.type() == UniValue::VSTR)
-					alias_str = alias_value.get_str();	
+				const UniValue& identity_value = find_value(o, "identity");
+				if (identity_value.type() == UniValue::VSTR)
+					identity_str = identity_value.get_str();	
 				const UniValue& expired_value = find_value(o, "expired");
 				if (expired_value.type() == UniValue::VNUM)
 					expired = expired_value.get_int();
@@ -415,7 +415,7 @@ void EditOfferDialog::loadCerts(const QString &alias)
 				{
 					QString name = QString::fromStdString(name_str);
 					QString title = QString::fromStdString(title_str);
-					QString alias = QString::fromStdString(alias_str);
+					QString identity = QString::fromStdString(identity_str);
 					QString certText = name + " - " + title;
 					ui->certEdit->addItem(certText,name);
 					if(name == cert)
@@ -424,11 +424,11 @@ void EditOfferDialog::loadCerts(const QString &alias)
 						if ( index != -1 ) 						
 						    ui->certEdit->setCurrentIndex(index);
 						
-						index = ui->aliasEdit->findData(alias);
+						index = ui->identityEdit->findData(identity);
 						if ( index != -1 ) 
 						{
-						    ui->aliasEdit->setCurrentIndex(index);
-							ui->aliasDisclaimer->setText(QString("<font color='blue'>") + tr("This will automatically use the alias which owns the certificate you are selling") + QString("</font>"));
+						    ui->identityEdit->setCurrentIndex(index);
+							ui->identityDisclaimer->setText(QString("<font color='blue'>") + tr("This will automatically use the identity which owns the certificate you are selling") + QString("</font>"));
 						}
 						
 					}
@@ -452,10 +452,10 @@ void EditOfferDialog::loadCerts(const QString &alias)
 	}         
  
 }
-void EditOfferDialog::loadAliases()
+void EditOfferDialog::loadIdentities()
 {
-	ui->aliasEdit->clear();
-	string strMethod = string("aliaslist");
+	ui->identityEdit->clear();
+	string strMethod = string("identitylist");
     UniValue params(UniValue::VARR); 
 	UniValue result ;
 	string name_str;
@@ -499,18 +499,18 @@ void EditOfferDialog::loadAliases()
 					safetyLevel = sl_value.get_int();
 				if(!safeSearch || safetyLevel > 0)
 				{
-					setOfferNotSafeBecauseOfAlias(QString::fromStdString(name_str));
+					setOfferNotSafeBecauseOfIdentity(QString::fromStdString(name_str));
 				}				
 				if(expired == 0)
 				{
 					QString name = QString::fromStdString(name_str);
-					ui->aliasEdit->addItem(name, name);		
-					if(name == alias)
+					ui->identityEdit->addItem(name, name);		
+					if(name == identity)
 					{
-						int index = ui->aliasEdit->findData(alias);
+						int index = ui->identityEdit->findData(identity);
 						if ( index != -1 ) 
 						{
-							ui->aliasEdit->setCurrentIndex(index);
+							ui->identityEdit->setCurrentIndex(index);
 						}
 					}
 				}
@@ -522,13 +522,13 @@ void EditOfferDialog::loadAliases()
 	{
 		string strError = find_value(objError, "message").get_str();
 		QMessageBox::critical(this, windowTitle(),
-			tr("Could not refresh alias list: ") + QString::fromStdString(strError),
+			tr("Could not refresh identity list: ") + QString::fromStdString(strError),
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
 	catch(std::exception& e)
 	{
 		QMessageBox::critical(this, windowTitle(),
-			tr("There was an exception trying to refresh the alias list: ") + QString::fromStdString(e.what()),
+			tr("There was an exception trying to refresh the identity list: ") + QString::fromStdString(e.what()),
 				QMessageBox::Ok, QMessageBox::Ok);
 	}         
  
@@ -551,7 +551,7 @@ void EditOfferDialog::setModel(WalletModel* walletModel, OfferTableModel *model)
     mapper->addMapping(ui->priceEdit, OfferTableModel::Price);
 	mapper->addMapping(ui->qtyEdit, OfferTableModel::Qty);	
 	mapper->addMapping(ui->descriptionEdit, OfferTableModel::Description);		
-	mapper->addMapping(ui->aliasPegEdit, OfferTableModel::AliasPeg);	
+	mapper->addMapping(ui->identityPegEdit, OfferTableModel::IdentityPeg);	
 	mapper->addMapping(ui->geoLocationEdit, OfferTableModel::GeoLocation);
     mapper->addMapping(ui->categoryEdit, OfferTableModel::Category);
 	mapper->addMapping(ui->paymentOptionsEdit, OfferTableModel::PaymentOptions);
@@ -565,7 +565,7 @@ void EditOfferDialog::loadRow(int row)
 		mapper->setCurrentIndex(row);
 		QModelIndex indexCurrency = model->index(row, OfferTableModel::Currency, tmpIndex);
 		QModelIndex indexPrivate = model->index(row, OfferTableModel::Private, tmpIndex);	
-		QModelIndex indexAlias = model->index(row, OfferTableModel::Alias, tmpIndex);
+		QModelIndex indexIdentity = model->index(row, OfferTableModel::Identity, tmpIndex);
 		QModelIndex indexQty = model->index(row, OfferTableModel::Qty, tmpIndex);
 		QModelIndex indexSafeSearch = model->index(row, OfferTableModel::SafeSearch, tmpIndex);
 		QModelIndex indexCategory = model->index(row, OfferTableModel::Category, tmpIndex);
@@ -583,7 +583,7 @@ void EditOfferDialog::loadRow(int row)
 		{
 			QString currencyStr = indexCurrency.data(OfferTableModel::CurrencyRole).toString();
 			ui->currencyEdit->setCurrentIndex(ui->currencyEdit->findText(currencyStr));
-			on_aliasPegEdit_editingFinished();
+			on_identityPegEdit_editingFinished();
 		}
 		if(indexSafeSearch.isValid() && !overrideSafeSearch)
 		{
@@ -599,13 +599,13 @@ void EditOfferDialog::loadRow(int row)
 				ui->categoryEdit->setCurrentIndex(index);
 			}
 		}
-		if(indexAlias.isValid())
+		if(indexIdentity.isValid())
 		{
-			QString aliasStr = indexAlias.data(OfferTableModel::AliasRole).toString();
-			int indexInComboBox = ui->aliasEdit->findText(aliasStr);
+			QString identityStr = indexIdentity.data(OfferTableModel::IdentityRole).toString();
+			int indexInComboBox = ui->identityEdit->findText(identityStr);
 			if(indexInComboBox < 0)
 				indexInComboBox = 0;
-			ui->aliasEdit->setCurrentIndex(indexInComboBox);
+			ui->identityEdit->setCurrentIndex(indexInComboBox);
 		}
 		if(indexQty.isValid())
 		{
@@ -639,7 +639,7 @@ bool EditOfferDialog::saveCurrentRow()
 			return false;
 		mode = NewOffer;
 	}
-	QString defaultPegAlias;
+	QString defaultPegIdentity;
 	QVariant currentCategory;
 	QSettings settings;
 	UniValue params(UniValue::VARR);
@@ -655,17 +655,17 @@ bool EditOfferDialog::saveCurrentRow()
                 QMessageBox::Ok, QMessageBox::Ok);
             return false;
         }
-		defaultPegAlias = settings.value("defaultPegAlias", "").toString();
-		 if (ui->aliasPegEdit->text() != defaultPegAlias) {
-			QMessageBox::StandardButton retval = QMessageBox::question(this, tr("Confirm Alias Peg"),
-                 tr("Warning: Are you sure you wish to choose this alias as your offer peg? By default the system peg is") + QString(" <b>%1</b>").arg(defaultPegAlias),
+		defaultPegIdentity = settings.value("defaultPegIdentity", "").toString();
+		 if (ui->identityPegEdit->text() != defaultPegIdentity) {
+			QMessageBox::StandardButton retval = QMessageBox::question(this, tr("Confirm Identity Peg"),
+                 tr("Warning: Are you sure you wish to choose this identity as your offer peg? By default the system peg is") + QString(" <b>%1</b>").arg(defaultPegIdentity),
                  QMessageBox::Yes|QMessageBox::Cancel,
                  QMessageBox::Cancel);
 			if(retval == QMessageBox::Cancel)
 				return false;
 		}
 		strMethod = string("offernew");
-		params.push_back(ui->aliasEdit->currentText().toStdString());
+		params.push_back(ui->identityEdit->currentText().toStdString());
 		currentCategory = ui->categoryEdit->itemData(ui->categoryEdit->currentIndex(), Qt::UserRole);
 		if(ui->categoryEdit->currentIndex() > 0 &&  currentCategory != QVariant::Invalid)
 			params.push_back(currentCategory.toString().toStdString());
@@ -730,10 +730,10 @@ bool EditOfferDialog::saveCurrentRow()
 
         break;
     case EditOffer:
-		defaultPegAlias = settings.value("defaultPegAlias", "").toString();
-		 if (ui->aliasPegEdit->text() != defaultPegAlias) {
-			QMessageBox::StandardButton retval = QMessageBox::question(this, tr("Confirm Alias Peg"),
-                 tr("Warning: Are you sure you wish to choose this alias as your offer peg? By default the system peg is") + QString(" <b>%1</b>").arg(defaultPegAlias),
+		defaultPegIdentity = settings.value("defaultPegIdentity", "").toString();
+		 if (ui->identityPegEdit->text() != defaultPegIdentity) {
+			QMessageBox::StandardButton retval = QMessageBox::question(this, tr("Confirm Identity Peg"),
+                 tr("Warning: Are you sure you wish to choose this identity as your offer peg? By default the system peg is") + QString(" <b>%1</b>").arg(defaultPegIdentity),
                  QMessageBox::Yes|QMessageBox::Cancel,
                  QMessageBox::Cancel);
 			if(retval == QMessageBox::Cancel)
@@ -742,7 +742,7 @@ bool EditOfferDialog::saveCurrentRow()
         if(mapper->submit())
         {
 			strMethod = string("offerupdate");
-			params.push_back(ui->aliasEdit->currentText().toStdString());
+			params.push_back(ui->identityEdit->currentText().toStdString());
 			params.push_back(ui->offerEdit->text().toStdString());
 			currentCategory = ui->categoryEdit->itemData(ui->categoryEdit->currentIndex(), Qt::UserRole);
 			if(ui->categoryEdit->currentIndex() > 0 &&  currentCategory != QVariant::Invalid)
@@ -840,7 +840,7 @@ void EditOfferDialog::accept()
 				break;
 			case OfferTableModel::INVALID_OFFER:
 				QMessageBox::warning(this, windowTitle(),
-					tr("The entered offer is not a valid Syscoin offer"),
+					tr("The entered offer is not a valid Dynamic offer"),
 					QMessageBox::Ok, QMessageBox::Ok);
 				break;
 			case OfferTableModel::WALLET_UNLOCK_FAILURE:

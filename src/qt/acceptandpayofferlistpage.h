@@ -45,13 +45,13 @@ public:
     const QString &getReturnValue() const { return returnValue; }
 	bool handlePaymentRequest(const SendCoinsRecipient *rv);
 	bool getProfileData(QString& publicData, QString& privateData);
-	void setValue(const QString& strAlias, const QString& strRand, const QString& strSold,  const QString& strRating, COffer &offer, QString price, QString address, QString aliasPeg);
+	void setValue(const QString& strIdentity, const QString& strRand, const QString& strSold,  const QString& strRating, COffer &offer, QString price, QString address, QString identityPeg);
 	void updateCaption();
 	void OpenPayDialog();
 	void OpenBTCPayDialog();
-	void OpenZECPayDialog();
+	void OpenSEQPayDialog();
 	void RefreshImage();
-	void loadAliases();
+	void loadIdentities();
 	void setModel(WalletModel* model);
 public Q_SLOTS:
 	void on_pubProfile();
