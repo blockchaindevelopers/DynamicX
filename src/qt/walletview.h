@@ -84,15 +84,15 @@ private:
 
 	// SYSCOIN
     IdentityView *identityView;
-	EscrowView *escrowView;
-	MessageView *messageView;
+//	EscrowView *escrowView;
+//	MessageView *messageView;
 	CertView *certView;
-    OfferView *offerView;
+//    OfferView *offerView;
     
     QStackedWidget* identityListPage;
-	QStackedWidget* escrowListPage;
-    QStackedWidget* messageListPage;
-	QStackedWidget* offerListPage;
+//	QStackedWidget* escrowListPage;
+//    QStackedWidget* messageListPage;
+//	QStackedWidget* offerListPage;
     QStackedWidget *certListPage;
     
     QProgressDialog *progressDialog;
@@ -117,9 +117,9 @@ public Q_SLOTS:
     
 	// SYSCOIN
     void gotoIdentityListPage();
-    void gotoEscrowListPage();
-    void gotoMessageListPage();
-    void gotoOfferListPage();
+    //void gotoEscrowListPage();
+    //void gotoMessageListPage();
+    //void gotoOfferListPage();
     void gotoCertListPage();
     
     /** Show Sign/Verify Message dialog and switch to sign message tab */

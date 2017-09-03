@@ -153,9 +153,9 @@ private:
     QAction *showPrivateSendHelpAction;
 	// SYSCOIN
     QAction *identityListAction;
-    QAction *escrowListAction;
-    QAction *messageListAction;
-    QAction *offerListAction;
+//    QAction *escrowListAction;
+//    QAction *messageListAction;
+//    QAction *offerListAction;
     QAction *certListAction;
     
     QSystemTrayIcon *trayIcon;

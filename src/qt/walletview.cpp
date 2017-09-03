@@ -68,16 +68,16 @@ WalletView::WalletView(const PlatformStyle *_platformStyle, QWidget *parent):
     
 	// SYSCOIN
     identityListPage = new QStackedWidget();
-	messageListPage = new QStackedWidget();
+	// essageListPage = new QStackedWidget();
 	certListPage = new QStackedWidget();
-    escrowListPage = new QStackedWidget();
-	offerListPage = new QStackedWidget();
+    // escrowListPage = new QStackedWidget();
+	// offerListPage = new QStackedWidget();
 	
     identityView = new IdentityView(platformStyle, identityListPage);
-	messageView = new MessageView(platformStyle, messageListPage);
-	escrowView = new EscrowView(platformStyle, escrowListPage);
+	// messageView = new MessageView(platformStyle, messageListPage);
+	// escrowView = new EscrowView(platformStyle, escrowListPage);
 	certView = new CertView(platformStyle, certListPage);
-	offerView = new OfferView(platformStyle, offerListPage);
+	// offerView = new OfferView(platformStyle, offerListPage);
 	
     vbox->addWidget(transactionView);
     QPushButton *exportButton = new QPushButton(tr("&Export"), this);
@@ -122,10 +122,10 @@ WalletView::WalletView(const PlatformStyle *_platformStyle, QWidget *parent):
     
 	// SYSCOIN
 	addWidget(identityListPage);
-	addWidget(messageListPage);
-	addWidget(escrowListPage);
+	//addWidget(messageListPage);
+	//addWidget(escrowListPage);
     addWidget(certListPage);
-	addWidget(offerListPage);
+	//addWidget(offerListPage);
 	
     // addWidget(dnsPage);
     if (settings.value("fShowDynodesTab").toBool()) {
@@ -180,10 +180,10 @@ void WalletView::setDynamicGUI(DynamicGUI *gui)
         
 		// SYSCOIN
 		identityView->setDynamicGUI(gui);
-		messageView->setDynamicGUI(gui);
-		escrowView->setDynamicGUI(gui);
+//		messageView->setDynamicGUI(gui);
+//		escrowView->setDynamicGUI(gui);
 		certView->setDynamicGUI(gui);
-		offerView->setDynamicGUI(gui);
+//		offerView->setDynamicGUI(gui);
     }
 }
 
@@ -200,10 +200,10 @@ void WalletView::setClientModel(ClientModel *_clientModel)
     
 	// SYSCOIN
     identityView->setClientModel(clientModel);
-	messageView->setClientModel(clientModel);
-	escrowView->setClientModel(clientModel);
+//	messageView->setClientModel(clientModel);
+//	escrowView->setClientModel(clientModel);
     certView->setClientModel(clientModel);
-	offerView->setClientModel(clientModel);
+//	offerView->setClientModel(clientModel);
 }
 
 void WalletView::setWalletModel(WalletModel *_walletModel)
@@ -247,10 +247,10 @@ void WalletView::setWalletModel(WalletModel *_walletModel)
         
         // SYSCOIN
         identityView->setWalletModel(walletModel);
-		messageView->setWalletModel(walletModel);
-		escrowView->setWalletModel(walletModel);
+//		messageView->setWalletModel(walletModel);
+//		escrowView->setWalletModel(walletModel);
         certView->setWalletModel(walletModel);
-		offerView->setWalletModel(walletModel);
+//		offerView->setWalletModel(walletModel);
     }
 }
 
@@ -315,7 +315,7 @@ void WalletView::gotoIdentityListPage()
 {
     setCurrentWidget(identityListPage);
 }
-
+/*
 void WalletView::gotoMessageListPage()
 {
     setCurrentWidget(messageListPage);
@@ -330,7 +330,7 @@ void WalletView::gotoOfferListPage()
 {
 	setCurrentWidget(offerListPage);  
 }
-
+*/
 void WalletView::gotoCertListPage()
 {
     setCurrentWidget(certListPage);

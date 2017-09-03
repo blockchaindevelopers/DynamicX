@@ -375,7 +375,7 @@ void DynamicGUI::createActions()
     identityListAction->setCheckable(true);
     identityListAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_4));
     tabGroup->addAction(identityListAction);
-
+/*
     messageListAction = new QAction(QIcon(":/icons/" + theme + "/message"), tr("Messages"), this);
     messageListAction->setStatusTip(tr("Messages"));
     messageListAction->setToolTip(messageListAction->statusTip());
@@ -389,8 +389,7 @@ void DynamicGUI::createActions()
     offerListAction->setCheckable(true);
     offerListAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_6));
     tabGroup->addAction(offerListAction);
-
-	
+*/	
     certListAction = new QAction(QIcon(":/icons/" + theme + "/cert"), tr("Certificates"), this);
     certListAction->setStatusTip(tr("Manage Certificates"));
     certListAction->setToolTip(certListAction->statusTip());
@@ -398,13 +397,13 @@ void DynamicGUI::createActions()
     certListAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_7));
     tabGroup->addAction(certListAction);
 
-    escrowListAction = new QAction(QIcon(":/icons/" + theme + "/escrow"), tr("Escrow"), this);
+/*    escrowListAction = new QAction(QIcon(":/icons/" + theme + "/escrow"), tr("Escrow"), this);
     escrowListAction->setStatusTip(tr("Escrows with offers"));
     escrowListAction->setToolTip(escrowListAction->statusTip());
     escrowListAction->setCheckable(true);
     escrowListAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_8));
     tabGroup->addAction(escrowListAction);
-
+*/
     // These showNormalIfMinimized are needed because Send Coins and Receive Coins
     // can be triggered from the tray menu, and need to show the GUI to be useful.
     connect(overviewAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
@@ -426,13 +425,13 @@ void DynamicGUI::createActions()
 	// SYSCOIN
     connect(identityListAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(identityListAction, SIGNAL(triggered()), this, SLOT(gotoIdentityListPage()));
-    connect(messageListAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
+  /*  connect(messageListAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(messageListAction, SIGNAL(triggered()), this, SLOT(gotoMessageListPage()));
     connect(escrowListAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(escrowListAction, SIGNAL(triggered()), this, SLOT(gotoEscrowListPage()));
     connect(offerListAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(offerListAction, SIGNAL(triggered()), this, SLOT(gotoOfferListPage()));
-    connect(certListAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
+    */connect(certListAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(certListAction, SIGNAL(triggered()), this, SLOT(gotoCertListPage()));
 
 #endif // ENABLE_WALLET
@@ -631,9 +630,9 @@ void DynamicGUI::createToolBars()
         // toolbar->addAction(dnsAction);
  		// SYSCOIN
 		toolbar->addAction(identityListAction);
-		toolbar->addAction(messageListAction);
-		toolbar->addAction(escrowListAction);
-		toolbar->addAction(offerListAction);
+//		toolbar->addAction(messageListAction);
+//		toolbar->addAction(escrowListAction);
+//		toolbar->addAction(offerListAction);
 		toolbar->addAction(certListAction);
 		
         /** Create additional container for toolbar and walletFrame and make it the central widget.
@@ -767,9 +766,9 @@ void DynamicGUI::setWalletActionsEnabled(bool enabled)
     openAction->setEnabled(enabled);
 	// SYSCOIN
     identityListAction->setEnabled(enabled);
-    messageListAction->setEnabled(enabled);
-	escrowListAction->setEnabled(enabled);
-    offerListAction->setEnabled(enabled);
+//    messageListAction->setEnabled(enabled);
+//	escrowListAction->setEnabled(enabled);
+//    offerListAction->setEnabled(enabled);
     certListAction->setEnabled(enabled);
 }
 
@@ -803,10 +802,10 @@ void DynamicGUI::createIconMenu(QMenu *pmenu)
     // pmenu->addAction(dnsAction);
     pmenu->addSeparator();
     pmenu->addAction(identityListAction);
-    pmenu->addAction(messageListAction);
-    pmenu->addAction(offerListAction);
+//    pmenu->addAction(messageListAction);
+//    pmenu->addAction(offerListAction);
     pmenu->addAction(certListAction);
-    pmenu->addAction(escrowListAction);
+//    pmenu->addAction(escrowListAction);
 	pmenu->addSeparator();
     pmenu->addAction(optionsAction);
     pmenu->addAction(openInfoAction);

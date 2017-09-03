@@ -322,7 +322,6 @@ public:
 	{
 		return Write(make_pair(std::string("namep"), name), vtxPaymentPos);
 	}
-
 	bool EraseIdentity(const std::vector<unsigned char>& name) {
 	    bool eraseIdentity =  Erase(make_pair(std::string("namei"), name)) ;
 		bool eraseIdentityPayment = Erase(make_pair(std::string("namep"), name));

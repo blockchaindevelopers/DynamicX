@@ -696,22 +696,6 @@ bool Fluid::InsertTransactionToRecord(CScript fluidInstruction, StringVector& tr
 	return false;
 }
 
-CAmount GetPoWBlockPayment(const int& nHeight, CAmount nFees)
-{
-	CAmount nSubsidy = BLOCKCHAIN_INIT_REWARD;
-	
-	if (chainActive.Height() >= 1 && chainActive.Height() <= Params().GetConsensus().nRewardsStart) {
-        nSubsidy = BLOCKCHAIN_INIT_REWARD;
-    }
-    else if (chainActive.Height() > Params().GetConsensus().nRewardsStart) {
-        nSubsidy = PHASE_1_POW_REWARD;
-    }
-	
-	LogPrint("creation", "GetPoWBlockPayment() : create=%s PoW Reward=%d\n", FormatMoney(nSubsidy+nFees), nSubsidy+nFees);
-
-	return nSubsidy  + nFees;
-}
-
 CAmount GetDynodePayment(bool fDynode)
 {
 	CAmount dynodePayment = BLOCKCHAIN_INIT_REWARD;
@@ -739,9 +723,9 @@ CAmount GetDynodePayment(bool fDynode)
 /** Passover code that will act as a switch to check if override did occur for Proof of Work Rewards **/ 
 CAmount getBlockSubsidyWithOverride(const int& nHeight, CAmount nFees, CAmount lastOverrideCommand) {
 	if (lastOverrideCommand != 0) {
-		return lastOverrideCommand;
+		return lastOverrideCommand + nFees; // Should we add +nFees?
 	} else {
-		return GetPoWBlockPayment(nHeight, nFees);
+		return 0*COIN; // Default to Zero
 	}
 }
 
