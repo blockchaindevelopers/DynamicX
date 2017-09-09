@@ -765,7 +765,7 @@ UniValue messagereceivelist(const UniValue& params, bool fHelp) {
 	}
 	else
 	{
-		for (PAIRTYPE(const uint256, CWalletTx)& item : pwalletMain->mapWallet)
+		for (std::pair<const uint256, CWalletTx>& item : pwalletMain->mapWallet)
 		{
 			const CWalletTx &wtx = item.second; 
 			if (wtx.nVersion != DYNAMIC_TX_VERSION)
@@ -924,7 +924,7 @@ UniValue messagesentlist(const UniValue& params, bool fHelp) {
 	}
 	else
 	{
-		for (PAIRTYPE(const uint256, CWalletTx)& item : pwalletMain->mapWallet)
+		for (std::pair<const uint256, CWalletTx>& item : pwalletMain->mapWallet)
 		{
 			const CWalletTx &wtx = item.second; 
 			if (wtx.nVersion != DYNAMIC_TX_VERSION)

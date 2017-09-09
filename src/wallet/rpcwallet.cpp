@@ -375,7 +375,7 @@ UniValue getaddressesbyaccount(const UniValue& params, bool fHelp)
 
     // Find all addresses that have the given account
     UniValue ret(UniValue::VARR);
-    for (const PAIRTYPE(CDynamicAddress, CAddressBookData)& item : pwalletMain->mapAddressBook)
+    for (const std::pair<CDynamicAddress, CAddressBookData>& item : pwalletMain->mapAddressBook)
     {
         const CDynamicAddress& address = item.first;
         const std::string& strName = item.second.name;
@@ -1350,7 +1350,7 @@ UniValue ListReceived(const UniValue& params, bool fByAccounts)
     // Reply
     UniValue ret(UniValue::VARR);
     std::map<std::string, tallyitem> mapAccountTally;
-    for (const PAIRTYPE(CDynamicAddress, CAddressBookData)& item : pwalletMain->mapAddressBook)
+    for (const std::pair<CDynamicAddress, CAddressBookData>& item : pwalletMain->mapAddressBook)
     {
         const CDynamicAddress& address = item.first;
         const std::string& strAccount = item.second.name;
@@ -1769,7 +1769,7 @@ UniValue listaccounts(const UniValue& params, bool fHelp)
             includeWatchonly = includeWatchonly | ISMINE_WATCH_ONLY;
 
     std::map<std::string, CAmount> mapAccountBalances;
-    for (const PAIRTYPE(CTxDestination, CAddressBookData)& entry : pwalletMain->mapAddressBook) {
+    for (const std::pair<CTxDestination, CAddressBookData>& entry : pwalletMain->mapAddressBook) {
         if (IsMine(*pwalletMain, entry.first) & includeWatchonly) // This address belongs to me
             mapAccountBalances[entry.second.name] = 0;
     }
@@ -1803,7 +1803,7 @@ UniValue listaccounts(const UniValue& params, bool fHelp)
         mapAccountBalances[entry.strAccount] += entry.nCreditDebit;
 
     UniValue ret(UniValue::VOBJ);
-    for (const PAIRTYPE(std::string, CAmount)& accountBalance : mapAccountBalances) {
+    for (const std::pair<std::string, CAmount>& accountBalance : mapAccountBalances) {
         ret.push_back(Pair(accountBalance.first, ValueFromAmount(accountBalance.second)));
     }
     return ret;

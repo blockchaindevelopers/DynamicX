@@ -598,7 +598,7 @@ CDynode* CDynodeMan::GetNextDynodeInQueueForPayment(int nBlockHeight, bool fFilt
     int nTenthNetwork = nDnCount/10;
     int nCountTenth = 0;
     arith_uint256 nHighest = 0;
-    for (PAIRTYPE(int, CDynode*)& s : vecDynodeLastPaid){
+    for (std::pair<int, CDynode*>& s : vecDynodeLastPaid){
         arith_uint256 nScore = s.second->CalculateScore(blockHash);
         if(nScore > nHighest){
             nHighest = nScore;
@@ -681,7 +681,7 @@ int CDynodeMan::GetDynodeRank(const CTxIn& vin, int nBlockHeight, int nMinProtoc
     sort(vecDynodeScores.rbegin(), vecDynodeScores.rend(), CompareScoreDN());
 
     int nRank = 0;
-    for (PAIRTYPE(int64_t, CDynode*)& scorePair : vecDynodeScores) {
+    for (std::pair<int64_t, CDynode*>& scorePair : vecDynodeScores) {
         nRank++;
         if(scorePair.second->vin.prevout == vin.prevout) return nRank;
     }
@@ -713,7 +713,7 @@ std::vector<std::pair<int, CDynode> > CDynodeMan::GetDynodeRanks(int nBlockHeigh
     sort(vecDynodeScores.rbegin(), vecDynodeScores.rend(), CompareScoreDN());
 
     int nRank = 0;
-    for (PAIRTYPE(int64_t, CDynode*)& s : vecDynodeScores) {
+    for (std::pair<int64_t, CDynode*>& s : vecDynodeScores) {
         nRank++;
         vecDynodeRanks.push_back(std::make_pair(nRank, *s.second));
     }
@@ -747,7 +747,7 @@ CDynode* CDynodeMan::GetDynodeByRank(int nRank, int nBlockHeight, int nMinProtoc
     sort(vecDynodeScores.rbegin(), vecDynodeScores.rend(), CompareScoreDN());
 
     int rank = 0;
-    for (PAIRTYPE(int64_t, CDynode*)& s : vecDynodeScores){
+    for (std::pair<int64_t, CDynode*>& s : vecDynodeScores){
         rank++;
         if(rank == nRank) {
             return s.second;

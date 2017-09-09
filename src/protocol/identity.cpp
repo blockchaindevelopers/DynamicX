@@ -2591,7 +2591,7 @@ UniValue identitylist(const UniValue& params, bool fHelp) {
 	uint256 hash;
 	CTransaction tx;
 	int pending = 0;
-	for (PAIRTYPE(const uint256, CWalletTx)& item : pwalletMain->mapWallet) {
+	for (std::pair<const uint256, CWalletTx>& item : pwalletMain->mapWallet) {
 		pending = 0;
 		// get txn hash, read txn index
 		hash = item.second.GetHash();
@@ -2638,7 +2638,7 @@ UniValue identitylist(const UniValue& params, bool fHelp) {
 			vNamesO[identity.vchIdentity] = oName;	
 		}
 	}
-	for (const PAIRTYPE(vector<unsigned char>, UniValue)& item : vNamesO)
+	for (const std::pair<vector<unsigned char>, UniValue>& item : vNamesO)
 		oRes.push_back(item.second);
 	return oRes;
 }
@@ -2657,7 +2657,7 @@ UniValue identityaffiliates(const UniValue& params, bool fHelp) {
 		uint256 hash;
 		CTransaction tx;
 		uint64_t nHeight;
-		for (PAIRTYPE(const uint256, CWalletTx)& item : pwalletMain->mapWallet) {
+		for (std::pair<const uint256, CWalletTx>& item : pwalletMain->mapWallet) {
 			// get txn hash, read txn index
 			hash = item.second.GetHash();
 			const CWalletTx &wtx = item.second;
@@ -2716,7 +2716,7 @@ UniValue identityaffiliates(const UniValue& params, bool fHelp) {
 		}
 	}
 
-	for (const PAIRTYPE(vector<unsigned char>, UniValue)& item : vOfferO)
+	for (const std::pair<vector<unsigned char>, UniValue>& item : vOfferO)
 		oRes.push_back(item.second);
 
 	return oRes;

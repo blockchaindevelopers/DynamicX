@@ -2178,7 +2178,7 @@ int CPrivatesendPool::GetDenominations(const std::vector<CTxOut>& vecTxOut, bool
     // look for denominations and update uses to 1
     for (CTxOut txout : vecTxOut) {
         bool found = false;
-        for (PAIRTYPE(CAmount, int)& s : vecDenomUsed) {
+        for (std::pair<CAmount, int>& s : vecDenomUsed) {
             if(txout.nValue == s.first) {
                 s.second = 1;
                 found = true;
@@ -2190,7 +2190,7 @@ int CPrivatesendPool::GetDenominations(const std::vector<CTxOut>& vecTxOut, bool
     int nDenom = 0;
     int c = 0;
     // if the denomination is used, shift the bit on
-    for (PAIRTYPE(CAmount, int)& s : vecDenomUsed) {
+    for (std::pair<CAmount, int>& s : vecDenomUsed) {
         int bit = (fSingleRandomDenom ? GetRandInt(2) : 1) & s.second;
         nDenom |= bit << c++;
         if(fSingleRandomDenom && bit) break; // use just one random denomination
