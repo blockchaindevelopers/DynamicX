@@ -279,7 +279,7 @@ void MyIdentityListPage::done(int retval)
 
     // Figure out which identity was selected, and return it
     QModelIndexList indexes = table->selectionModel()->selectedRows(IdentityTableModel::Name);
-    Q_FOREACH (const QModelIndex& index, indexes)
+    for (const QModelIndex& index : indexes)
     {
         QVariant identity = table->model()->data(index);
         returnValue = identity.toString();

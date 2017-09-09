@@ -52,7 +52,7 @@ QIcon ColorizeIcon(const QIcon& ico, const QColor& colorbase)
 {
     QIcon new_ico;
     QSize sz;
-    Q_FOREACH(sz, ico.availableSizes())
+    for (sz : ico.availableSizes())
     {
         QImage img(ico.pixmap(sz).toImage());
         MakeSingleColorImage(img, colorbase);

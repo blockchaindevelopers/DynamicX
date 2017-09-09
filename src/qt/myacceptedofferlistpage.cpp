@@ -638,7 +638,7 @@ void MyAcceptedOfferListPage::done(int retval)
     // Figure out which offer was selected, and return it
     QModelIndexList indexes = table->selectionModel()->selectedRows(OfferAcceptTableModel::Name);
 
-    Q_FOREACH (const QModelIndex& index, indexes)
+    for (const QModelIndex& index : indexes)
     {
         QVariant offer = table->model()->data(index);
         returnValue = offer.toString();

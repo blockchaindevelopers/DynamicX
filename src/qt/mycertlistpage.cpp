@@ -300,7 +300,7 @@ void MyCertListPage::done(int retval)
     // Figure out which cert was selected, and return it
     QModelIndexList indexes = table->selectionModel()->selectedRows(CertTableModel::Name);
 
-    Q_FOREACH (const QModelIndex& index, indexes)
+    for (const QModelIndex& index : indexes)
     {
         QVariant cert = table->model()->data(index);
         returnValue = cert.toString();

@@ -497,7 +497,7 @@ void TransactionView::computeSum()
         return;
     QModelIndexList selection = transactionView->selectionModel()->selectedRows();
 
-    Q_FOREACH (QModelIndex index, selection){
+    for (QModelIndex index : selection){
         amount += index.data(TransactionTableModel::AmountRole).toLongLong();
     }
     QString strAmount(DynamicUnits::formatWithUnit(nDisplayUnit, amount, true, DynamicUnits::separatorAlways));
