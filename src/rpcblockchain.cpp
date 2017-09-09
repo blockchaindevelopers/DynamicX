@@ -24,7 +24,7 @@
 
 #include <univalue.h>
 
-#include <stdint.h>
+#include <cstdint>
 
 extern void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& entry);
 void ScriptPubKeyToJSON(const CScript& scriptPubKey, UniValue& out, bool fIncludeHex);

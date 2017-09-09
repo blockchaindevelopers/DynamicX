@@ -16,7 +16,7 @@
 #include <zmq.h>
 #endif
 
-#include <stdarg.h>
+#include <cstdarg>
 #include <string>
 
 void zmqError(const char *str);

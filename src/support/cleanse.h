@@ -8,7 +8,7 @@
 #ifndef DYNAMIC_SUPPORT_CLEANSE_H
 #define DYNAMIC_SUPPORT_CLEANSE_H
 
-#include <stdlib.h>
+#include <cstdlib>
 
 // Attempt to overwrite data in the specified memory span.
 void memory_cleanse(void *ptr, size_t len);

@@ -21,7 +21,7 @@
 
 #include <univalue.h>
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <boost/assign/list_of.hpp>
 #include <boost/algorithm/string.hpp>

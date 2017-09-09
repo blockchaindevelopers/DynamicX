@@ -24,7 +24,7 @@
 #include "dynode-sync.h"
 #include "privatesend.h"
 
-#include <stdint.h>
+#include <cstdint>
 
 #include <QDebug>
 #include <QTimer>

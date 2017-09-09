@@ -63,11 +63,11 @@
 #include "protocol/escrow.h"
 #include "protocol/message.h"
 
-#include <stdint.h>
-#include <stdio.h>
+#include <cstdint>
+#include <cstdio>
 
 #ifndef WIN32
-#include <signal.h>
+#include <csignal>
 #endif
 
 #include <openssl/crypto.h>

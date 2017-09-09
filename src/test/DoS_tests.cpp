@@ -15,7 +15,7 @@
 
 #include "test/test_dynamic.h"
 
-#include <stdint.h>
+#include <cstdint>
 
 #include <boost/assign/list_of.hpp> // for 'map_list_of()'
 #include <boost/date_time/posix_time/posix_time_types.hpp>

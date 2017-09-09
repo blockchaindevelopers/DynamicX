@@ -8,7 +8,7 @@
 #if defined(HAVE_CONFIG_H)
 #endif
 
-#include <stdint.h>
+#include <cstdint>
 
 #if defined(HAVE_BYTESWAP_H)
 #include <byteswap.h>

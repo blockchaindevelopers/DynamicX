@@ -18,7 +18,7 @@
 
 #include <algorithm>
 #include <map>
-#include <stdint.h>
+#include <cstdint>
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/replace.hpp>

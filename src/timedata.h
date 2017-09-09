@@ -9,7 +9,7 @@
 #define DYNAMIC_TIMEDATA_H
 
 #include <algorithm>
-#include <assert.h>
+#include <cassert>
 
 class CNetAddr;
 

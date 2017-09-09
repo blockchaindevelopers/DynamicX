@@ -26,7 +26,7 @@
 #include "wallet/wallet.h"
 #include "wallet/walletdb.h" // for BackupWallet
 
-#include <stdint.h>
+#include <cstdint>
 
 
 #include <QDebug>

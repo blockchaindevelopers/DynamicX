@@ -13,7 +13,7 @@
 
 #include <algorithm>
 #include <iostream>
-#include <stdint.h>
+#include <cstdint>
 #include <string>
 #include <vector>
 #include "uint256.h"

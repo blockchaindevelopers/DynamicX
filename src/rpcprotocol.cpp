@@ -15,7 +15,7 @@
 #include "version.h"
 
 #include <fstream>
-#include <stdint.h>
+#include <cstdint>
 
 /**
  * JSON-RPC protocol.  Dynamic speaks version 1.0 for maximum compatibility,

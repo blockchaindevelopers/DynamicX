@@ -12,7 +12,7 @@
 #include "utilmoneystr.h"
 #include "test/test_dynamic.h"
 
-#include <stdint.h>
+#include <cstdint>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>

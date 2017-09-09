@@ -30,12 +30,12 @@
 #include "protocol/ntp.h"
 
 #ifdef WIN32
-#include <string.h>
+#include <cstring>
 #else
 #include <fcntl.h>
 #endif
 
-#include <math.h>
+#include <cmath>
 
 #ifdef USE_UPNP
 #include <miniupnpc/miniupnpc.h>

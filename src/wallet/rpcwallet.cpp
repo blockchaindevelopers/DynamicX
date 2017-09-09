@@ -25,7 +25,7 @@
 
 #include <univalue.h>
 
-#include <stdint.h>
+#include <cstdint>
 
 #include <boost/assign/list_of.hpp>
 

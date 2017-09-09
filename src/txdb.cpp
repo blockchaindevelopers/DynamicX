@@ -16,7 +16,7 @@
 
 #include "crypto/muhash.h"
 
-#include <stdint.h>
+#include <cstdint>
 
 #include <boost/thread.hpp>
 

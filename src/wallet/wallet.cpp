@@ -35,7 +35,7 @@
 #include "utilmoneystr.h"
 #include "consensus/validation.h"
 
-#include <assert.h>
+#include <cassert>
 
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/replace.hpp>

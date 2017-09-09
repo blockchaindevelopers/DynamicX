@@ -17,7 +17,7 @@
 
 #include "dynodeconfig.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/predicate.hpp>

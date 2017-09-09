@@ -8,7 +8,7 @@
 #ifndef DYNAMIC_UTILTIME_H
 #define DYNAMIC_UTILTIME_H
 
-#include <stdint.h>
+#include <cstdint>
 #include <string>
 
 int64_t GetTime();

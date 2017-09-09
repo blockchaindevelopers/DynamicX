@@ -11,12 +11,12 @@
 #include "prevector.h"
 #include "utilstrencodings.h"
 
-#include <assert.h>
+#include <cassert>
 #include <climits>
 #include <limits>
 #include <stdexcept>
-#include <stdint.h>
-#include <string.h>
+#include <cstdint>
+#include <cstring>
 #include <string>
 #include <vector>
 

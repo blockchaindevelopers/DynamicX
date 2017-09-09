@@ -15,7 +15,7 @@
 
 #include <deque>
 #include <set>
-#include <stdlib.h>
+#include <cstdlib>
 #include <vector>
 
 #include <event2/buffer.h>

@@ -27,7 +27,7 @@
 #include <QTemporaryFile>
 #include <QVariant>
 #ifdef USE_DBUS
-#include <stdint.h>
+#include <cstdint>
 #include <QtDBus>
 #endif
 

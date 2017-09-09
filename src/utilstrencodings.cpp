@@ -11,7 +11,7 @@
 
 #include <cstdlib>
 #include <cstring>
-#include <errno.h>
+#include <cerrno>
 #include <limits>
 #include <sstream>
 

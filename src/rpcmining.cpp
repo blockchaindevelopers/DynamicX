@@ -35,7 +35,7 @@
 #include <univalue.h>
 
 #include <memory>
-#include <stdint.h>
+#include <cstdint>
 
 #include <boost/assign/list_of.hpp>
 #include <boost/lexical_cast.hpp>

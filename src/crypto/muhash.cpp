@@ -8,8 +8,8 @@
 #include "common.h"
 #include "chacha20.h"
 
-#include <assert.h>
-#include <stdio.h>
+#include <cassert>
+#include <cstdio>
 
 namespace {
 

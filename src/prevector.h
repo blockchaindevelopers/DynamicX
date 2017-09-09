@@ -9,7 +9,7 @@
 #define DYNAMIC_PREVECTOR_H
 
 #include <iterator>
-#include <string.h>
+#include <cstring>
 
 #pragma pack(push, 1)
 /** Implements a drop-in replacement for std::vector<T> which stores up to N

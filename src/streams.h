@@ -11,7 +11,7 @@
 #include "serialize.h"
 #include "support/allocators/zeroafterfree.h"
 
-#include <assert.h>
+#include <cassert>
 
 /** Double ended buffer combining vector and stream-like interfaces.
  *

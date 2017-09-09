@@ -16,7 +16,7 @@
 #ifndef WIN32
 #include <sys/stat.h>
 #endif
-#include <stdint.h>
+#include <cstdint>
 
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>

@@ -31,7 +31,7 @@
 #include "wallet/wallet.h"
 #include "protocol/fluid.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <queue>
 #include <utility>
 

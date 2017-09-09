@@ -9,7 +9,7 @@
 #include "script/interpreter.h"
 #include "uint256.h"
 
-#include <stdint.h>
+#include <cstdint>
 
 #include <boost/variant.hpp>
 

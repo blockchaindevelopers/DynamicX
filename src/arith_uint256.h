@@ -8,7 +8,7 @@
 #ifndef DYNAMIC_ARITH_UINT256_H
 #define DYNAMIC_ARITH_UINT256_H
 
-#include <assert.h>
+#include <cassert>
 #include <cstring>
 #include <stdexcept>
 

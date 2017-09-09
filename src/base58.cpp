@@ -11,9 +11,9 @@
 #include "protocol/identity.h"
 #include "uint256.h"
 
-#include <assert.h>
-#include <stdint.h>
-#include <string.h>
+#include <cassert>
+#include <cstdint>
+#include <cstring>
 #include <string>
 #include <vector>
 

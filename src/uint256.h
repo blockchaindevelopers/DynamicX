@@ -10,7 +10,7 @@
 
 #include "crypto/common.h"
 
-#include <assert.h>
+#include <cassert>
 #include <cstring>
 #include <string>
 #include <vector>

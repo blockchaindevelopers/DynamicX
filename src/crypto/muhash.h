@@ -9,7 +9,7 @@
 #include "dynamic-config.h"
 #endif
 
-#include <stdint.h>
+#include <cstdint>
 
 struct Num3072 {
 #ifdef HAVE___INT128
