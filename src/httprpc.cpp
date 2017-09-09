@@ -23,7 +23,6 @@
 
 #include <stdio.h>
 
-#include <boost/foreach.hpp> //BOOST_FOREACH
 #include <boost/algorithm/string.hpp> // boost::trim
 
 /** WWW-Authenticate to present with 401 Unauthorized response */

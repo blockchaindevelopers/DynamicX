@@ -25,8 +25,6 @@
 #define UEND(a)             ((unsigned char*)&((&(a))[1]))
 #define ARRAYLEN(array)     (sizeof(array)/sizeof((array)[0]))
 
-/** This is needed because the foreach macro can't get over the comma in pair<t1, t2> */
-
 typedef std::vector<std::string> StringVector;
 typedef std::vector<uint256> HashVector;
 
