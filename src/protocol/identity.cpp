@@ -50,7 +50,6 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/case_conv.hpp> // for to_lower()
 #include <boost/xpressive/xpressive_dynamic.hpp>
-#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/thread.hpp>
 #include <boost/algorithm/hex.hpp>
@@ -77,7 +76,7 @@ bool GetDynamicTransaction(int nHeight, const uint256 &hash, CTransaction &txOut
     if (pindexSlow) {
         CBlock block;
         if (ReadBlockFromDisk(block, pindexSlow, consensusParams)) {
-            BOOST_FOREACH(const CTransaction &tx, block.vtx) {
+            for (const CTransaction &tx : block.vtx) {
                 if (tx.GetHash() == hash) {
                     txOut = tx;
                     return true;
@@ -537,7 +536,7 @@ bool getCategoryList(vector<string>& categoryList)
 }
 void PutToIdentityList(std::vector<CIdentityIndex> &identityList, CIdentityIndex& index) {
 	int i = identityList.size() - 1;
-	BOOST_REVERSE_FOREACH(CIdentityIndex &o, identityList) {
+	for (CIdentityIndex &o : reverse_iterate(identityList)) {
         if(!o.txHash.IsNull() && o.txHash == index.txHash) {
         	identityList[i] = index;
             return;
@@ -2592,7 +2591,7 @@ UniValue identitylist(const UniValue& params, bool fHelp) {
 	uint256 hash;
 	CTransaction tx;
 	int pending = 0;
-	BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, pwalletMain->mapWallet) {
+	for (PAIRTYPE(const uint256, CWalletTx)& item : pwalletMain->mapWallet) {
 		pending = 0;
 		// get txn hash, read txn index
 		hash = item.second.GetHash();
@@ -2639,7 +2638,7 @@ UniValue identitylist(const UniValue& params, bool fHelp) {
 			vNamesO[identity.vchIdentity] = oName;	
 		}
 	}
-	BOOST_FOREACH(const PAIRTYPE(vector<unsigned char>, UniValue)& item, vNamesO)
+	for (const PAIRTYPE(vector<unsigned char>, UniValue)& item : vNamesO)
 		oRes.push_back(item.second);
 	return oRes;
 }
@@ -2658,7 +2657,7 @@ UniValue identityaffiliates(const UniValue& params, bool fHelp) {
 		uint256 hash;
 		CTransaction tx;
 		uint64_t nHeight;
-		BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, pwalletMain->mapWallet) {
+		for (PAIRTYPE(const uint256, CWalletTx)& item : pwalletMain->mapWallet) {
 			// get txn hash, read txn index
 			hash = item.second.GetHash();
 			const CWalletTx &wtx = item.second;
@@ -2717,7 +2716,7 @@ UniValue identityaffiliates(const UniValue& params, bool fHelp) {
 		}
 	}
 
-	BOOST_FOREACH(const PAIRTYPE(vector<unsigned char>, UniValue)& item, vOfferO)
+	for (const PAIRTYPE(vector<unsigned char>, UniValue)& item : vOfferO)
 		oRes.push_back(item.second);
 
 	return oRes;
@@ -3000,7 +2999,7 @@ UniValue identityhistory(const UniValue& params, bool fHelp) {
     vector<vector<unsigned char> > vvch;
     int op, nOut;
 	string opName;
-	BOOST_FOREACH(txPos2, vtxPos) {
+	for (txPos2 : vtxPos) {
 		if (!GetDynamicTransaction(txPos2.nHeight, txPos2.txHash, tx, Params().GetConsensus()))
 			continue;
 
@@ -3095,7 +3094,7 @@ UniValue identityfilter(const UniValue& params, bool fHelp) {
 	if (!pidentitydb->ScanNames(vchIdentity, strRegexp, safeSearch, 25, nameScan))
 		throw runtime_error("DYNAMIC_IDENTITY_RPC_ERROR: ERRCODE: 5538 - " + _("Scan failed"));
 
-	BOOST_FOREACH(const CIdentityIndex &identity, nameScan) {
+	for (const CIdentityIndex &identity : nameScan) {
 		UniValue oName(UniValue::VOBJ);
 		if(BuildIdentityJson(identity, 0, oName))
 			oRes.push_back(oName);
@@ -3110,7 +3109,7 @@ void GetPrivateKeysFromScript(const CScript& script, vector<string> &strKeys)
     int nRequired;
 	txnouttype whichType;
     ExtractDestinations(script, whichType, addrs, nRequired);
-	BOOST_FOREACH(const CTxDestination& txDest, addrs) {
+	for (const CTxDestination& txDest : addrs) {
 		CDynamicAddress address(txDest);
 		CKeyID keyID;
 		if (!address.GetKeyID(keyID))
@@ -3167,7 +3166,7 @@ UniValue identitypay(const UniValue& params, bool fHelp) {
 
     CAmount totalAmount = 0;
     vector<string> keys = sendTo.getKeys();
-    BOOST_FOREACH(const string& name_, keys)
+    for (const string& name_ : keys)
     {
         CDynamicAddress address(name_);
         if (!address.IsValid())

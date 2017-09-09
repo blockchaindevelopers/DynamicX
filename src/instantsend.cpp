@@ -79,7 +79,7 @@ bool CInstantSend::ProcessTxLockRequest(const CTxLockRequest& txLockRequest)
 
     // Check to see if we conflict with existing completed lock,
     // fail if so, there can't be 2 completed locks for the same outpoint
-    BOOST_FOREACH(const CTxIn& txin, txLockRequest.vin) {
+    for (const CTxIn& txin : txLockRequest.vin) {
         std::map<COutPoint, uint256>::iterator it = mapLockedOutpoints.find(txin.prevout);
         if(it != mapLockedOutpoints.end()) {
             // Conflicting with complete lock, ignore this one
@@ -92,10 +92,10 @@ bool CInstantSend::ProcessTxLockRequest(const CTxLockRequest& txLockRequest)
 
     // Check to see if there are votes for conflicting request,
     // if so - do not fail, just warn user
-    BOOST_FOREACH(const CTxIn& txin, txLockRequest.vin) {
+    for (const CTxIn& txin : txLockRequest.vin) {
         std::map<COutPoint, std::set<uint256> >::iterator it = mapVotedOutpoints.find(txin.prevout);
         if(it != mapVotedOutpoints.end()) {
-            BOOST_FOREACH(const uint256& hash, it->second) {
+            for (const uint256& hash : it->second) {
                 if(hash != txLockRequest.GetHash()) {
                     LogPrint("instantsend", "CInstantSend::ProcessTxLockRequest -- Double spend attempt! %s\n", txin.prevout.ToStringShort());
                     // do not fail here, let it go and see which one will get the votes to be locked
@@ -147,7 +147,7 @@ bool CInstantSend::CreateTxLockCandidate(const CTxLockRequest& txLockRequest)
 
         CTxLockCandidate txLockCandidate(txLockRequest);
         // all inputs should already be checked by txLockRequest.IsValid() above, just use them now
-        BOOST_REVERSE_FOREACH(const CTxIn& txin, txLockRequest.vin) {
+        for (const CTxIn& txin : reverse_iterate(txLockRequest.vin)) {
             txLockCandidate.AddOutPointLock(txin.prevout);
         }
         mapTxLockCandidates.insert(std::make_pair(txHash, txLockCandidate));
@@ -201,7 +201,7 @@ void CInstantSend::Vote(CTxLockCandidate& txLockCandidate)
         // refuse to vote twice or to include the same outpoint in another tx
         bool fAlreadyVoted = false;
         if(itVoted != mapVotedOutpoints.end()) {
-            BOOST_FOREACH(const uint256& hash, itVoted->second) {
+            for (const uint256& hash : itVoted->second) {
                 std::map<uint256, CTxLockCandidate>::iterator it2 = mapTxLockCandidates.find(hash);
                 if(it2->second.HasDynodeVoted(itOutpointLock->first, activeDynode.vin.prevout)) {
                     // we already voted for this outpoint to be included either in the same tx or in a competing one,
@@ -323,7 +323,7 @@ bool CInstantSend::ProcessTxLockVote(CNode* pfrom, CTxLockVote& vote)
     LogPrint("instantsend", "CInstantSend::ProcessTxLockVote -- Transaction Lock Vote, txid=%s\n", txHash.ToString());
     std::map<COutPoint, std::set<uint256> >::iterator it1 = mapVotedOutpoints.find(vote.GetOutpoint());
     if(it1 != mapVotedOutpoints.end()) {
-        BOOST_FOREACH(const uint256& hash, it1->second) {
+        for (const uint256& hash : it1->second) {
             if(hash != txHash) {
                 // same outpoint was already voted to be locked by another tx lock request,
                 // find out if the same mn voted on this outpoint before
@@ -391,7 +391,7 @@ bool CInstantSend::IsEnoughOrphanVotesForTx(const CTxLockRequest& txLockRequest)
     // There could be a situation when we already have quite a lot of votes
     // but tx lock request still wasn't received. Let's scan through
     // orphan votes to check if this is the case.
-    BOOST_FOREACH(const CTxIn& txin, txLockRequest.vin) {
+    for (const CTxIn& txin : txLockRequest.vin) {
         if(!IsEnoughOrphanVotesForTxAndOutPoint(txLockRequest.GetHash(), txin.prevout)) {
             return false;
         }
@@ -485,7 +485,7 @@ bool CInstantSend::ResolveConflicts(const CTxLockCandidate& txLockCandidate)
 
     bool fMempoolConflict = false;
 
-    BOOST_FOREACH(const CTxIn& txin, txLockCandidate.txLockRequest.vin) {
+    for (const CTxIn& txin : txLockCandidate.txLockRequest.vin) {
         uint256 hashLocked;
         if(GetLockedOutPointTxHash(txin.prevout, hashLocked) && txHash != hashLocked) {
             // conflicting with complete lock, ignore current one
@@ -532,7 +532,7 @@ bool CInstantSend::ResolveConflicts(const CTxLockCandidate& txLockCandidate)
         return true;
     }
     // Not in block yet, make sure all its inputs are still unspent
-    BOOST_FOREACH(const CTxIn& txin, txLockCandidate.txLockRequest.vin) {
+    for (const CTxIn& txin : txLockCandidate.txLockRequest.vin) {
         CCoins coins;
         if(!pcoinsTip->GetCoins(txin.prevout.hash, coins) ||
            (unsigned int)txin.prevout.n>=coins.vout.size() ||
@@ -857,7 +857,7 @@ bool CTxLockRequest::IsValid(bool fRequireUnspent) const
     CAmount nValueIn = 0;
     CAmount nValueOut = 0;
 
-    BOOST_FOREACH(const CTxOut& txout, vout) {
+    for (const CTxOut& txout : vout) {
         // InstantSend supports normal scripts and unspendable (i.e. data) scripts.
         // TODO: Look into other script types that are normal and can be included
         if(!txout.scriptPubKey.IsNormalPaymentScript() && !txout.scriptPubKey.IsUnspendable()) {
@@ -867,7 +867,7 @@ bool CTxLockRequest::IsValid(bool fRequireUnspent) const
         nValueOut += txout.nValue;
     }
 
-    BOOST_FOREACH(const CTxIn& txin, vin) {
+    for (const CTxIn& txin : vin) {
 
         CCoins coins;
         int nPrevoutHeight = 0;

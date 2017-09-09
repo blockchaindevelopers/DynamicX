@@ -341,7 +341,7 @@ UniValue gobject(const UniValue& params, bool fHelp)
 
         UniValue resultsObj(UniValue::VOBJ);
 
-        BOOST_FOREACH(CDynodeConfig::CDynodeEntry dne, dynodeConfig.getEntries()) {
+        for (CDynodeConfig::CDynodeEntry dne : dynodeConfig.getEntries()) {
             std::string strError;
             std::vector<unsigned char> vchDyNodeSignature;
             std::string strDyNodeSignMessage;
@@ -453,7 +453,7 @@ UniValue gobject(const UniValue& params, bool fHelp)
 
         UniValue resultsObj(UniValue::VOBJ);
 
-        BOOST_FOREACH(CDynodeConfig::CDynodeEntry dne, dynodeConfig.getEntries())
+        for (CDynodeConfig::CDynodeEntry dne : dynodeConfig.getEntries())
         {
             // IF WE HAVE A SPECIFIC NODE REQUESTED TO VOTE, DO THAT
             if(strAlias != dne.getAlias()) continue;
@@ -575,7 +575,7 @@ UniValue gobject(const UniValue& params, bool fHelp)
 
         // CREATE RESULTS FOR USER
 
-        BOOST_FOREACH(CGovernanceObject* pGovObj, objs)
+        for (CGovernanceObject* pGovObj : objs)
         {
             if(strCachedSignal == "valid" && !pGovObj->IsSetCachedValid()) continue;
             if(strCachedSignal == "funding" && !pGovObj->IsSetCachedFunding()) continue;
@@ -724,7 +724,7 @@ UniValue gobject(const UniValue& params, bool fHelp)
         // GET MATCHING VOTES BY HASH, THEN SHOW USERS VOTE INFORMATION
 
         std::vector<CGovernanceVote> vecVotes = governance.GetMatchingVotes(hash);
-        BOOST_FOREACH(CGovernanceVote vote, vecVotes) {
+        for (CGovernanceVote vote : vecVotes) {
             bResult.push_back(Pair(vote.GetHash().ToString(),  vote.ToString()));
         }
 
@@ -768,7 +768,7 @@ UniValue gobject(const UniValue& params, bool fHelp)
         // GET MATCHING VOTES BY HASH, THEN SHOW USERS VOTE INFORMATION
 
         std::vector<CGovernanceVote> vecVotes = governance.GetCurrentVotes(hash, dnCollateralOutpoint);
-        BOOST_FOREACH(CGovernanceVote vote, vecVotes) {
+        for (CGovernanceVote vote : vecVotes) {
             bResult.push_back(Pair(vote.GetHash().ToString(),  vote.ToString()));
         }
 

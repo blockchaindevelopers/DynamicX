@@ -96,7 +96,7 @@ bool CDynodeSync::IsBlockchainSynced(bool fBlockAccepted)
     if(vNodesCopy.size() >= DYNODE_SYNC_ENOUGH_PEERS) {
         // Check to see how many of our peers are (almost) at the same height as we are
         int nNodesAtSameHeight = 0;
-        BOOST_FOREACH(CNode* pnode, vNodesCopy)
+        for (CNode* pnode : vNodesCopy)
         {
             // Make sure this peer is presumably at the same height
             if(!CheckNodeHeight(pnode)) continue;
@@ -193,7 +193,7 @@ void CDynodeSync::SwitchToNextAsset()
             TRY_LOCK(cs_vNodes, lockRecv);
             if(!lockRecv) return;
 
-            BOOST_FOREACH(CNode* pnode, vNodes) {
+            for (CNode* pnode : vNodes) {
                 netfulfilledman.AddFulfilledRequest(pnode->addr, "full-sync");
             }
 
@@ -237,7 +237,7 @@ void CDynodeSync::ClearFulfilledRequests()
     TRY_LOCK(cs_vNodes, lockRecv);
     if(!lockRecv) return;
 
-    BOOST_FOREACH(CNode* pnode, vNodes)
+    for (CNode* pnode : vNodes)
     {
         netfulfilledman.RemoveFulfilledRequest(pnode->addr, "spork-sync");
         netfulfilledman.RemoveFulfilledRequest(pnode->addr, "dynode-list-sync");
@@ -310,7 +310,7 @@ void CDynodeSync::ProcessTick()
 
     std::vector<CNode*> vNodesCopy = CopyNodeVector();
 
-    BOOST_FOREACH(CNode* pnode, vNodesCopy)    {
+    for (CNode* pnode : vNodesCopy)    {
         // Don't try to sync any data from outbound "dynode" connections -
         // they are temporary and should be considered unreliable for a sync process.
         // Inbound connection this early is most likely a "dynode" connection

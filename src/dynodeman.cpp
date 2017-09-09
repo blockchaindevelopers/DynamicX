@@ -172,7 +172,7 @@ void CDynodeMan::Check()
 
     LogPrint("Dynode", "CDynodeMan::Check -- nLastWatchdogVoteTime=%d, IsWatchdogActive()=%d\n", nLastWatchdogVoteTime, IsWatchdogActive());
 
-    BOOST_FOREACH(CDynode& dn, vDynodes) {
+    for (CDynode& dn : vDynodes) {
         dn.Check();
     }
 }
@@ -383,7 +383,7 @@ int CDynodeMan::CountDynodes(int nProtocolVersion)
     int nCount = 0;
     nProtocolVersion = nProtocolVersion == -1 ? dnpayments.GetMinDynodePaymentsProto() : nProtocolVersion;
 
-    BOOST_FOREACH(CDynode& dn, vDynodes) {
+    for (CDynode& dn : vDynodes) {
         if(dn.nProtocolVersion < nProtocolVersion) continue;
         nCount++;
     }
@@ -397,7 +397,7 @@ int CDynodeMan::CountEnabled(int nProtocolVersion)
     int nCount = 0;
     nProtocolVersion = nProtocolVersion == -1 ? dnpayments.GetMinDynodePaymentsProto() : nProtocolVersion;
 
-    BOOST_FOREACH(CDynode& dn, vDynodes) {
+    for (CDynode& dn : vDynodes) {
         if(dn.nProtocolVersion < nProtocolVersion || !dn.IsEnabled()) continue;
         nCount++;
     }
@@ -411,7 +411,7 @@ int CDynodeMan::CountByIP(int nNetworkType)
     LOCK(cs);
     int nNodeCount = 0;
 
-    BOOST_FOREACH(CDynode& dn, vDynodes)
+    for (CDynode& dn : vDynodes)
         if ((nNetworkType == NET_IPV4 && dn.addr.IsIPv4()) ||
             (nNetworkType == NET_TOR  && dn.addr.IsTor())  ||
             (nNetworkType == NET_IPV6 && dn.addr.IsIPv6())) {
@@ -447,7 +447,7 @@ CDynode* CDynodeMan::Find(const CScript &payee)
 {
     LOCK(cs);
 
-    BOOST_FOREACH(CDynode& dn, vDynodes)
+    for (CDynode& dn : vDynodes)
     {
         if(GetScriptForDestination(dn.pubKeyCollateralAddress.GetID()) == payee)
             return &dn;
@@ -459,7 +459,7 @@ CDynode* CDynodeMan::Find(const CTxIn &vin)
 {
     LOCK(cs);
 
-    BOOST_FOREACH(CDynode& dn, vDynodes)
+    for (CDynode& dn : vDynodes)
     {
         if(dn.vin.prevout == vin.prevout)
             return &dn;
@@ -471,7 +471,7 @@ CDynode* CDynodeMan::Find(const CPubKey &pubKeyDynode)
 {
     LOCK(cs);
 
-    BOOST_FOREACH(CDynode& dn, vDynodes)
+    for (CDynode& dn : vDynodes)
     {
         if(dn.pubKeyDynode == pubKeyDynode)
             return &dn;
@@ -559,7 +559,7 @@ CDynode* CDynodeMan::GetNextDynodeInQueueForPayment(int nBlockHeight, bool fFilt
     */
 
     int nDnCount = CountEnabled();
-    BOOST_FOREACH(CDynode &dn, vDynodes)
+    for (CDynode &dn : vDynodes)
     {
         if(!dn.IsValidForPayment()) continue;
 
@@ -598,7 +598,7 @@ CDynode* CDynodeMan::GetNextDynodeInQueueForPayment(int nBlockHeight, bool fFilt
     int nTenthNetwork = nDnCount/10;
     int nCountTenth = 0;
     arith_uint256 nHighest = 0;
-    BOOST_FOREACH (PAIRTYPE(int, CDynode*)& s, vecDynodeLastPaid){
+    for (PAIRTYPE(int, CDynode*)& s : vecDynodeLastPaid){
         arith_uint256 nScore = s.second->CalculateScore(blockHash);
         if(nScore > nHighest){
             nHighest = nScore;
@@ -624,7 +624,7 @@ CDynode* CDynodeMan::FindRandomNotInVec(const std::vector<CTxIn> &vecToExclude, 
 
     // fill a vector of pointers
     std::vector<CDynode*> vpDynodesShuffled;
-    BOOST_FOREACH(CDynode &dn, vDynodes) {
+    for (CDynode &dn : vDynodes) {
         vpDynodesShuffled.push_back(&dn);
     }
 
@@ -635,10 +635,10 @@ CDynode* CDynodeMan::FindRandomNotInVec(const std::vector<CTxIn> &vecToExclude, 
     bool fExclude;
 
     // loop through
-    BOOST_FOREACH(CDynode* pdn, vpDynodesShuffled) {
+    for (CDynode* pdn : vpDynodesShuffled) {
         if(pdn->nProtocolVersion < nProtocolVersion || !pdn->IsEnabled()) continue;
         fExclude = false;
-        BOOST_FOREACH(const CTxIn &txinToExclude, vecToExclude) {
+        for (const CTxIn &txinToExclude : vecToExclude) {
             if(pdn->vin.prevout == txinToExclude.prevout) {
                 fExclude = true;
                 break;
@@ -665,7 +665,7 @@ int CDynodeMan::GetDynodeRank(const CTxIn& vin, int nBlockHeight, int nMinProtoc
     LOCK(cs);
 
     // scan for winner
-    BOOST_FOREACH(CDynode& dn, vDynodes) {
+    for (CDynode& dn : vDynodes) {
         if(dn.nProtocolVersion < nMinProtocol) continue;
         if(fOnlyActive) {
             if(!dn.IsEnabled()) continue;
@@ -681,7 +681,7 @@ int CDynodeMan::GetDynodeRank(const CTxIn& vin, int nBlockHeight, int nMinProtoc
     sort(vecDynodeScores.rbegin(), vecDynodeScores.rend(), CompareScoreDN());
 
     int nRank = 0;
-    BOOST_FOREACH (PAIRTYPE(int64_t, CDynode*)& scorePair, vecDynodeScores) {
+    for (PAIRTYPE(int64_t, CDynode*)& scorePair : vecDynodeScores) {
         nRank++;
         if(scorePair.second->vin.prevout == vin.prevout) return nRank;
     }
@@ -701,7 +701,7 @@ std::vector<std::pair<int, CDynode> > CDynodeMan::GetDynodeRanks(int nBlockHeigh
     LOCK(cs);
 
     // scan for winner
-    BOOST_FOREACH(CDynode& dn, vDynodes) {
+    for (CDynode& dn : vDynodes) {
 
         if(dn.nProtocolVersion < nMinProtocol || !dn.IsEnabled()) continue;
 
@@ -713,7 +713,7 @@ std::vector<std::pair<int, CDynode> > CDynodeMan::GetDynodeRanks(int nBlockHeigh
     sort(vecDynodeScores.rbegin(), vecDynodeScores.rend(), CompareScoreDN());
 
     int nRank = 0;
-    BOOST_FOREACH (PAIRTYPE(int64_t, CDynode*)& s, vecDynodeScores) {
+    for (PAIRTYPE(int64_t, CDynode*)& s : vecDynodeScores) {
         nRank++;
         vecDynodeRanks.push_back(std::make_pair(nRank, *s.second));
     }
@@ -734,7 +734,7 @@ CDynode* CDynodeMan::GetDynodeByRank(int nRank, int nBlockHeight, int nMinProtoc
     }
 
     // Fill scores
-    BOOST_FOREACH(CDynode& dn, vDynodes) {
+    for (CDynode& dn : vDynodes) {
 
         if(dn.nProtocolVersion < nMinProtocol) continue;
         if(fOnlyActive && !dn.IsEnabled()) continue;
@@ -747,7 +747,7 @@ CDynode* CDynodeMan::GetDynodeByRank(int nRank, int nBlockHeight, int nMinProtoc
     sort(vecDynodeScores.rbegin(), vecDynodeScores.rend(), CompareScoreDN());
 
     int rank = 0;
-    BOOST_FOREACH (PAIRTYPE(int64_t, CDynode*)& s, vecDynodeScores){
+    for (PAIRTYPE(int64_t, CDynode*)& s : vecDynodeScores){
         rank++;
         if(rank == nRank) {
             return s.second;
@@ -763,7 +763,7 @@ void CDynodeMan::ProcessDynodeConnections()
     if(Params().NetworkIDString() == CBaseChainParams::REGTEST) return;
 
     LOCK(cs_vNodes);
-    BOOST_FOREACH(CNode* pnode, vNodes) {
+    for (CNode* pnode : vNodes) {
         if(pnode->fDynode) {
             if(privateSendPool.pSubmittedToDynode != nullptr && pnode->addr == privateSendPool.pSubmittedToDynode->addr) continue;
             LogPrintf("Closing Dynode connection: peer=%d, addr=%s\n", pnode->id, pnode->addr.ToString());
@@ -900,7 +900,7 @@ void CDynodeMan::ProcessMessage(CNode* pfrom, std::string& strCommand, CDataStre
 
         int nInvCount = 0;
 
-        BOOST_FOREACH(CDynode& dn, vDynodes) {
+        for (CDynode& dn : vDynodes) {
             if (vin != CTxIn() && vin != dn.vin) continue; // asked for specific vin but we are not there yet
             if (dn.addr.IsRFC1918() || dn.addr.IsLocal()) continue; // do not send local network Dynode
             if (dn.IsUpdateRequired()) continue; // do not send outdated Dynodes
@@ -995,7 +995,7 @@ void CDynodeMan::DoFullVerificationStep()
     if(nOffset >= (int)vecDynodeRanks.size()) return;
 
     std::vector<CDynode*> vSortedByAddr;
-    BOOST_FOREACH(CDynode& dn, vDynodes) {
+    for (CDynode& dn : vDynodes) {
         vSortedByAddr.push_back(&dn);
     }
 
@@ -1046,13 +1046,13 @@ void CDynodeMan::CheckSameAddr()
         CDynode* pprevDynode = nullptr;
         CDynode* pverifiedDynode = nullptr;
 
-        BOOST_FOREACH(CDynode& dn, vDynodes) {
+        for (CDynode& dn : vDynodes) {
             vSortedByAddr.push_back(&dn);
         }
 
         sort(vSortedByAddr.begin(), vSortedByAddr.end(), CompareByAddr());
 
-        BOOST_FOREACH(CDynode* pdn, vSortedByAddr) {
+        for (CDynode* pdn : vSortedByAddr) {
             // check only (pre)enabled Dynodes
             if(!pdn->IsEnabled() && !pdn->IsPreEnabled()) continue;
             // initial step
@@ -1080,7 +1080,7 @@ void CDynodeMan::CheckSameAddr()
     }
 
     // ban duplicates
-    BOOST_FOREACH(CDynode* pdn, vBan) {
+    for (CDynode* pdn : vBan) {
         LogPrintf("CDynodeMan::CheckSameAddr -- increasing PoSe ban score for Dynode %s\n", pdn->vin.prevout.ToStringShort());
         pdn->IncreasePoSeBanScore();
     }
@@ -1258,7 +1258,7 @@ void CDynodeMan::ProcessVerifyReply(CNode* pnode, CDynodeVerification& dnv)
         LogPrintf("CDynodeMan::ProcessVerifyReply -- verified real Dynode %s for addr %s\n",
                     prealDynode->vin.prevout.ToStringShort(), pnode->addr.ToString());
         // increase ban score for everyone else
-        BOOST_FOREACH(CDynode* pdn, vpDynodesToBan) {
+        for (CDynode* pdn : vpDynodesToBan) {
             pdn->IncreasePoSeBanScore();
             LogPrint("Dynode", "CDynodeMan::ProcessVerifyBroadcast -- increased PoSe ban score for %s addr %s, new score %d\n",
                         prealDynode->vin.prevout.ToStringShort(), pnode->addr.ToString(), pdn->nPoSeBanScore);
@@ -1352,7 +1352,7 @@ void CDynodeMan::ProcessVerifyBroadcast(CNode* pnode, const CDynodeVerification&
 
         // increase ban score for everyone else with the same addr
         int nCount = 0;
-        BOOST_FOREACH(CDynode& dn, vDynodes) {
+        for (CDynode& dn : vDynodes) {
             if(dn.addr != dnv.addr || dn.vin.prevout == dnv.vin1.prevout) continue;
             dn.IncreasePoSeBanScore();
             nCount++;
@@ -1504,7 +1504,7 @@ void CDynodeMan::UpdateLastPaid()
 
     // pCurrentBlockIndex->nHeight, nMaxBlocksToScanBack, IsFirstRun ? "true" : "false");
 
-    BOOST_FOREACH(CDynode& dn, vDynodes) {
+    for (CDynode& dn : vDynodes) {
         dn.UpdateLastPaid(pCurrentBlockIndex, nMaxBlocksToScanBack);
     }
 
@@ -1569,7 +1569,7 @@ void CDynodeMan::AddGovernanceVote(const CTxIn& vin, uint256 nGovernanceObjectHa
 void CDynodeMan::RemoveGovernanceObject(uint256 nGovernanceObjectHash)
 {
     LOCK(cs);
-    BOOST_FOREACH(CDynode& dn, vDynodes) {
+    for (CDynode& dn : vDynodes) {
         dn.RemoveGovernanceObject(nGovernanceObjectHash);
     }
 }

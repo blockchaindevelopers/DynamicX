@@ -42,7 +42,6 @@
 #include <boost/algorithm/hex.hpp>
 #include <boost/algorithm/string/case_conv.hpp> // for to_lower()
 #include <boost/xpressive/xpressive_dynamic.hpp>
-#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/thread.hpp>
 #include <boost/algorithm/string/predicate.hpp>
@@ -144,7 +143,7 @@ bool DecryptMessage(const CIdentityIndex& identity, const vector<unsigned char> 
 }
 void PutToCertList(std::vector<CCert> &certList, CCert& index) {
 	int i = certList.size() - 1;
-	BOOST_REVERSE_FOREACH(CCert &o, certList) {
+	for (CCert &o : reverse_iterate(certList)) {
         if(!o.txHash.IsNull() && o.txHash == index.txHash) {
         	certList[i] = index;
             return;
@@ -1316,7 +1315,7 @@ UniValue certlist(const UniValue& params, bool fHelp) {
 			throw runtime_error("DYNAMIC_CERTIFICATE_RPC_ERROR: ERRCODE: 2517 - " + _("Scan failed"));
 	}
 	CTransaction identitytx;
-	BOOST_FOREACH(const CCert& cert, certScan) {
+	for (const CCert& cert : certScan) {
 		vector<CIdentityIndex> vtxPos;
 		if (!pidentitydb->ReadIdentity(cert.vchIdentity, vtxPos) || vtxPos.empty())
 			continue;
@@ -1403,7 +1402,7 @@ UniValue certhistory(const UniValue& params, bool fHelp) {
 	CTransaction tx;
 	vector<vector<unsigned char> > vvch;
 	int op, nOut;
-    BOOST_FOREACH(txPos2, vtxPos) {
+    for (txPos2 : vtxPos) {
 		vector<CIdentityIndex> vtxIdentityPos;
 		if(!pidentitydb->ReadIdentity(txPos2.vchIdentity, vtxIdentityPos) || vtxIdentityPos.empty())
 			continue;
@@ -1466,7 +1465,7 @@ UniValue certfilter(const UniValue& params, bool fHelp) {
   
 	CTransaction identitytx;
 	uint256 txHash;
-	BOOST_FOREACH(const CCert &txCert, certScan) {
+	for (const CCert &txCert : certScan) {
 		vector<CIdentityIndex> vtxIdentityPos;
 		if(!pidentitydb->ReadIdentity(txCert.vchIdentity, vtxIdentityPos) || vtxIdentityPos.empty())
 			continue;

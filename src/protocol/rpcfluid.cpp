@@ -322,7 +322,7 @@ UniValue fluidcommandshistory(const UniValue& params, bool fHelp) {
 
 	UniValue obj(UniValue::VOBJ);
 
-    BOOST_FOREACH(const std::string& existingRecord, transactionRecord) {
+    for (const std::string& existingRecord : transactionRecord) {
 		obj.push_back(Pair("fluidCommand", existingRecord)); // We will make it a pair with timestamp later
     }
     
@@ -336,7 +336,7 @@ UniValue sterilizeaddresslist(const UniValue& params, bool fHelp) {
 	
 	UniValue obj(UniValue::VOBJ);
 
-    BOOST_FOREACH(const uint256& offendingHash, bannedDatabase) {
+    for (const uint256& offendingHash : bannedDatabase) {
 		obj.push_back(Pair("bannedAddress", offendingHash.ToString()));
     }
     

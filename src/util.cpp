@@ -85,7 +85,6 @@
 #include <boost/algorithm/string/case_conv.hpp> // for to_lower()
 #include <boost/program_options/detail/config_file.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/foreach.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/program_options/parsers.hpp>

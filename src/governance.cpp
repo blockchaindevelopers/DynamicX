@@ -1125,7 +1125,7 @@ int CGovernanceManager::RequestGovernanceObjectVotes(const std::vector<CNode*>& 
             nHashGovobj = vpGovObjsTmp.back()->GetHash();
         }
         bool fAsked = false;
-        BOOST_FOREACH(CNode* pnode, vNodesCopy) {
+        for (CNode* pnode : vNodesCopy) {
             // Only use regular peers, don't try to ask from outbound "dynode" connections -
             // they stay connected for a short period of time and it's possible that we won't get everything we should.
             // Only use outbound connections - inbound connection could be a "dynode" connection

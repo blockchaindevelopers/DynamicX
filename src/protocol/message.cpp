@@ -39,7 +39,6 @@
 #include "chainparams.h"
 #include <boost/algorithm/hex.hpp>
 #include <boost/xpressive/xpressive_dynamic.hpp>
-#include <boost/foreach.hpp>
 #include <boost/thread.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <functional> 
@@ -50,7 +49,7 @@ extern void SendMoneyDynamic(const vector<CRecipient> &vecSend, CAmount nValue, 
 
 void PutToMessageList(std::vector<CMessage> &messageList, CMessage& index) {
 	int i = messageList.size() - 1;
-	BOOST_REVERSE_FOREACH(CMessage &o, messageList) {
+	for (CMessage &o : reverse_iterate(messageList)) {
         if(index.nHeight != 0 && o.nHeight == index.nHeight) {
         	messageList[i] = index;
             return;
@@ -539,7 +538,7 @@ UniValue messagenew(const UniValue& params, bool fHelp) {
 	{
 		CTransaction rawTx;
 		DecodeHexTx(rawTx,stringFromVch(vchMyMessage));
-		BOOST_FOREACH(const CTxIn& txin, rawTx.vin)
+		for (const CTxIn& txin : rawTx.vin)
 		{
 			if(!pwalletMain->IsLockedCoin(txin.prevout.hash, txin.prevout.n))
 			{
@@ -555,7 +554,7 @@ UniValue messagenew(const UniValue& params, bool fHelp) {
 	const CWalletTx *wtxIdentityIn = pwalletMain->GetWalletTx(outPoint.hash);
 	if (wtxIdentityIn == nullptr)
 	{
-		BOOST_FOREACH(const COutPoint& outpoint, lockedOutputs)
+		for (const COutPoint& outpoint : lockedOutputs)
 		{
 			 LOCK2(cs_main, pwalletMain->cs_wallet);
 			 pwalletMain->UnlockCoin(outpoint);
@@ -570,7 +569,7 @@ UniValue messagenew(const UniValue& params, bool fHelp) {
 
 	if(!GetTxOfIdentity(vchFromString(strToAddress), identityTo, identitytx))
 	{
-		BOOST_FOREACH(const COutPoint& outpoint, lockedOutputs)
+		for (const COutPoint& outpoint : lockedOutputs)
 		{
 			 LOCK2(cs_main, pwalletMain->cs_wallet);
 			 pwalletMain->UnlockCoin(outpoint);
@@ -597,7 +596,7 @@ UniValue messagenew(const UniValue& params, bool fHelp) {
 	string strCipherTextTo;
 	if(!EncryptMessage(identityTo, vchMessageByte, strCipherTextTo))
 	{
-		BOOST_FOREACH(const COutPoint& outpoint, lockedOutputs)
+		for (const COutPoint& outpoint : lockedOutputs)
 		{
 			 LOCK2(cs_main, pwalletMain->cs_wallet);
 			 pwalletMain->UnlockCoin(outpoint);
@@ -607,7 +606,7 @@ UniValue messagenew(const UniValue& params, bool fHelp) {
 	string strCipherTextFrom;
 	if(!EncryptMessage(identityFrom, vchMessageByte, strCipherTextFrom))
 	{
-		BOOST_FOREACH(const COutPoint& outpoint, lockedOutputs)
+		for (const COutPoint& outpoint : lockedOutputs)
 		{
 			 LOCK2(cs_main, pwalletMain->cs_wallet);
 			 pwalletMain->UnlockCoin(outpoint);
@@ -688,7 +687,7 @@ UniValue messagenew(const UniValue& params, bool fHelp) {
 		res.push_back(stringFromVch(vchMessage));
 	}
 	// once we have used correct inputs for this message unlock coins that were locked in the wallet
-	BOOST_FOREACH(const COutPoint& outpoint, lockedOutputs)
+	for (const COutPoint& outpoint : lockedOutputs)
 	{
 		 LOCK2(cs_main, pwalletMain->cs_wallet);
 		 pwalletMain->UnlockCoin(outpoint);
@@ -766,7 +765,7 @@ UniValue messagereceivelist(const UniValue& params, bool fHelp) {
 	}
 	else
 	{
-		BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, pwalletMain->mapWallet)
+		for (PAIRTYPE(const uint256, CWalletTx)& item : pwalletMain->mapWallet)
 		{
 			const CWalletTx &wtx = item.second; 
 			if (wtx.nVersion != DYNAMIC_TX_VERSION)
@@ -788,7 +787,7 @@ UniValue messagereceivelist(const UniValue& params, bool fHelp) {
 			}
 		}
 	}
-	BOOST_FOREACH(const CMessage &message, messageScan) {
+	for (const CMessage &message : messageScan) {
 		// build the output
 		UniValue oName(UniValue::VOBJ);
 		if(BuildMessageJson(message, oName, strPrivateKey))
@@ -905,7 +904,7 @@ UniValue messagesentlist(const UniValue& params, bool fHelp) {
 			CTransaction tx;
 
 			vector<unsigned char> vchValue;
-			BOOST_FOREACH(const CIdentityIndex &theIdentity, vtxPos)
+			for (const CIdentityIndex &theIdentity : vtxPos)
 			{
 				if(!GetDynamicTransaction(theIdentity.nHeight, theIdentity.txHash, tx, Params().GetConsensus()))
 					continue;
@@ -925,7 +924,7 @@ UniValue messagesentlist(const UniValue& params, bool fHelp) {
 	}
 	else
 	{
-		BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, pwalletMain->mapWallet)
+		for (PAIRTYPE(const uint256, CWalletTx)& item : pwalletMain->mapWallet)
 		{
 			const CWalletTx &wtx = item.second; 
 			if (wtx.nVersion != DYNAMIC_TX_VERSION)
@@ -944,7 +943,7 @@ UniValue messagesentlist(const UniValue& params, bool fHelp) {
 			}
 		}
 	}
-	BOOST_FOREACH(const CMessage &message, messageScan) {
+	for (const CMessage &message : messageScan) {
 		// build the output
 		UniValue oName(UniValue::VOBJ);
 		if(BuildMessageJson(message, oName, strPrivateKey))

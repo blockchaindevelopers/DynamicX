@@ -441,8 +441,8 @@ bool Fluid::GetMintingInstructions(const CBlockHeader& blockHeader, CDynamicAddr
 	if(!getBlockFromHeader(blockHeader, block))
 		throw std::runtime_error("Cannot access blockchain database!");
 	
-    BOOST_FOREACH(const CTransaction& tx, block.vtx) {
-		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
+    for (const CTransaction& tx : block.vtx) {
+		for (const CTxOut& txout : tx.vout) {
 			if (txout.scriptPubKey.IsProtocolInstruction(MINT_TX)) {
 				std::string message;
 				if (!CheckIfQuorumExists(ScriptToAsmStr(txout.scriptPubKey), message))
@@ -464,8 +464,8 @@ void Fluid::GetDestructionTxes(const CBlockHeader& blockHeader, CAmount &amountD
 	if(!getBlockFromHeader(blockHeader, block))
 		throw std::runtime_error("Cannot access blockchain database!");
 	
-    BOOST_FOREACH(const CTransaction& tx, block.vtx) {
-		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
+    for (const CTransaction& tx : block.vtx) {
+		for (const CTxOut& txout : tx.vout) {
 			if (txout.scriptPubKey.IsProtocolInstruction(DESTROY_TX)) {			
 				amountDestroyed += txout.nValue; // This is what metric we need to get
 			}
@@ -478,8 +478,8 @@ bool Fluid::GetProofOverrideRequest(const CBlockHeader& blockHeader, CAmount &ho
 	if(!getBlockFromHeader(blockHeader, block))
 		throw std::runtime_error("Cannot access blockchain database!");
 	
-    BOOST_FOREACH(const CTransaction& tx, block.vtx) {
-		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
+    for (const CTransaction& tx : block.vtx) {
+		for (const CTxOut& txout : tx.vout) {
 			if (txout.scriptPubKey.IsProtocolInstruction(MINING_MODIFY_TX)) {
 				std::string message;
 				if (CheckIfQuorumExists(ScriptToAsmStr(txout.scriptPubKey), message))
@@ -495,8 +495,8 @@ bool Fluid::GetDynodeOverrideRequest(const CBlockHeader& blockHeader, CAmount &h
 	if(!getBlockFromHeader(blockHeader, block))
 		throw std::runtime_error("Cannot access blockchain database!");
 	
-    BOOST_FOREACH(const CTransaction& tx, block.vtx) {
-		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
+    for (const CTransaction& tx : block.vtx) {
+		for (const CTxOut& txout : tx.vout) {
 			if (txout.scriptPubKey.IsProtocolInstruction(DYNODE_MODFIY_TX)) {
 				std::string message;
 				if (CheckIfQuorumExists(ScriptToAsmStr(txout.scriptPubKey), message))
@@ -515,8 +515,8 @@ void Fluid::AddFluidTransactionsToRecord(const CBlockHeader& blockHeader, String
 		throw std::runtime_error("Cannot access blockchain database!");
 	
 	/* Step Two: Process transactions */
-    BOOST_FOREACH(const CTransaction& tx, block.vtx) {
-		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
+    for (const CTransaction& tx : block.vtx) {
+		for (const CTxOut& txout : tx.vout) {
 			if (IsTransactionFluid(txout.scriptPubKey)) {
 				if (!InsertTransactionToRecord(txout.scriptPubKey, transactionRecord)) {
 					LogPrintf("Script Public Key Database Entry: %s , FAILED!\n", ScriptToAsmStr(txout.scriptPubKey));
@@ -534,8 +534,8 @@ void Fluid::AddRemoveBanAddresses(const CBlockHeader& blockHeader, HashVector& b
 		throw std::runtime_error("Cannot access blockchain database!");
 	
 	/* Step Two: Process transactions */
-    BOOST_FOREACH(const CTransaction& tx, block.vtx) {
-		BOOST_FOREACH(const CTxOut& txout, tx.vout) {
+    for (const CTransaction& tx : block.vtx) {
+		for (const CTxOut& txout : tx.vout) {
 			/* First those who add addresses */
 			if (txout.scriptPubKey.IsProtocolInstruction(STERILIZE_TX)) {
 				if (CheckIfQuorumExists(ScriptToAsmStr(txout.scriptPubKey), message)) {
@@ -572,7 +572,7 @@ bool Fluid::CheckTransactionInRecord(CScript fluidInstruction, CBlockIndex* pind
 			
 			std::string message;
 			if (CheckIfQuorumExists(verificationString, message)) {
-				BOOST_FOREACH(const std::string& existingRecord, transactionRecord)
+				for (const std::string& existingRecord : transactionRecord)
 				{
 					if (existingRecord == verificationString) {
 						LogPrintf("Attempt to repeat Fluid Transaction: %s\n", existingRecord);
@@ -605,7 +605,7 @@ bool Fluid::CheckIfAddressIsBlacklisted(CScript scriptPubKey, CBlockIndex* pinde
 			uint256 identiferHash = Hash(address.begin(), address.end());
 			
 			/* Step 4: Check for each offending entry */
-			BOOST_FOREACH(const uint256& offendingHash, bannedDatabase)
+			for (const uint256& offendingHash : bannedDatabase)
 			{
 				/* Step 5: Do the hashes match? If so, return true */
 				if (offendingHash == identiferHash) {
@@ -626,7 +626,7 @@ bool Fluid::ProcessBanEntry(std::string getBanInstruction, int64_t timestamp, Ha
 	
 	LogPrintf("ProcessBanEntry(): Address hash for banning: %s\n", entry.ToString());
 	
-	BOOST_FOREACH(const uint256& offendingHash, bannedList)
+	for (const uint256& offendingHash : bannedList)
 	{
 		/* Is it already there? */
 		if (offendingHash == entry) {
@@ -658,7 +658,7 @@ bool Fluid::RemoveEntry(std::string getBanInstruction, int64_t timestamp, HashVe
 	LogPrintf("ProcessBanEntry(): Address hash for unbanning: %s\n", entry.ToString());
 
 	/* Is it already there? */
-	BOOST_FOREACH(const uint256& offendingHash, bannedList)
+	for (const uint256& offendingHash : bannedList)
 	{
 		/* Check if there */
 		if (offendingHash == entry) {
@@ -681,7 +681,7 @@ bool Fluid::InsertTransactionToRecord(CScript fluidInstruction, StringVector& tr
 			
 			std::string message;
 			if (CheckIfQuorumExists(verificationString, message)) {
-				BOOST_FOREACH(const std::string& existingRecord, transactionRecord)
+				for (const std::string& existingRecord : transactionRecord)
 				{
 					if (existingRecord == verificationString) {
 						return false;
@@ -771,7 +771,7 @@ bool Fluid::ValidationProcesses(CValidationState &state, CScript txOut, CAmount 
 }
 
 bool Fluid::ProvisionalCheckTransaction(const CTransaction &transaction) {
-	BOOST_FOREACH(const CTxOut& txout, transaction.vout) {
+	for (const CTxOut& txout : transaction.vout) {
 		CScript txOut = txout.scriptPubKey;
 		
 		if (CheckIfAddressIsBlacklisted(txOut)) {
@@ -796,7 +796,7 @@ bool Fluid::CheckTransactionToBlock(const CTransaction &transaction, const CBloc
 
     CBlockIndex* pblockindex = mapBlockIndex[hash];
 
-	BOOST_FOREACH(const CTxOut& txout, transaction.vout) {
+	for (const CTxOut& txout : transaction.vout) {
 		CScript txOut = txout.scriptPubKey;
 		
 		if (CheckIfAddressIsBlacklisted(txOut, pblockindex)) {

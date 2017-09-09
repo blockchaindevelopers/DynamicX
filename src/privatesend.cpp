@@ -105,7 +105,7 @@ void CPrivatesendPool::ProcessMessage(CNode* pfrom, std::string& strCommand, CDa
         vRecv >> psq;
 
         // process every psq only once
-        BOOST_FOREACH(CPrivatesendQueue q, vecPrivatesendQueue) {
+        for (CPrivatesendQueue q : vecPrivatesendQueue) {
             if(q == psq) {
                 // LogPrint("privatesend", "PSQUEUE -- %s seen\n", psq.ToString());
                 return;
@@ -138,7 +138,7 @@ void CPrivatesendPool::ProcessMessage(CNode* pfrom, std::string& strCommand, CDa
                 SubmitDenominate();
             }
         } else {
-            BOOST_FOREACH(CPrivatesendQueue q, vecPrivatesendQueue) {
+            for (CPrivatesendQueue q : vecPrivatesendQueue) {
                 if(q.vin == psq.vin) {
                     // no way same DN can send another "not yet ready" psq this soon
                     LogPrint("privatesend", "PSQUEUE -- Dynode %s is sending WAY too many psq messages\n", pdn->addr.ToString());
@@ -217,7 +217,7 @@ void CPrivatesendPool::ProcessMessage(CNode* pfrom, std::string& strCommand, CDa
 
             CMutableTransaction tx;
 
-            BOOST_FOREACH(const CTxOut txout, entry.vecTxPSOut) {
+            for (const CTxOut txout : entry.vecTxPSOut) {
                 nValueOut += txout.nValue;
                 tx.vout.push_back(txout);
 
@@ -233,7 +233,7 @@ void CPrivatesendPool::ProcessMessage(CNode* pfrom, std::string& strCommand, CDa
                 }
             }
 
-            BOOST_FOREACH(const CTxIn txin, entry.vecTxPSIn) {
+            for (const CTxIn txin : entry.vecTxPSIn) {
                 tx.vin.push_back(txin);
 
                 LogPrint("privatesend", "PSVIN -- txin=%s\n", txin.ToString());
@@ -350,7 +350,7 @@ void CPrivatesendPool::ProcessMessage(CNode* pfrom, std::string& strCommand, CDa
         int nTxInIndex = 0;
         int nTxInsCount = (int)vecTxIn.size();
 
-        BOOST_FOREACH(const CTxIn txin, vecTxIn) {
+        for (const CTxIn txin : vecTxIn) {
             nTxInIndex++;
             if(!AddScriptSig(txin)) {
                 LogPrint("privatesend", "PSSIGNFINALTX -- AddScriptSig() failed at %d/%d, session: %d\n", nTxInIndex, nTxInsCount, nSessionID);
@@ -487,7 +487,7 @@ void CPrivatesendPool::UnlockCoins()
     while(true) {
         TRY_LOCK(pwalletMain->cs_wallet, lockWallet);
         if(!lockWallet) {MilliSleep(50); continue;}
-        BOOST_FOREACH(COutPoint outpoint, vecOutPointLocked)
+        for (COutPoint outpoint : vecOutPointLocked)
             pwalletMain->UnlockCoin(outpoint);
         break;
     }
@@ -596,10 +596,10 @@ void CPrivatesendPool::CreateFinalTransaction()
 
     // make our new transaction
     for(int i = 0; i < GetEntriesCount(); i++) {
-        BOOST_FOREACH(const CTxPSOut& txpsout, vecEntries[i].vecTxPSOut)
+        for (const CTxPSOut& txpsout : vecEntries[i].vecTxPSOut)
             txNew.vout.push_back(txpsout);
 
-        BOOST_FOREACH(const CTxPSIn& txpsin, vecEntries[i].vecTxPSIn)
+        for (const CTxPSIn& txpsin : vecEntries[i].vecTxPSIn)
             txNew.vin.push_back(txpsin);
     }
 
@@ -686,9 +686,9 @@ void CPrivatesendPool::ChargeFees()
     std::vector<CTransaction> vecOffendersCollaterals;
 
     if(nState == POOL_STATE_ACCEPTING_ENTRIES) {
-        BOOST_FOREACH(const CTransaction& txCollateral, vecSessionCollaterals) {
+        for (const CTransaction& txCollateral : vecSessionCollaterals) {
             bool fFound = false;
-            BOOST_FOREACH(const CPrivateSendEntry& entry, vecEntries)
+            for (const CPrivateSendEntry& entry : vecEntries)
                 if(entry.txCollateral == txCollateral)
                     fFound = true;
 
@@ -702,8 +702,8 @@ void CPrivatesendPool::ChargeFees()
 
     if(nState == POOL_STATE_SIGNING) {
         // who didn't sign?
-        BOOST_FOREACH(const CPrivateSendEntry entry, vecEntries) {
-            BOOST_FOREACH(const CTxPSIn txpsin, entry.vecTxPSIn) {
+        for (const CPrivateSendEntry entry : vecEntries) {
+            for (const CTxPSIn txpsin : entry.vecTxPSIn) {
                 if(!txpsin.fHasSig) {
                     LogPrintf("CPrivatesendPool::ChargeFees -- found uncooperative node (didn't sign), found offence\n");
                     vecOffendersCollaterals.push_back(entry.txCollateral);
@@ -759,7 +759,7 @@ void CPrivatesendPool::ChargeRandomFees()
 
     LOCK(cs_main);
 
-    BOOST_FOREACH(const CTransaction& txCollateral, vecSessionCollaterals) {
+    for (const CTransaction& txCollateral : vecSessionCollaterals) {
 
         if(GetRandInt(100) > 10) return;
 
@@ -859,12 +859,12 @@ bool CPrivatesendPool::IsInputScriptSigValid(const CTxIn& txin)
     int nTxInIndex = -1;
     CScript sigPubKey = CScript();
 
-    BOOST_FOREACH(CPrivateSendEntry& entry, vecEntries) {
+    for (CPrivateSendEntry& entry : vecEntries) {
 
-        BOOST_FOREACH(const CTxPSOut& txpsout, entry.vecTxPSOut)
+        for (const CTxPSOut& txpsout : entry.vecTxPSOut)
             txNew.vout.push_back(txpsout);
 
-        BOOST_FOREACH(const CTxPSIn& txpsin, entry.vecTxPSIn) {
+        for (const CTxPSIn& txpsin : entry.vecTxPSIn) {
             txNew.vin.push_back(txpsin);
 
             if(txpsin.prevout == txin.prevout) {
@@ -901,7 +901,7 @@ bool CPrivatesendPool::IsCollateralValid(const CTransaction& txCollateral)
     CAmount nValueOut = 0;
     bool fMissingTx = false;
 
-    BOOST_FOREACH(const CTxOut txout, txCollateral.vout) {
+    for (const CTxOut txout : txCollateral.vout) {
         nValueOut += txout.nValue;
 
         if(!txout.scriptPubKey.IsNormalPaymentScript()) {
@@ -910,7 +910,7 @@ bool CPrivatesendPool::IsCollateralValid(const CTransaction& txCollateral)
         }
     }
 
-    BOOST_FOREACH(const CTxIn txin, txCollateral.vin) {
+    for (const CTxIn txin : txCollateral.vin) {
         CTransaction txPrev;
         uint256 hash;
         if(GetTransaction(txin.prevout.hash, txPrev, Params().GetConsensus(), hash, true)) {
@@ -954,7 +954,7 @@ bool CPrivatesendPool::AddEntry(const CPrivateSendEntry& entryNew, PoolMessage& 
 {
     if(!fDyNode) return false;
 
-    BOOST_FOREACH(CTxIn txin, entryNew.vecTxPSIn) {
+    for (CTxIn txin : entryNew.vecTxPSIn) {
         if(txin.prevout.IsNull()) {
             LogPrint("privatesend", "CPrivatesendPool::AddEntry -- input not valid!\n");
             nMessageIDRet = ERR_INVALID_INPUT;
@@ -974,10 +974,10 @@ bool CPrivatesendPool::AddEntry(const CPrivateSendEntry& entryNew, PoolMessage& 
         return false;
     }
 
-    BOOST_FOREACH(CTxIn txin, entryNew.vecTxPSIn) {
+    for (CTxIn txin : entryNew.vecTxPSIn) {
         LogPrint("privatesend", "looking for txin -- %s\n", txin.ToString());
-        BOOST_FOREACH(const CPrivateSendEntry& entry, vecEntries) {
-            BOOST_FOREACH(const CTxPSIn& txpsin, entry.vecTxPSIn) {
+        for (const CPrivateSendEntry& entry : vecEntries) {
+            for (const CTxPSIn& txpsin : entry.vecTxPSIn) {
                 if(txpsin.prevout == txin.prevout) {
                     LogPrint("privatesend", "CPrivatesendPool::AddEntry -- found in txin\n");
                     nMessageIDRet = ERR_ALREADY_HAVE;
@@ -1000,8 +1000,8 @@ bool CPrivatesendPool::AddScriptSig(const CTxIn& txinNew)
 {
     LogPrint("privatesend", "CPrivatesendPool::AddScriptSig -- scriptSig=%s\n", ScriptToAsmStr(txinNew.scriptSig).substr(0,24));
 
-    BOOST_FOREACH(const CPrivateSendEntry& entry, vecEntries) {
-        BOOST_FOREACH(const CTxPSIn& txpsin, entry.vecTxPSIn) {
+    for (const CPrivateSendEntry& entry : vecEntries) {
+        for (const CTxPSIn& txpsin : entry.vecTxPSIn) {
             if(txpsin.scriptSig == txinNew.scriptSig) {
                 LogPrint("privatesend", "CPrivatesendPool::AddScriptSig -- already exists\n");
                 return false;
@@ -1016,7 +1016,7 @@ bool CPrivatesendPool::AddScriptSig(const CTxIn& txinNew)
 
     LogPrint("privatesend", "CPrivatesendPool::AddScriptSig -- scriptSig=%s new\n", ScriptToAsmStr(txinNew.scriptSig).substr(0,24));
 
-    BOOST_FOREACH(CTxIn& txin, finalMutableTransaction.vin) {
+    for (CTxIn& txin : finalMutableTransaction.vin) {
         if(txinNew.prevout == txin.prevout && txin.nSequence == txinNew.nSequence) {
             txin.scriptSig = txinNew.scriptSig;
             txin.prevPubKey = txinNew.prevPubKey;
@@ -1037,8 +1037,8 @@ bool CPrivatesendPool::AddScriptSig(const CTxIn& txinNew)
 // Check to make sure everything is signed
 bool CPrivatesendPool::IsSignaturesComplete()
 {
-    BOOST_FOREACH(const CPrivateSendEntry& entry, vecEntries)
-        BOOST_FOREACH(const CTxPSIn& txpsin, entry.vecTxPSIn)
+    for (const CPrivateSendEntry& entry : vecEntries)
+        for (const CTxPSIn& txpsin : entry.vecTxPSIn)
             if(!txpsin.fHasSig) return false;
 
     return true;
@@ -1061,10 +1061,10 @@ bool CPrivatesendPool::SendDenominate(const std::vector<CTxIn>& vecTxIn, const s
     }
 
     // lock the funds we're going to use
-    BOOST_FOREACH(CTxIn txin, txMyCollateral.vin)
+    for (CTxIn txin : txMyCollateral.vin)
         vecOutPointLocked.push_back(txin.prevout);
 
-    BOOST_FOREACH(CTxIn txin, vecTxIn)
+    for (CTxIn txin : vecTxIn)
         vecOutPointLocked.push_back(txin.prevout);
 
     // we should already be connected to a Dynode
@@ -1093,12 +1093,12 @@ bool CPrivatesendPool::SendDenominate(const std::vector<CTxIn>& vecTxIn, const s
         CValidationState validationState;
         CMutableTransaction tx;
 
-        BOOST_FOREACH(const CTxIn& txin, vecTxIn) {
+        for (const CTxIn& txin : vecTxIn) {
             LogPrint("privatesend", "CPrivatesendPool::SendDenominate -- txin=%s\n", txin.ToString());
             tx.vin.push_back(txin);
         }
 
-        BOOST_FOREACH(const CTxOut& txout, vecTxOut) {
+        for (const CTxOut& txout : vecTxOut) {
             LogPrint("privatesend", "CPrivatesendPool::SendDenominate -- txout=%s\n", txout.ToString());
             tx.vout.push_back(txout);
         }
@@ -1180,8 +1180,8 @@ bool CPrivatesendPool::SignFinalTransaction(const CTransaction& finalTransaction
     std::vector<CTxIn> sigs;
 
     //make sure my inputs/outputs are present, otherwise refuse to sign
-    BOOST_FOREACH(const CPrivateSendEntry entry, vecEntries) {
-        BOOST_FOREACH(const CTxPSIn txpsin, entry.vecTxPSIn) {
+    for (const CPrivateSendEntry entry : vecEntries) {
+        for (const CTxPSIn txpsin : entry.vecTxPSIn) {
             /* Sign my transaction and all outputs */
             int nMyInputIndex = -1;
             CScript prevPubKey = CScript();
@@ -1201,7 +1201,7 @@ bool CPrivatesendPool::SignFinalTransaction(const CTransaction& finalTransaction
                 CAmount nValue2 = 0;
 
                 for(unsigned int i = 0; i < finalMutableTransaction.vout.size(); i++) {
-                    BOOST_FOREACH(const CTxOut& txout, entry.vecTxPSOut) {
+                    for (const CTxOut& txout : entry.vecTxPSOut) {
                         if(finalMutableTransaction.vout[i] == txout) {
                             nFoundOutputsCount++;
                             nValue1 += finalMutableTransaction.vout[i].nValue;
@@ -1209,7 +1209,7 @@ bool CPrivatesendPool::SignFinalTransaction(const CTransaction& finalTransaction
                     }
                 }
 
-                BOOST_FOREACH(const CTxOut txout, entry.vecTxPSOut)
+                for (const CTxOut txout : entry.vecTxPSOut)
                     nValue2 += txout.nValue;
 
                 int nTargetOuputsCount = entry.vecTxPSOut.size();
@@ -1480,7 +1480,7 @@ bool CPrivatesendPool::DoAutomaticDenominating(bool fDryRun)
     if(nLiquidityProvider || fUseQueue) {
 
         // Look through the queues and see if anything matches
-        BOOST_FOREACH(CPrivatesendQueue& psq, vecPrivatesendQueue) {
+        for (CPrivatesendQueue& psq : vecPrivatesendQueue) {
             // only try each queue once
             if(psq.fTried) continue;
             psq.fTried = true;
@@ -1712,7 +1712,7 @@ bool CPrivatesendPool::PrepareDenominate(int nMinRounds, int nMaxRounds, std::st
 
     {
         LOCK(pwalletMain->cs_wallet);
-        BOOST_FOREACH(CTxIn txin, vecTxIn) {
+        for (CTxIn txin : vecTxIn) {
             pwalletMain->LockCoin(txin.prevout);
         }
     }
@@ -1726,7 +1726,7 @@ bool CPrivatesendPool::PrepareDenominate(int nMinRounds, int nMaxRounds, std::st
     int nStepsMax = 5 + GetRandInt(PRIVATESEND_ENTRY_MAX_SIZE-5+1);
 
     while (nStep < nStepsMax) {
-        BOOST_FOREACH(int nBit, vecBits) {
+        for (int nBit : vecBits) {
             CAmount nValueDenom = vecPrivateSendDenominations[nBit];
             if (nValueLeft - nValueDenom < 0) continue;
 
@@ -1770,7 +1770,7 @@ bool CPrivatesendPool::PrepareDenominate(int nMinRounds, int nMaxRounds, std::st
     {
         // unlock unused coins
         LOCK(pwalletMain->cs_wallet);
-        BOOST_FOREACH(CTxIn txin, vecTxIn) {
+        for (CTxIn txin : vecTxIn) {
             pwalletMain->UnlockCoin(txin.prevout);
         }
     }
@@ -1778,7 +1778,7 @@ bool CPrivatesendPool::PrepareDenominate(int nMinRounds, int nMaxRounds, std::st
     if (GetDenominations(vecTxOutRet) != nSessionDenom) {
         // unlock used coins on failure
         LOCK(pwalletMain->cs_wallet);
-        BOOST_FOREACH(CTxIn txin, vecTxInRet) {
+        for (CTxIn txin : vecTxInRet) {
             pwalletMain->UnlockCoin(txin.prevout);
         }
         strErrorRet = "Can't make current denominated outputs";
@@ -1798,7 +1798,7 @@ bool CPrivatesendPool::MakeCollateralAmounts()
         return false;
     }
 
-    BOOST_FOREACH(CompactTallyItem& item, vecTally) {
+    for (CompactTallyItem& item : vecTally) {
         if(!MakeCollateralAmounts(item)) continue;
         return true;
     }
@@ -1834,7 +1834,7 @@ bool CPrivatesendPool::MakeCollateralAmounts(const CompactTallyItem& tallyItem)
     coinControl.fAllowWatchOnly = false;
     // send change to the same address so that we were able create more denoms out of it later
     coinControl.destChange = tallyItem.address.Get();
-    BOOST_FOREACH(const CTxIn& txin, tallyItem.vecTxIn)
+    for (const CTxIn& txin : tallyItem.vecTxIn)
         coinControl.Select(txin.prevout);
 
     bool fSuccess = pwalletMain->CreateTransaction(vecSend, wtx, reservekeyChange,
@@ -1879,7 +1879,7 @@ bool CPrivatesendPool::CreateDenominated()
 
     bool fCreateMixingCollaterals = !pwalletMain->HasCollateralInputs();
 
-    BOOST_FOREACH(CompactTallyItem& item, vecTally) {
+    for (CompactTallyItem& item : vecTally) {
         if(!CreateDenominated(item, fCreateMixingCollaterals)) continue;
         return true;
     }
@@ -1921,7 +1921,7 @@ bool CPrivatesendPool::CreateDenominated(const CompactTallyItem& tallyItem, bool
     bool fSkip = true;
     do {
 
-        BOOST_REVERSE_FOREACH(CAmount nDenomValue, vecPrivateSendDenominations) {
+        for (CAmount nDenomValue : reverse_iterate(vecPrivateSendDenominations)) {
 
             if(fSkip) {
                 // Note: denoms are skipped if there are already DENOMS_COUNT_MAX of them
@@ -1975,7 +1975,7 @@ bool CPrivatesendPool::CreateDenominated(const CompactTallyItem& tallyItem, bool
     coinControl.fAllowWatchOnly = false;
     // send change to the same address so that we were able create more denoms out of it later
     coinControl.destChange = tallyItem.address.Get();
-    BOOST_FOREACH(const CTxIn& txin, tallyItem.vecTxIn)
+    for (const CTxIn& txin : tallyItem.vecTxIn)
         coinControl.Select(txin.prevout);
 
     CWalletTx wtx;
@@ -2013,7 +2013,7 @@ bool CPrivatesendPool::IsOutputsCompatibleWithSessionDenom(const std::vector<CTx
 {
     if(GetDenominations(vecTxPSOut) == 0) return false;
 
-    BOOST_FOREACH(const CPrivateSendEntry entry, vecEntries) {
+    for (const CPrivateSendEntry entry : vecEntries) {
         LogPrintf("CPrivatesendPool::IsOutputsCompatibleWithSessionDenom -- vecTxPSOut denom %d, entry.vecTxPSOut denom %d\n", GetDenominations(vecTxPSOut), GetDenominations(entry.vecTxPSOut));
         if(GetDenominations(vecTxPSOut) != GetDenominations(entry.vecTxPSOut)) return false;
     }
@@ -2152,7 +2152,7 @@ int CPrivatesendPool::GetDenominations(const std::vector<CTxPSOut>& vecTxPSOut)
 {
     std::vector<CTxOut> vecTxOut;
 
-    BOOST_FOREACH(CTxPSOut out, vecTxPSOut)
+    for (CTxPSOut out : vecTxPSOut)
         vecTxOut.push_back(out);
 
     return GetDenominations(vecTxOut);
@@ -2172,13 +2172,13 @@ int CPrivatesendPool::GetDenominations(const std::vector<CTxOut>& vecTxOut, bool
     std::vector<std::pair<CAmount, int> > vecDenomUsed;
 
     // make a list of denominations, with zero uses
-    BOOST_FOREACH(CAmount nDenomValue, vecPrivateSendDenominations)
+    for (CAmount nDenomValue : vecPrivateSendDenominations)
         vecDenomUsed.push_back(std::make_pair(nDenomValue, 0));
 
     // look for denominations and update uses to 1
-    BOOST_FOREACH(CTxOut txout, vecTxOut) {
+    for (CTxOut txout : vecTxOut) {
         bool found = false;
-        BOOST_FOREACH (PAIRTYPE(CAmount, int)& s, vecDenomUsed) {
+        for (PAIRTYPE(CAmount, int)& s : vecDenomUsed) {
             if(txout.nValue == s.first) {
                 s.second = 1;
                 found = true;
@@ -2190,7 +2190,7 @@ int CPrivatesendPool::GetDenominations(const std::vector<CTxOut>& vecTxOut, bool
     int nDenom = 0;
     int c = 0;
     // if the denomination is used, shift the bit on
-    BOOST_FOREACH (PAIRTYPE(CAmount, int)& s, vecDenomUsed) {
+    for (PAIRTYPE(CAmount, int)& s : vecDenomUsed) {
         int bit = (fSingleRandomDenom ? GetRandInt(2) : 1) & s.second;
         nDenom |= bit << c++;
         if(fSingleRandomDenom && bit) break; // use just one random denomination
@@ -2227,7 +2227,7 @@ int CPrivatesendPool::GetDenominationsByAmounts(const std::vector<CAmount>& vecA
     CScript scriptTmp = CScript();
     std::vector<CTxOut> vecTxOut;
 
-    BOOST_REVERSE_FOREACH(CAmount nAmount, vecAmount) {
+    for (CAmount nAmount : reverse_iterate(vecAmount)) {
         CTxOut txout(nAmount, scriptTmp);
         vecTxOut.push_back(txout);
     }
@@ -2266,7 +2266,7 @@ std::string CPrivatesendPool::GetMessageByID(PoolMessage nMessageID)
 
 bool CPrivateSendEntry::AddScriptSig(const CTxIn& txin)
 {
-    BOOST_FOREACH(CTxPSIn& txpsin, vecTxPSIn) {
+    for (CTxPSIn& txpsin : vecTxPSIn) {
         if(txpsin.prevout == txin.prevout && txpsin.nSequence == txin.nSequence) {
             if(txpsin.fHasSig) return false;
 
@@ -2311,7 +2311,7 @@ bool CPrivatesendQueue::CheckSignature(const CPubKey& pubKeyDynode)
 bool CPrivatesendQueue::Relay()
 {
     std::vector<CNode*> vNodesCopy = CopyNodeVector();
-    BOOST_FOREACH(CNode* pnode, vNodesCopy)
+    for (CNode* pnode : vNodesCopy)
         if(pnode->nVersion >= MIN_PRIVATESEND_PEER_PROTO_VERSION)
             pnode->PushMessage(NetMsgType::PSQUEUE, (*this));
 
@@ -2349,7 +2349,7 @@ bool CPrivatesendBroadcastTx::CheckSignature(const CPubKey& pubKeyDynode)
 void CPrivatesendPool::RelayFinalTransaction(const CTransaction& txFinal)
 {
     LOCK(cs_vNodes);
-    BOOST_FOREACH(CNode* pnode, vNodes)
+    for (CNode* pnode : vNodes)
         if(pnode->nVersion >= MIN_PRIVATESEND_PEER_PROTO_VERSION)
             pnode->PushMessage(NetMsgType::PSFINALTX, nSessionID, txFinal);
 }
@@ -2374,7 +2374,7 @@ void CPrivatesendPool::PushStatus(CNode* pnode, PoolStatusUpdate nStatusUpdate, 
 void CPrivatesendPool::RelayStatus(PoolStatusUpdate nStatusUpdate, PoolMessage nMessageID)
 {
     LOCK(cs_vNodes);
-    BOOST_FOREACH(CNode* pnode, vNodes)
+    for (CNode* pnode : vNodes)
         if(pnode->nVersion >= MIN_PRIVATESEND_PEER_PROTO_VERSION)
             PushStatus(pnode, nStatusUpdate, nMessageID);
 }
@@ -2382,7 +2382,7 @@ void CPrivatesendPool::RelayStatus(PoolStatusUpdate nStatusUpdate, PoolMessage n
 void CPrivatesendPool::RelayCompletedTransaction(PoolMessage nMessageID)
 {
     LOCK(cs_vNodes);
-    BOOST_FOREACH(CNode* pnode, vNodes)
+    for (CNode* pnode : vNodes)
         if(pnode->nVersion >= MIN_PRIVATESEND_PEER_PROTO_VERSION)
             pnode->PushMessage(NetMsgType::PSCOMPLETE, nSessionID, (int)nMessageID);
 }

@@ -146,7 +146,7 @@ void CActiveDynode::ManageStateInitial()
 
     LogPrint("Dynode", "CActiveDynode::ManageStateInitial -- status = %s, type = %s, pinger enabled = %d\n", GetStatus(), GetTypeString(), fPingerEnabled);
     // Check that our local network configuration is correct
-    BOOST_FOREACH(CNode* pnode, vNodes) {
+    for (CNode* pnode : vNodes) {
     if (pnode->addr.IsIPv6()) {
         // listen option is probably overwritten by smth else, no good
         LogPrintf("Dynodes cannot use IPv6, you must use IPv4 for Dynode connectivity.");
@@ -169,7 +169,7 @@ void CActiveDynode::ManageStateInitial()
                 return;
             }
             // We have some peers, let's try to find our local address from one of them
-            BOOST_FOREACH(CNode* pnode, vNodes) {
+            for (CNode* pnode : vNodes) {
                 if (pnode->fSuccessfullyConnected && pnode->addr.IsIPv4()) {
                     fFoundLocal = GetLocal(service, &pnode->addr) && CDynode::IsValidNetAddr(service);
                     if(fFoundLocal) break;

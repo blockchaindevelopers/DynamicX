@@ -44,7 +44,6 @@
 #include <boost/algorithm/string/case_conv.hpp> // for to_lower()
 #include <boost/xpressive/xpressive_dynamic.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/foreach.hpp>
 #include <boost/thread.hpp>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -3783,7 +3782,7 @@ UniValue offerhistory(const UniValue& params, bool fHelp) {
 	CTransaction tx;
 	vector<vector<unsigned char> > vvch;
 	int op, nOut;
-	BOOST_FOREACH(txPos2, vtxPos) {
+	for (txPos2 : vtxPos) {
 		vector<CIdentityIndex> vtxIdentityPos;
 		if(!pidentitydb->ReadIdentity(txPos2.vchIdentity, vtxIdentityPos) || vtxIdentityPos.empty())
 			continue;
@@ -3848,7 +3847,7 @@ UniValue offerfilter(const UniValue& params, bool fHelp) {
 	if (!pofferdb->ScanOffers(vchOffer, strRegexp, safeSearch, strCategory, 25, offerScan))
 		throw runtime_error("DYNAMIC_OFFER_RPC_ERROR ERRCODE: 1596 - " + _("Scan failed"));
 	CTransaction identitytx;
-	BOOST_FOREACH(const COffer &txOffer, offerScan) {
+	for (const COffer &txOffer : offerScan) {
 		vector<CIdentityIndex> vtxIdentityPos;
 		if(!pidentitydb->ReadIdentity(txOffer.vchIdentity, vtxIdentityPos) || vtxIdentityPos.empty())
 			continue;

@@ -1,5 +1,4 @@
 #include <boost/assign/list_of.hpp>
-#include <boost/foreach.hpp>
 
 #include "identitylistpage.h"
 #include "ui_identitylistpage.h"

@@ -45,7 +45,6 @@
 #include <boost/xpressive/xpressive_dynamic.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/hex.hpp>
-#include <boost/foreach.hpp>
 #include <boost/thread.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 
@@ -56,7 +55,7 @@ extern void SendMoneyDynamic(const vector<CRecipient> &vecSend, CAmount nValue, 
 
 void PutToEscrowList(std::vector<CEscrow> &escrowList, CEscrow& index) {
 	int i = escrowList.size() - 1;
-	BOOST_REVERSE_FOREACH(CEscrow &o, escrowList) {
+	for (CEscrow &o : reverse_iterate(escrowList)) {
         if(!o.txHash.IsNull() && o.txHash == index.txHash) {
         	escrowList[i] = index;
             return;
@@ -1816,7 +1815,7 @@ UniValue escrowrelease(const UniValue& params, bool fHelp) {
   	arraySignParams.push_back(createEscrowSpendingTx);
  	arraySignInputs.push_back(signUniValue);
  	arraySignParams.push_back(arraySignInputs);
-	BOOST_FOREACH(const string& strKey, strKeys) {
+	for (const string& strKey : strKeys) {
 		arrayPrivateKeys.push_back(strKey);
 	}
 	arraySignParams.push_back(arrayPrivateKeys);
@@ -2311,7 +2310,7 @@ UniValue escrowclaimrelease(const UniValue& params, bool fHelp) {
   	arraySignParams.push_back(HexStr(escrow.rawTx));
  	arraySignInputs.push_back(signUniValue);
  	arraySignParams.push_back(arraySignInputs);
-	BOOST_FOREACH(const string& strKey, strKeys) {
+	for (const string& strKey : strKeys) {
 		arrayPrivateKeys.push_back(strKey);
 	}
 	arraySignParams.push_back(arrayPrivateKeys);
@@ -2705,7 +2704,7 @@ UniValue escrowrefund(const UniValue& params, bool fHelp) {
   	arraySignParams.push_back(createEscrowSpendingTx);
  	arraySignInputs.push_back(signUniValue);
  	arraySignParams.push_back(arraySignInputs);
-	BOOST_FOREACH(const string& strKey, strKeys) {
+	for (const string& strKey : strKeys) {
 		arrayPrivateKeys.push_back(strKey);
 	}
 	arraySignParams.push_back(arrayPrivateKeys);
@@ -3008,7 +3007,7 @@ UniValue escrowclaimrefund(const UniValue& params, bool fHelp) {
   	arraySignParams.push_back(HexStr(escrow.rawTx));
  	arraySignInputs.push_back(signUniValue);
  	arraySignParams.push_back(arraySignInputs);
-	BOOST_FOREACH(const string& strKey, strKeys) {
+	for (const string& strKey : strKeys) {
 		arrayPrivateKeys.push_back(strKey);
 	}
 	arraySignParams.push_back(arrayPrivateKeys);
@@ -3756,7 +3755,7 @@ UniValue escrowlist(const UniValue& params, bool fHelp) {
 	
 	}
 	pair<CEscrow, CEscrow> pairScan;
-	BOOST_FOREACH(pairScan, escrowScan) {
+	for (pairScan : escrowScan) {
 		UniValue oEscrow(UniValue::VOBJ);
 		if(BuildEscrowJson(pairScan.first, pairScan.second, oEscrow, strPrivateKey))
 			oRes.push_back(oEscrow);
@@ -3777,7 +3776,7 @@ UniValue escrowhistory(const UniValue& params, bool fHelp) {
         throw runtime_error("failed to read from escrow DB");
 
     CEscrow txPos2;
-    BOOST_FOREACH(txPos2, vtxPos) {
+    for (txPos2 : vtxPos) {
 		UniValue oEscrow(UniValue::VOBJ);
         if(BuildEscrowJson(txPos2, vtxPos.front(), oEscrow))
 			oRes.push_back(oEscrow);
@@ -3813,7 +3812,7 @@ UniValue escrowfilter(const UniValue& params, bool fHelp) {
 		throw runtime_error("DYNAMIC_ESCROW_RPC_ERROR: ERRCODE: 4607 - " + _("Scan failed"));
 
 	pair<CEscrow, CEscrow> pairScan;
-	BOOST_FOREACH(pairScan, escrowScan) {
+	for (pairScan : escrowScan) {
 		UniValue oEscrow(UniValue::VOBJ);
 		if(BuildEscrowJson(pairScan.first, pairScan.second, oEscrow))
 			oRes.push_back(oEscrow);

@@ -257,7 +257,7 @@ UniValue dynode(const UniValue& params, bool fHelp)
         UniValue statusObj(UniValue::VOBJ);
         statusObj.push_back(Pair("alias", strAlias));
 
-        BOOST_FOREACH(CDynodeConfig::CDynodeEntry dne, dynodeConfig.getEntries()) {
+        for (CDynodeConfig::CDynodeEntry dne : dynodeConfig.getEntries()) {
             if(dne.getAlias() == strAlias) {
                 fFound = true;
                 std::string strError;
@@ -302,7 +302,7 @@ UniValue dynode(const UniValue& params, bool fHelp)
 
         UniValue resultsObj(UniValue::VOBJ);
 
-        BOOST_FOREACH(CDynodeConfig::CDynodeEntry dne, dynodeConfig.getEntries()) {
+        for (CDynodeConfig::CDynodeEntry dne : dynodeConfig.getEntries()) {
             std::string strError;
 
             CTxIn vin = CTxIn(uint256S(dne.getTxHash()), uint32_t(atoi(dne.getOutputIndex().c_str())));
@@ -350,7 +350,7 @@ UniValue dynode(const UniValue& params, bool fHelp)
     {
         UniValue resultObj(UniValue::VOBJ);
 
-        BOOST_FOREACH(CDynodeConfig::CDynodeEntry dne, dynodeConfig.getEntries()) {
+        for (CDynodeConfig::CDynodeEntry dne : dynodeConfig.getEntries()) {
             CTxIn vin = CTxIn(uint256S(dne.getTxHash()), uint32_t(atoi(dne.getOutputIndex().c_str())));
             CDynode *pdn = dnodeman.Find(vin);
 
@@ -375,7 +375,7 @@ UniValue dynode(const UniValue& params, bool fHelp)
         pwalletMain->AvailableCoins(vPossibleCoins, true, nullptr, false, ONLY_1000);
 
         UniValue obj(UniValue::VOBJ);
-        BOOST_FOREACH(COutput& out, vPossibleCoins) {
+        for (COutput& out : vPossibleCoins) {
             obj.push_back(Pair(out.tx->GetHash().ToString(), strprintf("%d", out.i)));
         }
 
@@ -486,14 +486,14 @@ UniValue dynodelist(const UniValue& params, bool fHelp)
     UniValue obj(UniValue::VOBJ);
     if (strMode == "rank") {
         std::vector<std::pair<int, CDynode> > vDynodeRanks = dnodeman.GetDynodeRanks();
-        BOOST_FOREACH(PAIRTYPE(int, CDynode)& s, vDynodeRanks) {
+        for (PAIRTYPE(int, CDynode)& s : vDynodeRanks) {
             std::string strOutpoint = s.second.vin.prevout.ToStringShort();
             if (strFilter !="" && strOutpoint.find(strFilter) == std::string::npos) continue;
             obj.push_back(Pair(strOutpoint, s.first));
         }
     } else {
         std::vector<CDynode> vDynodes = dnodeman.GetFullDynodeVector();
-        BOOST_FOREACH(CDynode& dn, vDynodes) {
+        for (CDynode& dn : vDynodes) {
             std::string strOutpoint = dn.vin.prevout.ToStringShort();
             if (strMode == "activeseconds") {
                 if (strFilter !="" && strOutpoint.find(strFilter) == std::string::npos) continue;
@@ -607,7 +607,7 @@ UniValue dynodebroadcast(const UniValue& params, bool fHelp)
 
         statusObj.push_back(Pair("alias", strAlias));
 
-        BOOST_FOREACH(CDynodeConfig::CDynodeEntry dne, dynodeConfig.getEntries()) {
+        for (CDynodeConfig::CDynodeEntry dne : dynodeConfig.getEntries()) {
             if(dne.getAlias() == strAlias) {
                 fFound = true;
                 std::string strError;
@@ -657,7 +657,7 @@ UniValue dynodebroadcast(const UniValue& params, bool fHelp)
         UniValue resultsObj(UniValue::VOBJ);
         std::vector<CDynodeBroadcast> vecDnb;
 
-        BOOST_FOREACH(CDynodeConfig::CDynodeEntry dne, dynodeConfig.getEntries()) {
+        for (CDynodeConfig::CDynodeEntry dne : dynodeConfig.getEntries()) {
             std::string strError;
             CDynodeBroadcast dnb;
 
@@ -703,7 +703,7 @@ UniValue dynodebroadcast(const UniValue& params, bool fHelp)
         int nDos = 0;
         UniValue returnObj(UniValue::VOBJ);
 
-        BOOST_FOREACH(CDynodeBroadcast& dnb, vecDnb) {
+        for (CDynodeBroadcast& dnb : vecDnb) {
             UniValue resultObj(UniValue::VOBJ);
 
             if(dnb.CheckSignature(nDos)) {
@@ -756,7 +756,7 @@ UniValue dynodebroadcast(const UniValue& params, bool fHelp)
         UniValue returnObj(UniValue::VOBJ);
 
         // verify all signatures first, bailout if any of them broken
-        BOOST_FOREACH(CDynodeBroadcast& dnb, vecDnb) {
+        for (CDynodeBroadcast& dnb : vecDnb) {
             UniValue resultObj(UniValue::VOBJ);
 
             resultObj.push_back(Pair("vin", dnb.vin.ToString()));

@@ -462,7 +462,7 @@ UniValue getwork(const UniValue& params, bool fHelp)
             {
                 // Deallocate old blocks since they're obsolete now
                 mapNewBlock.clear();
-                BOOST_FOREACH(CBlockTemplate* pblocktemplate, vNewBlockTemplate)
+                for (CBlockTemplate* pblocktemplate : vNewBlockTemplate)
                     delete pblocktemplate;
                 vNewBlockTemplate.clear();
             }
@@ -799,7 +799,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
     UniValue transactions(UniValue::VARR);
     std::map<uint256, int64_t> setTxIndex;
     int i = 0;
-    BOOST_FOREACH (const CTransaction& tx, pblock->vtx) 
+    for (const CTransaction& tx : pblock->vtx) 
     {
         uint256 txHash = tx.GetHash();
         setTxIndex[txHash] = i++;
@@ -814,7 +814,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
         entry.push_back(Pair("hash", txHash.GetHex()));
 
         UniValue deps(UniValue::VARR);
-        BOOST_FOREACH (const CTxIn &in, tx.vin)
+        for (const CTxIn &in : tx.vin)
         {
             if (setTxIndex.count(in.prevout.hash))
                 deps.push_back(setTxIndex[in.prevout.hash]);
@@ -926,7 +926,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
 
     UniValue superblockObjArray(UniValue::VARR);
     if(pblock->voutSuperblock.size()) {
-        BOOST_FOREACH (const CTxOut& txout, pblock->voutSuperblock) {
+        for (const CTxOut& txout : pblock->voutSuperblock) {
             UniValue entry(UniValue::VOBJ);
             CTxDestination address1;
             ExtractDestination(txout.scriptPubKey, address1);

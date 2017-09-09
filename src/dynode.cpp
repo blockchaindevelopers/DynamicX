@@ -386,7 +386,7 @@ void CDynode::UpdateLastPaid(const CBlockIndex *pindex, int nMaxBlocksToScanBack
 
             CAmount nDynodePayment = getDynodeSubsidyWithOverride(BlockReading->overridenDynodeReward);
 
-            BOOST_FOREACH(CTxOut txout, block.vtx[0].vout)
+            for (CTxOut txout : block.vtx[0].vout)
                 if(dnpayee == txout.scriptPubKey && nDynodePayment == txout.nValue) {
                     nBlockLastPaid = BlockReading->nHeight;
                     nTimeLastPaid = BlockReading->nTime;
@@ -445,7 +445,7 @@ bool CDynodeBroadcast::Create(std::string strService, std::string strKeyDynode, 
         return false;
     }
 
-    BOOST_FOREACH(CNode* pnode, vNodes) {
+    for (CNode* pnode : vNodes) {
     if (pnode->addr.IsIPv6()) {
         LogPrintf("Invalid protocol for Dynode, only IPv4 is supported.");
         return false;
@@ -688,7 +688,7 @@ bool CDynodeBroadcast::IsVinAssociatedWithPubkey(const CTxIn& txin, const CPubKe
     CTransaction tx;
     uint256 hash;
     if(GetTransaction(txin.prevout.hash, tx, Params().GetConsensus(), hash, true)) {
-        BOOST_FOREACH(CTxOut out, tx.vout)
+        for (CTxOut out : tx.vout)
             if(out.nValue == 1000*COIN && out.scriptPubKey == payee) return true;
     }
 
