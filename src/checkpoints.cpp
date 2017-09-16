@@ -11,6 +11,7 @@
 #include "chainparams.h"
 #include "main.h"
 #include "uint256.h"
+#include "reverse_iterator.h"
 
 #include <cstdint>
 

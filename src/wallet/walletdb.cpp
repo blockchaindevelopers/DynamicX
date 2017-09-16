@@ -16,6 +16,7 @@
 #include "utiltime.h"
 #include "consensus/validation.h"
 #include "wallet/wallet.h"
+#include "reverse_iterator.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>

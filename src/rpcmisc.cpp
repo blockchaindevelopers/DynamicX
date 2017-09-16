@@ -24,6 +24,7 @@
 #include "wallet/wallet.h"
 #include "wallet/walletdb.h"
 #endif
+#include "warnings.h"
 
 #include <univalue.h>
 

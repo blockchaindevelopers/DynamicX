@@ -976,7 +976,7 @@ void DynamicGUI::gotoIdentityListPage()
 {
     if (walletFrame) walletFrame->gotoIdentityListPage();
 }
-
+/*
 void DynamicGUI::gotoMessageListPage()
 {
     if (walletFrame) walletFrame->gotoMessageListPage();
@@ -989,7 +989,7 @@ void DynamicGUI::gotoOfferListPage()
 {
     if (walletFrame) walletFrame->gotoOfferListPage();
 }
-
+*/
 void DynamicGUI::gotoCertListPage()
 {
     if (walletFrame) walletFrame->gotoCertListPage();

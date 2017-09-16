@@ -39,6 +39,7 @@
 #include "wallet/wallet.h"
 #include "policy/policy.h"
 #include "script/script.h"
+#include "reverse_iterator.h"
 #include "chainparams.h"
 
 #include <boost/algorithm/string/case_conv.hpp> // for to_lower()

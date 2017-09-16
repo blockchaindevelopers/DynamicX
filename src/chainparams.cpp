@@ -24,10 +24,6 @@
 
 #include "chainparamsseeds.h"
 
-CScript AssimilateFirstPubKey() {
-	return CScript() << OP_DESTROY << ParseHex("3530303030");
-}
-
 static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesisOutputScript, const uint32_t nTime, const uint32_t nNonce, const uint32_t nBits, const int32_t nVersion, const CAmount& genesisReward)
 {
     CMutableTransaction txNew;
@@ -49,6 +45,27 @@ static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesi
     return genesis;
 }
 
+double GetDifficulty(uint32_t nBits)
+{
+    int nShift = (nBits >> 24) & 0xff;
+
+    double dDiff =
+        (double)0x0000ffff / (double)(nBits & 0x00ffffff);
+
+    while (nShift < 29)
+    {
+        dDiff *= 256.0;
+        nShift++;
+    }
+    while (nShift > 29)
+    {
+        dDiff /= 256.0;
+        nShift--;
+    }
+
+    return dDiff;
+}
+
 static void MineGenesis(CBlockHeader& genesisBlock, const uint256& powLimit, bool noProduction)
 {
     if(noProduction)
@@ -57,6 +74,7 @@ static void MineGenesis(CBlockHeader& genesisBlock, const uint256& powLimit, boo
 
     printf("NOTE: Genesis nTime = %u \n", genesisBlock.nTime);
     printf("WARN: Genesis nNonce (BLANK!) = %u \n", genesisBlock.nNonce);
+    printf("INFO: Initial Difficulty set to %f \n", GetDifficulty(genesisBlock.nBits));
 
     arith_uint256 besthash;
     memset(&besthash,0xFF,32);
@@ -84,6 +102,7 @@ static void MineGenesis(CBlockHeader& genesisBlock, const uint256& powLimit, boo
     printf("Genesis nTime = %u \n", genesisBlock.nTime);
     printf("Genesis nNonce = %u \n", genesisBlock.nNonce);
     printf("Genesis nBits: %08x\n", genesisBlock.nBits);
+    printf("INFO: New difficulty set to %f \n", GetDifficulty(genesisBlock.nBits));
     printf("Genesis Hash = %s\n", newhash.ToString().c_str());
     printf("Genesis Hash Merkle Root = %s\n", genesisBlock.hashMerkleRoot.ToString().c_str());
 }
@@ -129,7 +148,7 @@ public:
         consensus.nMajorityEnforceBlockUpgrade = 750;
         consensus.nMajorityRejectBlockOutdated = 950;
         consensus.nMajorityWindow = 1000;
-        consensus.powLimit = uint256S("00000fffff000000000000000000000000000000000000000000000000000000");
+        consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 6 * 60 * 60; // Dynamic: 6 hours
         consensus.nPowTargetSpacing = 2 * 64; // Dynamic: 256 seconds
         consensus.nPowMaxAdjustDown = 32; // Dynamic: 32% adjustment down
@@ -162,7 +181,7 @@ public:
         nDefaultPort = 31300;
         nMaxTipAge = 12 * 60 * 64;
         nPruneAfterHeight = 20545;
-        startNewChain = false;
+        startNewChain = true;
 
         genesis = CreateGenesisBlock(1502296619, 151932, UintToArith256(consensus.powLimit).GetCompact(), 1, (1 * COIN));
         if(startNewChain == true) { MineGenesis(genesis, consensus.powLimit, true); }

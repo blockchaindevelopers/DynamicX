@@ -18,6 +18,7 @@
 #include "spork.h"
 #include "util.h"
 #include "consensus/validation.h"
+#include "reverse_iterator.h"
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/thread.hpp>

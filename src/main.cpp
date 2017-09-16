@@ -47,6 +47,7 @@
 #include "versionbits.h"
 #include "checkforks.h"
 #include "protocol/fluid.h"
+#include "reverse_iterator.h"
 
 #include "protocol/identity.h"
 #include "protocol/offer.h"

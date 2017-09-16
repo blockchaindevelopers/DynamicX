@@ -241,7 +241,7 @@ void WalletFrame::gotoIdentityListPage()
     if (walletView)
         walletView->gotoIdentityListPage();
 }
-void WalletFrame::gotoMessageListPage()
+/*void WalletFrame::gotoMessageListPage()
 {
     WalletView *walletView = currentWalletView();
     if (walletView)
@@ -260,7 +260,7 @@ void WalletFrame::gotoOfferListPage()
     if (walletView)
         walletView->gotoOfferListPage();
 }
-
+*/
 void WalletFrame::gotoCertListPage()
 {
     WalletView *walletView = currentWalletView();

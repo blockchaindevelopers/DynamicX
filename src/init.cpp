@@ -62,6 +62,7 @@
 #include "protocol/cert.h"
 #include "protocol/escrow.h"
 #include "protocol/message.h"
+#include "warnings.h"
 
 #include <cstdint>
 #include <cstdio>

@@ -38,6 +38,7 @@
 #include "wallet/wallet.h"
 #include "chainparams.h"
 #include "messagecrypter.h"
+#include "reverse_iterator.h"
 
 #include <boost/algorithm/hex.hpp>
 #include <boost/algorithm/string/case_conv.hpp> // for to_lower()

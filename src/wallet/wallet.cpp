@@ -3578,7 +3578,7 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
                 //
                 // Note how the sequence number is set to max()-1 so that the
                 // nLockTime set above actually works.
-                for (const PAIRTYPE(const CWalletTx*,unsigned int)& coin : setCoins){
+                for (const std::pair<const CWalletTx*,unsigned int>& coin : setCoins){
                     CTxIn txin = CTxIn(coin.first->GetHash(),coin.second,CScript(),
                                               std::numeric_limits<unsigned int>::max()-2);
                     txin.prevPubKey = coin.first->vout[coin.second].scriptPubKey;

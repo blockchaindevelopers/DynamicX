@@ -119,7 +119,6 @@ static const unsigned int DEFAULT_DB_MAX_OPEN_FILES = 1000;
 static const bool DEFAULT_DB_COMPRESSION = true;
 static const unsigned int DEFAULT_BANSCORE_THRESHOLD = 100;
 
-static const bool DEFAULT_TESTSAFEMODE = false;
 /** Default for -mempoolreplacement */
 static const bool DEFAULT_ENABLE_REPLACEMENT = false;
 

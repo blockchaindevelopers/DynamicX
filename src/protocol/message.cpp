@@ -37,6 +37,7 @@
 #include "rpcserver.h"
 #include "wallet/wallet.h"
 #include "chainparams.h"
+#include "reverse_iterator.h"
 #include <boost/algorithm/hex.hpp>
 #include <boost/xpressive/xpressive_dynamic.hpp>
 #include <boost/thread.hpp>

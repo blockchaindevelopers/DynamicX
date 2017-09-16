@@ -19,6 +19,7 @@
 #include "util.h"
 #include "utilmoneystr.h"
 #include "consensus/validation.h"
+#include "reverse_iterator.h"
 
 #include <boost/lexical_cast.hpp>
 

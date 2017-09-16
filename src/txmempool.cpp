@@ -18,6 +18,7 @@
 #include "utiltime.h"
 #include "consensus/validation.h"
 #include "version.h"
+#include "reverse_iterator.h"
 
 CTxMemPoolEntry::CTxMemPoolEntry(const CTransaction& _tx, const CAmount& _nFee,
                                  int64_t _nTime, double _entryPriority, unsigned int _entryHeight,

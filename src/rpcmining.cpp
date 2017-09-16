@@ -31,6 +31,7 @@
 #ifdef ENABLE_WALLET
 #include "wallet/wallet.h"
 #endif
+#include "warnings.h"
 
 #include <univalue.h>
 

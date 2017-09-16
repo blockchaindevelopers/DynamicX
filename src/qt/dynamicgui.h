@@ -256,10 +256,10 @@ private Q_SLOTS:
 	// SYSCOIN
     /** Switch to identity list page */
     void gotoIdentityListPage();
-    void gotoEscrowListPage();
-    void gotoMessageListPage();
+    //void gotoEscrowListPage();
+    //void gotoMessageListPage();
     /** Switch to offers page */
-    void gotoOfferListPage();
+   // void gotoOfferListPage();
     /** Switch to certificate  page */
     void gotoCertListPage();
 

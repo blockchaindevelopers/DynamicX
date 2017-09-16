@@ -23,6 +23,7 @@
 #include "dynodeman.h"
 #include "dynode-sync.h"
 #include "privatesend.h"
+#include "warnings.h"
 
 #include <cstdint>
 

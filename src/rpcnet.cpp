@@ -19,6 +19,7 @@
 #include "utilstrencodings.h"
 #include "version.h"
 #include "protocol/ntp.h"
+#include "warnings.h"
 
 #include <univalue.h>
 
