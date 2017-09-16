@@ -22,7 +22,7 @@ int nSubmittedFinalBudget;
 const std::string CGovernanceManager::SERIALIZATION_VERSION_STRING = "CGovernanceManager-Version-1";
 
 CGovernanceManager::CGovernanceManager()
-    : pCurrentBlockIndex(NULL),
+    : pCurrentBlockIndex(nullptr),
       nTimeLastDiff(0),
       nCachedBlockHeight(0),
       mapObjects(),
@@ -61,7 +61,7 @@ bool CGovernanceManager::HaveVoteForHash(uint256 nHash)
 {
     LOCK(cs);
 
-    CGovernanceObject* pGovobj = NULL;
+    CGovernanceObject* pGovobj = nullptr;
     if(!mapVoteToObject.Get(nHash,pGovobj)) {
         return false;
     }
@@ -82,7 +82,7 @@ bool CGovernanceManager::SerializeVoteForHash(uint256 nHash, CDataStream& ss)
 {
     LOCK(cs);
 
-    CGovernanceObject* pGovobj = NULL;
+    CGovernanceObject* pGovobj = nullptr;
     if(!mapVoteToObject.Get(nHash,pGovobj)) {
         return false;
     }
@@ -152,7 +152,7 @@ void CGovernanceManager::ProcessMessage(CNode* pfrom, std::string& strCommand, C
         // MAKE SURE WE HAVE A VALID REFERENCE TO THE TIP BEFORE CONTINUING
 
         if(!pCurrentBlockIndex) {
-            LogPrintf("CGovernanceManager::ProcessMessage DNGOVERNANCEOBJECT -- pCurrentBlockIndex is NULL\n");
+            LogPrintf("CGovernanceManager::ProcessMessage DNGOVERNANCEOBJECT -- pCurrentBlockIndex is nullptr\n");
             return;
         }
 
@@ -297,7 +297,7 @@ void CGovernanceManager::CheckOrphanVotes(CGovernanceObject& govobj, CGovernance
         if(pairVote.second < nNow) {
             fRemove = true;
         }
-        else if(govobj.ProcessVote(NULL, vote, exception)) {
+        else if(govobj.ProcessVote(nullptr, vote, exception)) {
             fRemove = true;
         }
         if(fRemove) {
@@ -469,7 +469,7 @@ void CGovernanceManager::UpdateCachesAndClean()
 
     fRateChecksEnabled = false;
 
-    LogPrint("gobject", "CGovernanceManager::UpdateCachesAndClean -- After pCurrentBlockIndex (not NULL)\n");
+    LogPrint("gobject", "CGovernanceManager::UpdateCachesAndClean -- After pCurrentBlockIndex (not nullptr)\n");
 
     // UPDATE CACHE FOR EACH OBJECT THAT IS FLAGGED DIRTYCACHE=TRUE
 
@@ -546,7 +546,7 @@ CGovernanceObject *CGovernanceManager::FindGovernanceObject(const uint256& nHash
     if(mapObjects.count(nHash))
         return &mapObjects[nHash];
 
-    return NULL;
+    return nullptr;
 }
 
 std::vector<CGovernanceVote> CGovernanceManager::GetMatchingVotes(const uint256& nParentHash)
@@ -704,7 +704,7 @@ bool CGovernanceManager::ConfirmInventoryRequest(const CInv& inv)
     }
 
 
-    hash_s_t* setHash = NULL;
+    hash_s_t* setHash = nullptr;
     switch(inv.type) {
     case MSG_GOVERNANCE_OBJECT:
         setHash = &setRequestedObjects;

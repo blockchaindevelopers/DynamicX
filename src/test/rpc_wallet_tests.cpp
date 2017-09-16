@@ -16,7 +16,7 @@
 
 #include <univalue.h>
 
-extern UniValue createArgs(int nRequired, const char* address1 = NULL, const char* address2 = NULL);
+extern UniValue createArgs(int nRequired, const char* address1 = nullptr, const char* address2 = nullptr);
 extern UniValue CallRPC(std::string args);
 
 extern CWallet* pwalletMain;

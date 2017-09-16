@@ -31,7 +31,7 @@ const char* GetTxnOutputType(txnouttype t)
     case TX_NULL_DATA: return "nulldata";
     case TX_NAME: return "name";
     }
-    return NULL;
+    return nullptr;
 }
 
 /**

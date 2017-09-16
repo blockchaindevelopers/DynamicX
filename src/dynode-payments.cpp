@@ -770,7 +770,7 @@ bool CDynodePayments::ProcessBlock(int nBlockHeight)
     int nCount = 0;
     CDynode *pdn = dnodeman.GetNextDynodeInQueueForPayment(nBlockHeight, true, nCount);
 
-    if (pdn == NULL) {
+    if (pdn == nullptr) {
         LogPrintf("CDynodePayments::ProcessBlock -- ERROR: Failed to find Dynode to pay\n");
         return false;
     }

@@ -107,12 +107,12 @@ public:
 	bool GetDynodeOverrideRequest(const CBlockHeader& blockHeader, CAmount &howMuch);
 	
 	void AddRemoveBanAddresses(const CBlockHeader& blockHeader, HashVector& bannedList);
-	bool CheckIfAddressIsBlacklisted(CScript scriptPubKey, CBlockIndex* pindex = NULL);
+	bool CheckIfAddressIsBlacklisted(CScript scriptPubKey, CBlockIndex* pindex = nullptr);
 	bool ProcessBanEntry(std::string getBanInstruction, int64_t timestamp, HashVector& bannedList);
 	bool RemoveEntry(std::string getBanInstruction, int64_t timestamp, HashVector& bannedList);
 	
 	bool InsertTransactionToRecord(CScript fluidInstruction, StringVector& transactionRecord);
-	bool CheckTransactionInRecord(CScript fluidInstruction, CBlockIndex* pindex = NULL);
+	bool CheckTransactionInRecord(CScript fluidInstruction, CBlockIndex* pindex = nullptr);
 	void AddFluidTransactionsToRecord(const CBlockHeader& blockHeader, StringVector& transactionRecord);
 	
 	bool ValidationProcesses(CValidationState& state, CScript txOut, CAmount txValue);

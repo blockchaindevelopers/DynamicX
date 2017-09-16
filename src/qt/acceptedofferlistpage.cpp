@@ -287,7 +287,7 @@ void AcceptedOfferListPage::on_exportButton_clicked()
     QString filename = GUIUtil::getSaveFileName(
             this,
             tr("Export Offer Data"), QString(),
-            tr("Comma separated file (*.csv)"), NULL);
+            tr("Comma separated file (*.csv)"), nullptr);
 
     if (filename.isNull()) return;
 

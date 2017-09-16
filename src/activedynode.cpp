@@ -207,7 +207,7 @@ void CActiveDynode::ManageStateInitial()
 
     LogPrintf("CActiveDynode::ManageStateInitial -- Checking inbound connection to '%s'\n", service.ToString());
 
-    if(!ConnectNode((CAddress)service, NULL, true)) {
+    if(!ConnectNode((CAddress)service, nullptr, true)) {
         nState = ACTIVE_DYNODE_NOT_CAPABLE;
         strNotCapableReason = "Could not connect to " + service.ToString();
         LogPrintf("CActiveDynode::ManageStateInitial -- %s: %s\n", GetStateString(), strNotCapableReason);

@@ -378,7 +378,7 @@ void CInstantSend::ProcessOrphanTxLockVotes()
     LOCK2(cs_main, cs_instantsend);
     std::map<uint256, CTxLockVote>::iterator it = mapTxLockVotesOrphan.begin();
     while(it != mapTxLockVotesOrphan.end()) {
-        if(ProcessTxLockVote(NULL, it->second)) {
+        if(ProcessTxLockVote(nullptr, it->second)) {
             mapTxLockVotesOrphan.erase(it++);
         } else {
             ++it;
@@ -780,8 +780,8 @@ void CInstantSend::SyncTransaction(const CTransaction& tx, const CBlock* pblock)
 
     uint256 txHash = tx.GetHash();
 
-    // When tx is 0-confirmed or conflicted, pblock is NULL and nHeightNew should be set to -1
-    CBlockIndex* pblockindex = NULL;
+    // When tx is 0-confirmed or conflicted, pblock is nullptr and nHeightNew should be set to -1
+    CBlockIndex* pblockindex = nullptr;
     if(pblock) {
         uint256 blockHash = pblock->GetHash();
         BlockMap::iterator mi = mapBlockIndex.find(blockHash);

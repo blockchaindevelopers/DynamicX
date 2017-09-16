@@ -71,7 +71,7 @@ bool IsTransactionFluid(CScript txOut) {
 /** Does client instance own address for engaging in processes - required for RPC (PS: NEEDS wallet) */
 bool Fluid::InitiateFluidVerify(CDynamicAddress dynamicAddress) {
 #ifdef ENABLE_WALLET
-    LOCK2(cs_main, pwalletMain ? &pwalletMain->cs_wallet : NULL);
+    LOCK2(cs_main, pwalletMain ? &pwalletMain->cs_wallet : nullptr);
 	CDynamicAddress address(dynamicAddress);
 	
 	if (address.IsValid()) {
@@ -562,7 +562,7 @@ bool Fluid::CheckTransactionInRecord(CScript fluidInstruction, CBlockIndex* pind
 	StringVector transactionRecord;
 	if (chainActive.Height() <= minimumThresholdForBanning || !shouldWeCheckDatabase)
 		return false;
-	else if (pindex == NULL) 
+	else if (pindex == nullptr) 
 		transactionRecord = chainActive.Tip()->existingFluidTransactions;
 	else
 		transactionRecord = pindex->existingFluidTransactions;
@@ -591,7 +591,7 @@ bool Fluid::CheckIfAddressIsBlacklisted(CScript scriptPubKey, CBlockIndex* pinde
 	
 	if (chainActive.Height() <= minimumThresholdForBanning || !shouldWeCheckDatabase)
 		return false;
-	else if (pindex == NULL) 
+	else if (pindex == nullptr) 
 		bannedDatabase = chainActive.Tip()->bannedAddresses;
 	else
 		bannedDatabase = pindex->bannedAddresses;

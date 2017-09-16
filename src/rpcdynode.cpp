@@ -145,7 +145,7 @@ UniValue dynode(const UniValue& params, bool fHelp)
 
         CService addr = CService(strAddress);
 
-        CNode *pnode = ConnectNode((CAddress)addr, NULL);
+        CNode *pnode = ConnectNode((CAddress)addr, nullptr);
         if(!pnode)
             throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf("Couldn't connect to Dynode %s", strAddress));
 
@@ -184,7 +184,7 @@ UniValue dynode(const UniValue& params, bool fHelp)
     {
         int nCount;
         int nHeight;
-        CDynode* winner = NULL;
+        CDynode* winner = nullptr;
         {
             LOCK(cs_main);
             nHeight = chainActive.Height() + (strCommand == "current" ? 1 : 10);
@@ -372,7 +372,7 @@ UniValue dynode(const UniValue& params, bool fHelp)
     if (strCommand == "outputs") {
         // Find possible candidates
         std::vector<COutput> vPossibleCoins;
-        pwalletMain->AvailableCoins(vPossibleCoins, true, NULL, false, ONLY_1000);
+        pwalletMain->AvailableCoins(vPossibleCoins, true, nullptr, false, ONLY_1000);
 
         UniValue obj(UniValue::VOBJ);
         BOOST_FOREACH(COutput& out, vPossibleCoins) {
@@ -766,7 +766,7 @@ UniValue dynodebroadcast(const UniValue& params, bool fHelp)
             bool fResult;
             if (dnb.CheckSignature(nDos)) {
                 if (fSafe) {
-                    fResult = dnodeman.CheckDnbAndUpdateDynodeList(NULL, dnb, nDos);
+                    fResult = dnodeman.CheckDnbAndUpdateDynodeList(nullptr, dnb, nDos);
                 } else {
                     dnodeman.UpdateDynodeList(dnb);
                     dnb.Relay();

@@ -49,7 +49,7 @@
 
 using namespace std;
 
-extern void SendMoneyDynamic(const vector<CRecipient> &vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CWalletTx* wtxInIdentity=NULL, int nTxOutIdentity = 0, bool dynamicMultiSigTx=false, const CCoinControl* coinControl=NULL, const CWalletTx* wtxInLinkIdentity=NULL,  int nTxOutLinkIdentity = 0);
+extern void SendMoneyDynamic(const vector<CRecipient> &vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CWalletTx* wtxInIdentity=nullptr, int nTxOutIdentity = 0, bool dynamicMultiSigTx=false, const CCoinControl* coinControl=nullptr, const CWalletTx* wtxInLinkIdentity=nullptr,  int nTxOutLinkIdentity = 0);
 
 bool EncryptMessage(const vector<unsigned char> &vchPubKey, const vector<unsigned char> &vchMessage, string &strCipherText)
 {
@@ -517,7 +517,7 @@ bool CheckCertInputs(const CTransaction &tx, int op, int nOut, const vector<vect
 			chainActive.Tip()->nHeight, tx.GetHash().ToString().c_str(),
 			fJustCheck ? "JUSTCHECK" : "BLOCK");
 	bool foundIdentity = false;
-    const COutPoint *prevOutput = NULL;
+    const COutPoint *prevOutput = nullptr;
     const CCoins *prevCoins;
 
 	int prevIdentityOp = 0;
@@ -563,7 +563,7 @@ bool CheckCertInputs(const CTransaction &tx, int op, int nOut, const vector<vect
 				continue;
 			// ensure inputs are unspent when doing consensus check to add to block
 			prevCoins = inputs.AccessCoins(prevOutput->hash);
-			if(prevCoins == NULL)
+			if(prevCoins == nullptr)
 				continue;
 			if(prevCoins->vout.size() <= prevOutput->n || !IsDynamicScript(prevCoins->vout[prevOutput->n].scriptPubKey, pop, vvch) || pop == OP_IDENTITY_PAYMENT)
 				continue;
@@ -804,7 +804,7 @@ UniValue certnew(const UniValue& params, bool fHelp) {
 	// check for identity existence in DB
 	CTransaction identitytx;
 	CIdentityIndex theIdentity;
-	const CWalletTx *wtxIdentityIn = NULL;
+	const CWalletTx *wtxIdentityIn = nullptr;
 	if (!GetTxOfIdentity(vchIdentity, theIdentity, identitytx))
 		throw runtime_error("DYNAMIC_CERTIFICATE_CONSENSUS_ERROR: ERRCODE: 2500 - " + _("failed to read identity from identity DB"));
 
@@ -814,7 +814,7 @@ UniValue certnew(const UniValue& params, bool fHelp) {
 	COutPoint outPoint;
 	int numResults  = identityunspent(vchIdentity, outPoint);
 	wtxIdentityIn = pwalletMain->GetWalletTx(outPoint.hash);
-	if (wtxIdentityIn == NULL)
+	if (wtxIdentityIn == nullptr)
 		throw runtime_error("DYNAMIC_CERTIFICATE_CONSENSUS_ERROR ERRCODE: 2502 - " + _("This identity is not in your wallet"));
 
 
@@ -979,7 +979,7 @@ UniValue certupdate(const UniValue& params, bool fHelp) {
 
 	CTransaction identitytx;
 	CIdentityIndex theIdentity;
-	const CWalletTx *wtxIdentityIn = NULL;
+	const CWalletTx *wtxIdentityIn = nullptr;
 	if (!GetTxOfIdentity(theCert.vchIdentity, theIdentity, identitytx))
 		throw runtime_error("DYNAMIC_CERTIFICATE_CONSENSUS_ERROR: ERRCODE: 2505 - " + _("Failed to read identity from identity DB"));
 	if(!IsMyIdentity(theIdentity)) {
@@ -988,7 +988,7 @@ UniValue certupdate(const UniValue& params, bool fHelp) {
 	COutPoint outPoint;
 	int numResults  = identityunspent(theCert.vchIdentity, outPoint);
 	wtxIdentityIn = pwalletMain->GetWalletTx(outPoint.hash);
-	if (wtxIdentityIn == NULL)
+	if (wtxIdentityIn == nullptr)
 		throw runtime_error("DYNAMIC_CERTIFICATE_RPC_ERROR ERRCODE: 2507 - " + _("This identity is not in your wallet"));
 
 	CCert copyCert = theCert;
@@ -1133,7 +1133,7 @@ UniValue certtransfer(const UniValue& params, bool fHelp) {
         throw runtime_error("DYNAMIC_CERTIFICATE_RPC_ERROR: ERRCODE: 2510 - " + _("Could not find a certificate with this key"));
 
 	CIdentityIndex fromIdentity;
-	const CWalletTx *wtxIdentityIn = NULL;
+	const CWalletTx *wtxIdentityIn = nullptr;
 	if(!GetTxOfIdentity(theCert.vchIdentity, fromIdentity, identitytx))
 	{
 		 throw runtime_error("DYNAMIC_CERTIFICATE_RPC_ERROR: ERRCODE: 2511 - " + _("Could not find the certificate identity"));
@@ -1144,7 +1144,7 @@ UniValue certtransfer(const UniValue& params, bool fHelp) {
 	COutPoint outPoint;
 	int numResults  = identityunspent(theCert.vchIdentity, outPoint);
 	wtxIdentityIn = pwalletMain->GetWalletTx(outPoint.hash);
-	if (wtxIdentityIn == NULL)
+	if (wtxIdentityIn == nullptr)
 		throw runtime_error("DYNAMIC_CERTIFICATE_RPC_ERROR ERRCODE: 2513 - " + _("This identity is not in your wallet"));
 
 	// if cert is private, decrypt the data

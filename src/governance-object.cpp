@@ -711,7 +711,7 @@ void CGovernanceObject::CheckOrphanVotes()
             continue;
         }
         CGovernanceException exception;
-        if(!ProcessVote(NULL, vote, exception)) {
+        if(!ProcessVote(nullptr, vote, exception)) {
             LogPrintf("CGovernanceObject::CheckOrphanVotes -- Failed to add orphan vote: %s\n", exception.what());
         }
         else {

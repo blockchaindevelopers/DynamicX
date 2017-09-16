@@ -76,7 +76,7 @@ unsigned int GetNextWorkRequired(const INDEX_TYPE pindexLast, const BLOCK_TYPE b
 
         const INDEX_TYPE pindexFirst = pindexLast; // multi algo - last block is selected on a per algo basis.
 
-        if (pindexLast == NULL)
+        if (pindexLast == nullptr)
             return nProofOfWorkLimit;
 
         if (INDEX_HEIGHT(pindexLast) <= nQBFrame)
@@ -95,7 +95,7 @@ unsigned int GetNextWorkRequired(const INDEX_TYPE pindexLast, const BLOCK_TYPE b
             nLBTimespan = nLBTimespan * 150 / PERCENT_FACTOR;
 
         pindexFirst = pindexLast;
-        for (unsigned int i = 1; pindexFirst != NULL && i <= nQBFrame; i++) {
+        for (unsigned int i = 1; pindexFirst != nullptr && i <= nQBFrame; i++) {
             nDeltaTimespan = INDEX_TIME(pindexFirst) - INDEX_TIME(INDEX_PREV(pindexFirst));
 
             if (nDeltaTimespan <= nBadTimeLimit)
@@ -112,7 +112,7 @@ unsigned int GetNextWorkRequired(const INDEX_TYPE pindexLast, const BLOCK_TYPE b
         }
         else {
             pindexFirst = pindexLast;
-            for (unsigned int i = 1; pindexFirst != NULL && i <= nMiddleFrame; i++) {
+            for (unsigned int i = 1; pindexFirst != nullptr && i <= nMiddleFrame; i++) {
                 nDeltaTimespan = INDEX_TIME(pindexFirst) - INDEX_TIME(INDEX_PREV(pindexFirst));
 
                 if (nDeltaTimespan <= nBadTimeLimit)
@@ -128,7 +128,7 @@ unsigned int GetNextWorkRequired(const INDEX_TYPE pindexLast, const BLOCK_TYPE b
         }
         else {
             pindexFirst = pindexLast;
-            for (unsigned int i = 1; pindexFirst != NULL && i <= nLongFrame; i++)
+            for (unsigned int i = 1; pindexFirst != nullptr && i <= nLongFrame; i++)
                 pindexFirst = INDEX_PREV(pindexFirst);
 
             nLongTimespan = INDEX_TIME(pindexLast) - INDEX_TIME(pindexFirst);

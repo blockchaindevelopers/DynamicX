@@ -39,15 +39,15 @@ unsigned int LegacyRetargetBlock(const CBlockIndex* pindexLast, const CBlockHead
 {
 	unsigned int nProofOfWorkLimit = UintToArith256(params.powLimit).GetCompact();
 
-	if (pindexLast == NULL)
+	if (pindexLast == nullptr)
 		return nProofOfWorkLimit; // genesis block
 
 	const CBlockIndex* pindexPrev = GetLastBlockIndex(pindexLast);
-	if (pindexPrev->pprev == NULL)
+	if (pindexPrev->pprev == nullptr)
 		return nProofOfWorkLimit; // first block
 		
 	const CBlockIndex* pindexPrevPrev = GetLastBlockIndex(pindexPrev->pprev);
-	if (pindexPrevPrev->pprev == NULL)
+	if (pindexPrevPrev->pprev == nullptr)
 		return nProofOfWorkLimit; // second block
 	
 	int64_t nTargetSpacing = params.nPowTargetTimespan;

@@ -54,7 +54,7 @@
 
 using namespace std;
 
-extern void SendMoneyDynamic(const vector<CRecipient> &vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CWalletTx* wtxInIdentity=NULL, int nTxOutIdentity = 0, bool dynamicMultiSigTx=false, const CCoinControl* coinControl=NULL, const CWalletTx* wtxInLinkIdentity=NULL,  int nTxOutLinkIdentity = 0);
+extern void SendMoneyDynamic(const vector<CRecipient> &vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CWalletTx* wtxInIdentity=nullptr, int nTxOutIdentity = 0, bool dynamicMultiSigTx=false, const CCoinControl* coinControl=nullptr, const CWalletTx* wtxInLinkIdentity=nullptr,  int nTxOutLinkIdentity = 0);
 
 bool DisconnectIdentity(const CBlockIndex *pindex, const CTransaction &tx, int op, vector<vector<unsigned char> > &vvchArgs );
 bool DisconnectOffer(const CBlockIndex *pindex, const CTransaction &tx, int op, vector<vector<unsigned char> > &vvchArgs );
@@ -571,7 +571,7 @@ bool CheckOfferInputs(const CTransaction &tx, int op, int nOut, const vector<vec
 			fJustCheck ? "JUSTCHECK" : "BLOCK", " VVCH SIZE: ", vvchArgs.size());
 	bool foundIdentity = false;
 	bool foundIdentityLink = false;
-	const COutPoint *prevOutput = NULL;
+	const COutPoint *prevOutput = nullptr;
 	const CCoins *prevCoins;
 	int prevIdentityOp = 0;
 	int prevIdentityOpLink = 0;
@@ -634,7 +634,7 @@ bool CheckOfferInputs(const CTransaction &tx, int op, int nOut, const vector<vec
 				continue;
 			// ensure inputs are unspent when doing consensus check to add to block
 			prevCoins = inputs.AccessCoins(prevOutput->hash);
-			if(prevCoins == NULL)
+			if(prevCoins == nullptr)
 				continue;
 			if(prevCoins->vout.size() <= prevOutput->n || !IsDynamicScript(prevCoins->vout[prevOutput->n].scriptPubKey, pop, vvch) || pop == OP_IDENTITY_PAYMENT)
 				continue;
@@ -1481,7 +1481,7 @@ UniValue offernew(const UniValue& params, bool fHelp) {
 
 	CTransaction identitytx;
 	CIdentityIndex identity;
-	const CWalletTx *wtxIdentityIn = NULL;
+	const CWalletTx *wtxIdentityIn = nullptr;
 	if (!GetTxOfIdentity(vchIdentity, identity, identitytx))
 		throw runtime_error("DYNAMIC_OFFER_RPC_ERROR ERRCODE: 1500 - " + _("Could not find an identity with this name"));
     if(!IsMyIdentity(identity)) {
@@ -1490,7 +1490,7 @@ UniValue offernew(const UniValue& params, bool fHelp) {
 	COutPoint outPoint;
 	int numResults  = identityunspent(vchIdentity, outPoint);	
 	wtxIdentityIn = pwalletMain->GetWalletTx(outPoint.hash);
-	if (wtxIdentityIn == NULL)
+	if (wtxIdentityIn == nullptr)
 		throw runtime_error("DYNAMIC_OFFER_RPC_ERROR ERRCODE: 1502 - " + _("This identity is not in your wallet"));
 
 	vector<unsigned char> vchCat = vchFromValue(params[1]);
@@ -1688,7 +1688,7 @@ UniValue offerlink(const UniValue& params, bool fHelp) {
 
 	CTransaction identitytx;
 	CIdentityIndex identity;
-	const CWalletTx *wtxIdentityIn = NULL;
+	const CWalletTx *wtxIdentityIn = nullptr;
 	if (!GetTxOfIdentity(vchIdentity, identity, identitytx))
 		throw runtime_error("DYNAMIC_OFFER_RPC_ERROR ERRCODE: 1510 - " + _("Could not find an identity with this name"));
     if(!IsMyIdentity(identity)) {
@@ -1697,7 +1697,7 @@ UniValue offerlink(const UniValue& params, bool fHelp) {
 	COutPoint outPoint;
 	int numResults  = identityunspent(vchIdentity, outPoint);	
 	wtxIdentityIn = pwalletMain->GetWalletTx(outPoint.hash);
-	if (wtxIdentityIn == NULL)
+	if (wtxIdentityIn == nullptr)
 		throw runtime_error("DYNAMIC_OFFER_RPC_ERROR ERRCODE: 1512 - " + _("This identity is not in your wallet"));
 
 	vector<unsigned char> vchLinkOffer = vchFromValue(params[1]);
@@ -1875,7 +1875,7 @@ UniValue offeraddwhitelist(const UniValue& params, bool fHelp) {
 
 	CTransaction identitytx;
 	CIdentityIndex theIdentity;
-	const CWalletTx *wtxIdentityIn = NULL;
+	const CWalletTx *wtxIdentityIn = nullptr;
 	if (!GetTxOfIdentity( theOffer.vchIdentity, theIdentity, identitytx))
 		throw runtime_error("DYNAMIC_OFFER_RPC_ERROR ERRCODE: 1519 - " + _("Could not find an identity with this name"));
 
@@ -1885,7 +1885,7 @@ UniValue offeraddwhitelist(const UniValue& params, bool fHelp) {
 	COutPoint outPoint;
 	int numResults  = identityunspent(theOffer.vchIdentity, outPoint);	
 	wtxIdentityIn = pwalletMain->GetWalletTx(outPoint.hash);
-	if (wtxIdentityIn == NULL)
+	if (wtxIdentityIn == nullptr)
 		throw runtime_error("DYNAMIC_OFFER_RPC_ERROR ERRCODE: 1521 - " + _("This identity is not in your wallet"));
 
 	CDynamicAddress identityAddress;
@@ -1988,7 +1988,7 @@ UniValue offerremovewhitelist(const UniValue& params, bool fHelp) {
 	// look for a transaction with this key
 	CTransaction tx;
 	COffer theOffer;
-	const CWalletTx *wtxIdentityIn = NULL;
+	const CWalletTx *wtxIdentityIn = nullptr;
 	if (!GetTxOfOffer( vchOffer, theOffer, tx))
 		throw runtime_error("DYNAMIC_OFFER_RPC_ERROR ERRCODE: 1523 - " + _("Could not find an offer with this guid"));
 	CTransaction identitytx;
@@ -2001,7 +2001,7 @@ UniValue offerremovewhitelist(const UniValue& params, bool fHelp) {
 	COutPoint outPoint;
 	int numResults  = identityunspent(theOffer.vchIdentity, outPoint);	
 	wtxIdentityIn = pwalletMain->GetWalletTx(outPoint.hash);
-	if (wtxIdentityIn == NULL)
+	if (wtxIdentityIn == nullptr)
 		throw runtime_error("DYNAMIC_OFFER_RPC_ERROR ERRCODE: 1526 - " + _("This identity is not in your wallet"));
 
 	CDynamicAddress identityAddress;
@@ -2093,7 +2093,7 @@ UniValue offerclearwhitelist(const UniValue& params, bool fHelp) {
 	// look for a transaction with this key
 	CTransaction tx;
 	COffer theOffer;
-	const CWalletTx *wtxIdentityIn = NULL;
+	const CWalletTx *wtxIdentityIn = nullptr;
 	if (!GetTxOfOffer( vchOffer, theOffer, tx))
 		throw runtime_error("DYNAMIC_OFFER_RPC_ERROR ERRCODE: 1528 - " + _("Could not find an offer with this guid"));
 	CTransaction identitytx;
@@ -2107,7 +2107,7 @@ UniValue offerclearwhitelist(const UniValue& params, bool fHelp) {
 	COutPoint outPoint;
 	int numResults  = identityunspent(theOffer.vchIdentity, outPoint);	
 	wtxIdentityIn = pwalletMain->GetWalletTx(outPoint.hash);
-	if (wtxIdentityIn == NULL)
+	if (wtxIdentityIn == nullptr)
 		throw runtime_error("DYNAMIC_OFFER_RPC_ERROR ERRCODE: 1531 - " + _("This identity is not in your wallet"));
 
 	CDynamicAddress identityAddress;
@@ -2271,8 +2271,8 @@ UniValue offerupdate(const UniValue& params, bool fHelp) {
 
 	CIdentityIndex identity, linkIdentity;
 	CTransaction identitytx, linkidentitytx;
-	const CWalletTx *wtxIdentityIn = NULL;
-	const CWalletTx *wtxLinkIdentityIn = NULL;
+	const CWalletTx *wtxIdentityIn = nullptr;
+	const CWalletTx *wtxLinkIdentityIn = nullptr;
 	
 
 	// this is a dynamicd txn
@@ -2346,7 +2346,7 @@ UniValue offerupdate(const UniValue& params, bool fHelp) {
 	COutPoint outPoint;
 	int numResults  = identityunspent(theOffer.vchIdentity, outPoint);	
 	wtxIdentityIn = pwalletMain->GetWalletTx(outPoint.hash);
-	if (wtxIdentityIn == NULL)
+	if (wtxIdentityIn == nullptr)
 		throw runtime_error("DYNAMIC_OFFER_RPC_ERROR ERRCODE: 1547 - " + _("This identity is not in your wallet"));
 
 	int numResultsLink = 0;
@@ -2355,7 +2355,7 @@ UniValue offerupdate(const UniValue& params, bool fHelp) {
 	{
 		numResultsLink = identityunspent(vchIdentity, outPointLink);	
 		wtxLinkIdentityIn = pwalletMain->GetWalletTx(outPointLink.hash);
-		if (wtxLinkIdentityIn == NULL)
+		if (wtxLinkIdentityIn == nullptr)
 			throw runtime_error("DYNAMIC_OFFER_RPC_ERROR ERRCODE: 1548 - " + _("This identity is not in your wallet"));
 
 	}
@@ -2450,7 +2450,7 @@ UniValue offerupdate(const UniValue& params, bool fHelp) {
 			vecSend.push_back(identityRecipientLink);
 	}
 
-	SendMoneyDynamic(vecSend, recipient.nAmount+identityRecipient.nAmount+fee.nAmount, false, wtx, wtxIdentityIn, outPoint.n, identity.multiSigInfo.vchIdentityes.size() > 0 || linkIdentity.multiSigInfo.vchIdentityes.size() > 0, NULL, wtxLinkIdentityIn, outPointLink.n);
+	SendMoneyDynamic(vecSend, recipient.nAmount+identityRecipient.nAmount+fee.nAmount, false, wtx, wtxIdentityIn, outPoint.n, identity.multiSigInfo.vchIdentityes.size() > 0 || linkIdentity.multiSigInfo.vchIdentityes.size() > 0, nullptr, wtxLinkIdentityIn, outPointLink.n);
 	UniValue res(UniValue::VARR);
 	if(identity.multiSigInfo.vchIdentityes.size() > 0 || linkIdentity.multiSigInfo.vchIdentityes.size() > 0)
 	{
@@ -2610,7 +2610,7 @@ UniValue offeraccept(const UniValue& params, bool fHelp) {
 			throw runtime_error("DYNAMIC_OFFER_RPC_ERROR: ERRCODE: 1563 - " + _("Cannot purchase a wanted offer"));
 		}
 	}
-	const CWalletTx *wtxIdentityIn = NULL;
+	const CWalletTx *wtxIdentityIn = nullptr;
 	COfferLinkWhitelistEntry foundEntry;
 	CAmount nPrice;
 	CAmount nCommission;
@@ -2902,7 +2902,7 @@ UniValue offeracceptfeedback(const UniValue& params, bool fHelp) {
     CTransaction tx;
 	COffer theOffer;
 	COfferAccept theOfferAccept;
-	const CWalletTx *wtxIdentityIn = NULL;
+	const CWalletTx *wtxIdentityIn = nullptr;
 
 	COffer tmpOffer;
 	if (!GetTxOfOffer( vchOffer, tmpOffer, tx))
@@ -2993,7 +2993,7 @@ UniValue offeracceptfeedback(const UniValue& params, bool fHelp) {
 		theOffer.accept.feedback.push_back(sellerFeedback);
 		numResults  = identityunspent(buyerIdentity.vchIdentity, outPoint);	
 		wtxIdentityIn = pwalletMain->GetWalletTx(outPoint.hash);
-		if (wtxIdentityIn == NULL)
+		if (wtxIdentityIn == nullptr)
 			throw runtime_error("DYNAMIC_OFFER_RPC_ERROR ERRCODE: 1579 - " + _("Buyer identity is not in your wallet"));
 		scriptPubKeyIdentity << CScript::EncodeOP_N(OP_IDENTITY_UPDATE) << buyerIdentity.vchIdentity << buyerIdentity.vchGUID << vchFromString("") << OP_2DROP << OP_2DROP;
 		scriptPubKeyIdentity += buyerScript;
@@ -3009,7 +3009,7 @@ UniValue offeracceptfeedback(const UniValue& params, bool fHelp) {
 		theOffer.accept.feedback.push_back(buyerFeedback);
 		numResults  = identityunspent(sellerIdentity.vchIdentity, outPoint);	
 		wtxIdentityIn = pwalletMain->GetWalletTx(outPoint.hash);
-		if (wtxIdentityIn == NULL)
+		if (wtxIdentityIn == nullptr)
 			throw runtime_error("DYNAMIC_OFFER_RPC_ERROR ERRCODE: 1580 - " + _("Seller identity is not in your wallet"));
 		scriptPubKeyIdentity = CScript() <<  CScript::EncodeOP_N(OP_IDENTITY_UPDATE) << sellerIdentity.vchIdentity << sellerIdentity.vchGUID << vchFromString("") << OP_2DROP << OP_2DROP;
 		scriptPubKeyIdentity += sellerScript;
@@ -3098,7 +3098,7 @@ UniValue offeracceptacknowledge(const UniValue& params, bool fHelp) {
     CTransaction tx, linkTx;
 	COffer theOffer, linkOffer;
 	COfferAccept theOfferAccept;
-	const CWalletTx *wtxIdentityIn = NULL;
+	const CWalletTx *wtxIdentityIn = nullptr;
 
 	if (!GetTxOfOffer( vchOffer, theOffer, tx))
 		throw runtime_error("DYNAMIC_OFFER_RPC_ERROR ERRCODE: 1582 - " + _("Could not find an offer with this guid"));
@@ -3158,7 +3158,7 @@ UniValue offeracceptacknowledge(const UniValue& params, bool fHelp) {
 	COutPoint outPoint;
 	int numResults  = identityunspent(sellerIdentity.vchIdentity, outPoint);	
 	wtxIdentityIn = pwalletMain->GetWalletTx(outPoint.hash);
-	if (wtxIdentityIn == NULL)
+	if (wtxIdentityIn == nullptr)
 		throw runtime_error("DYNAMIC_OFFER_RPC_ERROR ERRCODE: 1590 - " + _("Seller identity is not in your wallet"));
 
 	scriptPubKeyIdentity = CScript() <<  CScript::EncodeOP_N(OP_IDENTITY_UPDATE) << sellerIdentity.vchIdentity << sellerIdentity.vchGUID << vchFromString("") << OP_2DROP << OP_2DROP;

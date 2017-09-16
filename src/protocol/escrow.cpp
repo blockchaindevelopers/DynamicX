@@ -52,7 +52,7 @@
 extern CScript _createmultisig_redeemScript(const UniValue& params);
 using namespace std;
 extern CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
-extern void SendMoneyDynamic(const vector<CRecipient> &vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CWalletTx* wtxInIdentity=NULL, int nTxOutIdentity = 0, bool dynamicMultiSigTx=false, const CCoinControl* coinControl=NULL, const CWalletTx* wtxInLinkIdentity=NULL,  int nTxOutLinkIdentity = 0);
+extern void SendMoneyDynamic(const vector<CRecipient> &vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CWalletTx* wtxInIdentity=nullptr, int nTxOutIdentity = 0, bool dynamicMultiSigTx=false, const CCoinControl* coinControl=nullptr, const CWalletTx* wtxInLinkIdentity=nullptr,  int nTxOutLinkIdentity = 0);
 
 void PutToEscrowList(std::vector<CEscrow> &escrowList, CEscrow& index) {
 	int i = escrowList.size() - 1;
@@ -424,7 +424,7 @@ bool CheckEscrowInputs(const CTransaction &tx, int op, int nOut, const vector<ve
 		LogPrintf("*Trying to add escrow in coinbase transaction, skipping...");
 		return true;
 	}
-	const COutPoint *prevOutput = NULL;
+	const COutPoint *prevOutput = nullptr;
 	const CCoins *prevCoins;
 	int prevIdentityOp = 0;
 	bool foundIdentity = false;
@@ -477,7 +477,7 @@ bool CheckEscrowInputs(const CTransaction &tx, int op, int nOut, const vector<ve
 				continue;
 			// ensure inputs are unspent when doing consensus check to add to block
 			prevCoins = inputs.AccessCoins(prevOutput->hash);
-			if(prevCoins == NULL)
+			if(prevCoins == nullptr)
 				continue;
 			if(prevCoins->vout.size() <= prevOutput->n || !IsDynamicScript(prevCoins->vout[prevOutput->n].scriptPubKey, pop, vvch) || pop == OP_IDENTITY_PAYMENT)
 				continue;
@@ -1354,7 +1354,7 @@ UniValue escrownew(const UniValue& params, bool fHelp) {
 	if(theOffer.sCategory.size() > 0 && boost::algorithm::starts_with(stringFromVch(theOffer.sCategory), "wanted"))
 		throw runtime_error("DYNAMIC_ESCROW_RPC_ERROR: ERRCODE: 4515 - " + _("Cannot purchase a wanted offer"));
 
-	const CWalletTx *wtxIdentityIn = NULL;
+	const CWalletTx *wtxIdentityIn = nullptr;
 
 	CScript scriptPubKeyIdentity, scriptPubKeyIdentityOrig;
 	COfferLinkWhitelistEntry foundEntry;
@@ -1628,7 +1628,7 @@ UniValue escrowrelease(const UniValue& params, bool fHelp) {
 		GetAddress(sellerIdentityLatest, &sellerAddressPayment, sellerScript, escrow.nPaymentOption);
 	}
 
-	const CWalletTx *wtxIdentityIn = NULL;
+	const CWalletTx *wtxIdentityIn = nullptr;
 	CScript scriptPubKeyIdentity;
 
 	COffer theOffer, linkOffer;
@@ -2406,7 +2406,7 @@ UniValue escrowcompleterelease(const UniValue& params, bool fHelp) {
 	}
 
 
-	const CWalletTx *wtxIdentityIn = NULL;
+	const CWalletTx *wtxIdentityIn = nullptr;
 	vector<unsigned char> vchLinkIdentity;
 	CScript scriptPubKeyIdentity;
 	if(!IsMyIdentity(sellerIdentityLatest))
@@ -2621,7 +2621,7 @@ UniValue escrowrefund(const UniValue& params, bool fHelp) {
 	{
 		throw runtime_error("DYNAMIC_ESCROW_RPC_ERROR: ERRCODE: 4569 - " + _("Expected amount of escrow does not match what is held in escrow. Expected amount: ") +  boost::lexical_cast<string>(nEscrowTotal));
 	}
-	const CWalletTx *wtxIdentityIn = NULL;
+	const CWalletTx *wtxIdentityIn = nullptr;
 	vector<unsigned char> vchLinkIdentity;
 	CIdentityIndex theIdentity;
 	CScript scriptPubKeyIdentity;
@@ -3100,7 +3100,7 @@ UniValue escrowcompleterefund(const UniValue& params, bool fHelp) {
 
 
 	string strPrivateKey ;
-	const CWalletTx *wtxIdentityIn = NULL;
+	const CWalletTx *wtxIdentityIn = nullptr;
 	vector<unsigned char> vchLinkIdentity;
 	CScript scriptPubKeyIdentity;
 	if(!IsMyIdentity(buyerIdentityLatest))
@@ -3247,7 +3247,7 @@ UniValue escrowfeedback(const UniValue& params, bool fHelp) {
 	CScript scriptPubKeyIdentity;
 	COutPoint outPoint;
 	int numResults=0;
-	const CWalletTx *wtxIdentityIn = NULL;
+	const CWalletTx *wtxIdentityIn = nullptr;
 	if(role == "buyer")
 	{
 		if(!IsMyIdentity(buyerIdentityLatest))

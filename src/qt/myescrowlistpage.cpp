@@ -585,7 +585,7 @@ void MyEscrowListPage::on_exportButton_clicked()
     QString filename = GUIUtil::getSaveFileName(
             this,
             tr("Export Escrow Data"), QString(),
-            tr("Comma separated file (*.csv)"), NULL);
+            tr("Comma separated file (*.csv)"), nullptr);
 
     if (filename.isNull()) return;
 

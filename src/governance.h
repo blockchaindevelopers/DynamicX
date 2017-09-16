@@ -280,7 +280,7 @@ public:
     std::vector<CGovernanceObject*> GetAllNewerThan(int64_t nMoreThanTime);
 
     bool IsBudgetPaymentBlock(int nBlockHeight);
-    bool AddGovernanceObject(CGovernanceObject& govobj, bool& fAddToSeen, CNode* pfrom = NULL);
+    bool AddGovernanceObject(CGovernanceObject& govobj, bool& fAddToSeen, CNode* pfrom = nullptr);
 
     std::string GetRequiredPaymentsString(int nBlockHeight);
 
@@ -359,7 +359,7 @@ public:
     bool DynodeRateCheck(const CGovernanceObject& govobj, bool fUpdateLast, bool fForce, bool& fRateCheckBypassed);
 
     bool ProcessVoteAndRelay(const CGovernanceVote& vote, CGovernanceException& exception) {
-        bool fOK = ProcessVote(NULL, vote, exception);
+        bool fOK = ProcessVote(nullptr, vote, exception);
         if(fOK) {
             vote.Relay();
         }

@@ -46,7 +46,7 @@
 
 using namespace std;
 
-extern void SendMoneyDynamic(const vector<CRecipient> &vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CWalletTx* wtxInIdentity=NULL, int nTxOutIdentity = 0, bool dynamicMultiSigTx=false, const CCoinControl* coinControl=NULL, const CWalletTx* wtxInLinkIdentity=NULL,  int nTxOutLinkIdentity = 0);
+extern void SendMoneyDynamic(const vector<CRecipient> &vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CWalletTx* wtxInIdentity=nullptr, int nTxOutIdentity = 0, bool dynamicMultiSigTx=false, const CCoinControl* coinControl=nullptr, const CWalletTx* wtxInLinkIdentity=nullptr,  int nTxOutLinkIdentity = 0);
 
 void PutToMessageList(std::vector<CMessage> &messageList, CMessage& index) {
 	int i = messageList.size() - 1;
@@ -334,7 +334,7 @@ bool CheckMessageInputs(const CTransaction &tx, int op, int nOut, const vector<v
 		LogPrintf("*** MESSAGE %d %d %s %s\n", nHeight,
 			chainActive.Tip()->nHeight, tx.GetHash().ToString().c_str(),
 			fJustCheck ? "JUSTCHECK" : "BLOCK");
-    const COutPoint *prevOutput = NULL;
+    const COutPoint *prevOutput = nullptr;
     const CCoins *prevCoins;
 
 	int prevIdentityOp = 0;
@@ -383,7 +383,7 @@ bool CheckMessageInputs(const CTransaction &tx, int op, int nOut, const vector<v
 				continue;
 			// ensure inputs are unspent when doing consensus check to add to block
 			prevCoins = inputs.AccessCoins(prevOutput->hash);
-			if(prevCoins == NULL)
+			if(prevCoins == nullptr)
 				continue;
 			if(prevCoins->vout.size() <= prevOutput->n || !IsDynamicScript(prevCoins->vout[prevOutput->n].scriptPubKey, pop, vvch) || pop == OP_IDENTITY_PAYMENT)
 				continue;
@@ -553,7 +553,7 @@ UniValue messagenew(const UniValue& params, bool fHelp) {
 	COutPoint outPoint;
 	int numResults  = identityunspent(identityFrom.vchIdentity, outPoint);	
 	const CWalletTx *wtxIdentityIn = pwalletMain->GetWalletTx(outPoint.hash);
-	if (wtxIdentityIn == NULL)
+	if (wtxIdentityIn == nullptr)
 	{
 		BOOST_FOREACH(const COutPoint& outpoint, lockedOutputs)
 		{

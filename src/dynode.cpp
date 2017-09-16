@@ -395,7 +395,7 @@ void CDynode::UpdateLastPaid(const CBlockIndex *pindex, int nMaxBlocksToScanBack
                 }
         }
 
-        if (BlockReading->pprev == NULL) { assert(BlockReading); break; }
+        if (BlockReading->pprev == nullptr) { assert(BlockReading); break; }
         BlockReading = BlockReading->pprev;
     }
 
@@ -827,7 +827,7 @@ bool CDynodePing::SimpleCheck(int& nDos)
         return false;
     }
 
-    if (pdn == NULL) {
+    if (pdn == nullptr) {
         LogPrint("Dynode", "CDynodePing::CheckAndUpdate -- Couldn't find Dynode entry, Dynode=%s\n", vin.prevout.ToStringShort());
         return false;
     }

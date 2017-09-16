@@ -65,7 +65,7 @@ void CPrivatesendPool::ProcessMessage(CNode* pfrom, std::string& strCommand, CDa
         LogPrint("privatesend", "PSACCEPT -- nDenom %d (%s)  txCollateral %s", nDenom, GetDenominationsToString(nDenom), txCollateral.ToString());
 
         CDynode* pdn = dnodeman.Find(activeDynode.vin);
-        if(pdn == NULL) {
+        if(pdn == nullptr) {
             PushStatus(pfrom, STATUS_REJECTED, ERR_DN_LIST);
             return;
         }
@@ -117,7 +117,7 @@ void CPrivatesendPool::ProcessMessage(CNode* pfrom, std::string& strCommand, CDa
         if(psq.IsExpired() || psq.nTime > GetTime() + PRIVATESEND_QUEUE_TIMEOUT) return;
 
         CDynode* pdn = dnodeman.Find(psq.vin);
-        if(pdn == NULL) return;
+        if(pdn == nullptr) return;
 
         if(!psq.CheckSignature(pdn->pubKeyDynode)) {
             // we probably have outdated info
@@ -262,7 +262,7 @@ void CPrivatesendPool::ProcessMessage(CNode* pfrom, std::string& strCommand, CDa
                 LOCK(cs_main);
                 CValidationState validationState;
                 mempool.PrioritiseTransaction(tx.GetHash(), tx.GetHash().ToString(), 1000, 0.1*COIN);
-                if(!AcceptToMemoryPool(mempool, validationState, CTransaction(tx), false, NULL, false, true, true)) {
+                if(!AcceptToMemoryPool(mempool, validationState, CTransaction(tx), false, nullptr, false, true, true)) {
                     LogPrintf("PSVIN -- transaction not valid! tx=%s", tx.ToString());
                     PushStatus(pfrom, STATUS_REJECTED, ERR_INVALID_TX);
                     return;
@@ -467,7 +467,7 @@ void CPrivatesendPool::SetNull()
     // Client side
     nEntriesCount = 0;
     fLastEntryAccepted = false;
-    pSubmittedToDynode = NULL;
+    pSubmittedToDynode = nullptr;
 
     // Both sides
     nState = POOL_STATE_IDLE;
@@ -629,7 +629,7 @@ void CPrivatesendPool::CommitFinalTransaction()
         TRY_LOCK(cs_main, lockMain);
         CValidationState validationState;
         mempool.PrioritiseTransaction(hashTx, hashTx.ToString(), 1000, 0.1*COIN);
-        if(!lockMain || !AcceptToMemoryPool(mempool, validationState, finalTransaction, false, NULL, false, true, true))
+        if(!lockMain || !AcceptToMemoryPool(mempool, validationState, finalTransaction, false, nullptr, false, true, true))
         {
             LogPrintf("CPrivatesendPool::CommitFinalTransaction -- AcceptToMemoryPool() error: Transaction not valid\n");
             SetNull();
@@ -937,7 +937,7 @@ bool CPrivatesendPool::IsCollateralValid(const CTransaction& txCollateral)
     {
         LOCK(cs_main);
         CValidationState validationState;
-        if(!AcceptToMemoryPool(mempool, validationState, txCollateral, false, NULL, false, true, true)) {
+        if(!AcceptToMemoryPool(mempool, validationState, txCollateral, false, nullptr, false, true, true)) {
             LogPrint("privatesend", "CPrivatesendPool::IsCollateralValid -- didn't pass AcceptToMemoryPool()\n");
             return false;
         }
@@ -1107,7 +1107,7 @@ bool CPrivatesendPool::SendDenominate(const std::vector<CTxIn>& vecTxIn, const s
 
         mempool.PrioritiseTransaction(tx.GetHash(), tx.GetHash().ToString(), 1000, 0.1*COIN);
         TRY_LOCK(cs_main, lockMain);
-        if(!lockMain || !AcceptToMemoryPool(mempool, validationState, CTransaction(tx), false, NULL, false, true, true)) {
+        if(!lockMain || !AcceptToMemoryPool(mempool, validationState, CTransaction(tx), false, nullptr, false, true, true)) {
             LogPrintf("CPrivatesendPool::SendDenominate -- AcceptToMemoryPool() failed! tx=%s", tx.ToString());
             UnlockCoins();
             SetNull();
@@ -1172,7 +1172,7 @@ bool CPrivatesendPool::CheckPoolStateUpdate(PoolState nStateNew, int nEntriesCou
 //
 bool CPrivatesendPool::SignFinalTransaction(const CTransaction& finalTransactionNew, CNode* pnode)
 {
-    if(fDyNode || pnode == NULL) return false;
+    if(fDyNode || pnode == nullptr) return false;
 
     finalMutableTransaction = finalTransactionNew;
     LogPrintf("CPrivatesendPool::SignFinalTransaction -- finalMutableTransaction=%s", finalMutableTransaction.ToString());
@@ -1488,7 +1488,7 @@ bool CPrivatesendPool::DoAutomaticDenominating(bool fDryRun)
             if(psq.IsExpired()) continue;
 
             CDynode* pdn = dnodeman.Find(psq.vin);
-            if(pdn == NULL) {
+            if(pdn == nullptr) {
                 LogPrintf("CPrivatesendPool::DoAutomaticDenominating -- psq Dynode is not in Dynode list, Dynode=%s\n", psq.vin.prevout.ToStringShort());
                 continue;
             }
@@ -1519,7 +1519,7 @@ bool CPrivatesendPool::DoAutomaticDenominating(bool fDryRun)
 
             vecDynodesUsed.push_back(psq.vin);
 
-            CNode* pnodeFound = NULL;
+            CNode* pnodeFound = nullptr;
             {
                 LOCK(cs_vNodes);
                 pnodeFound = FindNode(pdn->addr);
@@ -1534,7 +1534,7 @@ bool CPrivatesendPool::DoAutomaticDenominating(bool fDryRun)
 
             LogPrintf("CPrivatesendPool::DoAutomaticDenominating -- attempt to connect to Dynode from queue, addr=%s\n", pdn->addr.ToString());
             // connect to Dynode and submit the queue request
-            CNode* pnode = (pnodeFound && pnodeFound->fDynode) ? pnodeFound : ConnectNode((CAddress)pdn->addr, NULL, true);
+            CNode* pnode = (pnodeFound && pnodeFound->fDynode) ? pnodeFound : ConnectNode((CAddress)pdn->addr, nullptr, true);
             if(pnode) {
                 pSubmittedToDynode = pdn;
                 nSessionDenom = psq.nDenom;
@@ -1575,7 +1575,7 @@ bool CPrivatesendPool::DoAutomaticDenominating(bool fDryRun)
     // otherwise, try one randomly
     while(nTries < 10) {
         CDynode* pdn = dnodeman.FindRandomNotInVec(vecDynodesUsed, MIN_PRIVATESEND_PEER_PROTO_VERSION);
-        if(pdn == NULL) {
+        if(pdn == nullptr) {
             LogPrintf("CPrivatesendPool::DoAutomaticDenominating -- Can't find random Dynode!\n");
             strAutoDenomResult = _("Can't find random Dynode.");
             return false;
@@ -1591,7 +1591,7 @@ bool CPrivatesendPool::DoAutomaticDenominating(bool fDryRun)
             continue;
         }
 
-        CNode* pnodeFound = NULL;
+        CNode* pnodeFound = nullptr;
         {
             LOCK(cs_vNodes);
             pnodeFound = FindNode(pdn->addr);
@@ -1606,7 +1606,7 @@ bool CPrivatesendPool::DoAutomaticDenominating(bool fDryRun)
         }
 
         LogPrintf("CPrivatesendPool::DoAutomaticDenominating -- attempt %d connection to Dynode %s\n", nTries, pdn->addr.ToString());
-        CNode* pnode = (pnodeFound && pnodeFound->fDynode) ? pnodeFound : ConnectNode((CAddress)pdn->addr, NULL, true);
+        CNode* pnode = (pnodeFound && pnodeFound->fDynode) ? pnodeFound : ConnectNode((CAddress)pdn->addr, nullptr, true);
         if(pnode) {
             LogPrintf("CPrivatesendPool::DoAutomaticDenominating -- connected, addr=%s\n", pdn->addr.ToString());
             pSubmittedToDynode = pdn;
@@ -1843,7 +1843,7 @@ bool CPrivatesendPool::MakeCollateralAmounts(const CompactTallyItem& tallyItem)
         // if we failed (most likeky not enough funds), try to use all coins instead -
         // DN-like funds should not be touched in any case and we can't mix denominated without collaterals anyway
         LogPrintf("CPrivatesendPool::MakeCollateralAmounts -- ONLY_NONDENOMINATED_NOT1000IFDN Error: %s\n", strFail);
-        CCoinControl *coinControlNull = NULL;
+        CCoinControl *coinControlNull = nullptr;
         fSuccess = pwalletMain->CreateTransaction(vecSend, wtx, reservekeyChange,
                 nFeeRet, nChangePosRet, strFail, coinControlNull, true, ONLY_NOT1000IFDN);
         if(!fSuccess) {
@@ -2359,7 +2359,7 @@ void CPrivatesendPool::RelayIn(const CPrivateSendEntry& entry)
     if(!pSubmittedToDynode) return;
 
     CNode* pnode = FindNode(pSubmittedToDynode->addr);
-    if(pnode != NULL) {
+    if(pnode != nullptr) {
         LogPrintf("CPrivatesendPool::RelayIn -- found Dynode, relaying message to %s\n", pnode->addr.ToString());
         pnode->PushMessage(NetMsgType::PSVIN, entry);
     }

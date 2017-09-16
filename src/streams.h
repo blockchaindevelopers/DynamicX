@@ -403,7 +403,7 @@ public:
     {
         if (file) {
             ::fclose(file);
-            file = NULL;
+            file = nullptr;
         }
     }
 
@@ -413,7 +413,7 @@ public:
      */
     FILE* release()             {
         FILE* ret = file;
-        file = NULL;
+        file = nullptr;
         return ret;
     }
 
@@ -425,10 +425,10 @@ public:
         return file;
     }
 
-    /** Return true if the wrapped FILE* is NULL, false otherwise.
+    /** Return true if the wrapped FILE* is nullptr, false otherwise.
      */
     bool IsNull() const         {
-        return (file == NULL);
+        return (file == nullptr);
     }
 
     //
@@ -454,7 +454,7 @@ public:
     CAutoFile& read(char* pch, size_t nSize)
     {
         if (!file)
-            throw std::ios_base::failure("CAutoFile::read: file handle is NULL");
+            throw std::ios_base::failure("CAutoFile::read: file handle is nullptr");
         if (fread(pch, 1, nSize, file) != nSize)
             throw std::ios_base::failure(feof(file) ? "CAutoFile::read: end of file" : "CAutoFile::read: fread failed");
         return (*this);
@@ -463,7 +463,7 @@ public:
     CAutoFile& write(const char* pch, size_t nSize)
     {
         if (!file)
-            throw std::ios_base::failure("CAutoFile::write: file handle is NULL");
+            throw std::ios_base::failure("CAutoFile::write: file handle is nullptr");
         if (fwrite(pch, 1, nSize, file) != nSize)
             throw std::ios_base::failure("CAutoFile::write: write failed");
         return (*this);
@@ -481,7 +481,7 @@ public:
     {
         // Serialize to this stream
         if (!file)
-            throw std::ios_base::failure("CAutoFile::operator<<: file handle is NULL");
+            throw std::ios_base::failure("CAutoFile::operator<<: file handle is nullptr");
         ::Serialize(*this, obj, nType, nVersion);
         return (*this);
     }
@@ -491,7 +491,7 @@ public:
     {
         // Unserialize from this stream
         if (!file)
-            throw std::ios_base::failure("CAutoFile::operator>>: file handle is NULL");
+            throw std::ios_base::failure("CAutoFile::operator>>: file handle is nullptr");
         ::Unserialize(*this, obj, nType, nVersion);
         return (*this);
     }
@@ -557,7 +557,7 @@ public:
     {
         if (src) {
             ::fclose(src);
-            src = NULL;
+            src = nullptr;
         }
     }
 

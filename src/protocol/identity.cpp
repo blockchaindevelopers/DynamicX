@@ -58,20 +58,20 @@
 
 using namespace std;
 
-CIdentityDB *pidentitydb = NULL;
-COfferDB *pofferdb = NULL;
-CCertDB *pcertdb = NULL;
-CEscrowDB *pescrowdb = NULL;
-CMessageDB *pmessagedb = NULL;
+CIdentityDB *pidentitydb = nullptr;
+COfferDB *pofferdb = nullptr;
+CCertDB *pcertdb = nullptr;
+CEscrowDB *pescrowdb = nullptr;
+CMessageDB *pmessagedb = nullptr;
 
 extern CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
-extern void SendMoneyDynamic(const vector<CRecipient> &vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CWalletTx* wtxInIdentity=NULL, int nTxOutIdentity = 0, bool dynamicMultiSigTx=false, const CCoinControl* coinControl=NULL, const CWalletTx* wtxInLinkIdentity=NULL,  int nTxOutLinkIdentity = 0);
+extern void SendMoneyDynamic(const vector<CRecipient> &vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CWalletTx* wtxInIdentity=nullptr, int nTxOutIdentity = 0, bool dynamicMultiSigTx=false, const CCoinControl* coinControl=nullptr, const CWalletTx* wtxInLinkIdentity=nullptr,  int nTxOutLinkIdentity = 0);
 
 bool GetDynamicTransaction(int nHeight, const uint256 &hash, CTransaction &txOut, const Consensus::Params& consensusParams)
 {
 	if(nHeight < 0 || nHeight > chainActive.Height())
 		return false;
-	CBlockIndex *pindexSlow = NULL; 
+	CBlockIndex *pindexSlow = nullptr; 
 	LOCK(cs_main);
 	pindexSlow = chainActive[nHeight];
     if (pindexSlow) {
@@ -676,7 +676,7 @@ bool CheckIdentityInputs(const CTransaction &tx, int op, int nOut, const vector<
 	}
 	if (fDebug)
 		LogPrintf("*** IDENTITY %d %d op=%s %s nOut=%d %s\n", nHeight, chainActive.Tip()->nHeight, identityFromOp(op).c_str(), tx.GetHash().ToString().c_str(), nOut, fJustCheck ? "JUSTCHECK" : "BLOCK");
-	const COutPoint *prevOutput = NULL;
+	const COutPoint *prevOutput = nullptr;
 	const CCoins *prevCoins;
 	int prevOp = 0;
 	vector<vector<unsigned char> > vvchPrevArgs;
@@ -747,7 +747,7 @@ bool CheckIdentityInputs(const CTransaction &tx, int op, int nOut, const vector<
 				continue;
 			// ensure inputs are unspent when doing consensus check to add to block
 			prevCoins = inputs.AccessCoins(prevOutput->hash);
-			if(prevCoins == NULL)
+			if(prevCoins == nullptr)
 				continue;
 			if(prevCoins->vout.size() <= prevOutput->n || !IsDynamicScript(prevCoins->vout[prevOutput->n].scriptPubKey, pop, vvch) || pop == OP_IDENTITY_PAYMENT)
 				continue;
@@ -1353,50 +1353,50 @@ bool CIdentityDB::CleanupDatabase(int &servicesCleaned)
 }
 void CleanupDynamicServiceDatabases(int &numServicesCleaned)
 {
-	if(pofferdb != NULL)
+	if(pofferdb != nullptr)
 		pofferdb->CleanupDatabase(numServicesCleaned);
-	if(pescrowdb!= NULL)
+	if(pescrowdb!= nullptr)
 		pescrowdb->CleanupDatabase(numServicesCleaned);
-	if(pmessagedb!= NULL)
+	if(pmessagedb!= nullptr)
 		pmessagedb->CleanupDatabase(numServicesCleaned);
-	if(pcertdb!= NULL)
+	if(pcertdb!= nullptr)
 		pcertdb->CleanupDatabase(numServicesCleaned);
-	if(pidentitydb!= NULL)
+	if(pidentitydb!= nullptr)
 		pidentitydb->CleanupDatabase(numServicesCleaned);
-	if(pidentitydb != NULL)
+	if(pidentitydb != nullptr)
 	{
 		if (!pidentitydb->Flush())
 			LogPrintf("Failed to write to identity database!");
 		delete pidentitydb;
-		pidentitydb = NULL;
+		pidentitydb = nullptr;
 	}
-	if(pofferdb != NULL)
+	if(pofferdb != nullptr)
 	{
 		if (!pofferdb->Flush())
 			LogPrintf("Failed to write to offer database!");
 		delete pofferdb;
-		pofferdb = NULL;
+		pofferdb = nullptr;
 	}
-	if(pcertdb != NULL)
+	if(pcertdb != nullptr)
 	{
 		if (!pcertdb->Flush())
 			LogPrintf("Failed to write to cert database!");
 		delete pcertdb;
-		pcertdb = NULL;
+		pcertdb = nullptr;
 	}
-	if(pescrowdb != NULL)
+	if(pescrowdb != nullptr)
 	{
 		if (!pescrowdb->Flush())
 			LogPrintf("Failed to write to escrow database!");
 		delete pescrowdb;
-		pescrowdb = NULL;
+		pescrowdb = nullptr;
 	}
-	if(pmessagedb != NULL)
+	if(pmessagedb != nullptr)
 	{
 		if (!pmessagedb->Flush())
 			LogPrintf("Failed to write to message database!");
 		delete pmessagedb;
-		pmessagedb = NULL;
+		pmessagedb = nullptr;
 	}
 
 }
@@ -1748,7 +1748,7 @@ void TransferIdentityBalances(const vector<unsigned char> &vchIdentity, const CS
     {
 		const CIdentityPayment& identityPayment = vtxPaymentPos[i];
 		coins = view.AccessCoins(identityPayment.txHash);
-		if(coins == NULL)
+		if(coins == nullptr)
 			continue;
      
 		if(!coins->IsAvailable(identityPayment.nOut))
@@ -2022,7 +2022,7 @@ UniValue identitynew(const UniValue& params, bool fHelp) {
 		coinControl.fAllowWatchOnly = true;
 		TransferIdentityBalances(vchIdentity, scriptPubKeyOrig, vecSend, coinControl);
 	}
-	SendMoneyDynamic(vecSend, recipient.nAmount + fee.nAmount, false, wtx, NULL, 0, oldIdentity.multiSigInfo.vchIdentityes.size() > 0, coinControl.HasSelected()? &coinControl: NULL);
+	SendMoneyDynamic(vecSend, recipient.nAmount + fee.nAmount, false, wtx, nullptr, 0, oldIdentity.multiSigInfo.vchIdentityes.size() > 0, coinControl.HasSelected()? &coinControl: nullptr);
 	UniValue res(UniValue::VARR);
 	if(oldIdentity.multiSigInfo.vchIdentityes.size() > 0)
 	{
@@ -2139,7 +2139,7 @@ UniValue identityupdate(const UniValue& params, bool fHelp) {
 	COutPoint outPoint;
 	int numResults  = identityunspent(vchIdentity, outPoint);
 	const CWalletTx* wtxIn = pwalletMain->GetWalletTx(outPoint.hash);
-	if (wtxIn == NULL)
+	if (wtxIn == nullptr)
 		throw runtime_error("DYNAMIC_IDENTITY_RPC_ERROR: ERRCODE: 5519 - " + _("This identity is not in your wallet"));
 
 	CDynamicAddress oldAddress;
@@ -2310,7 +2310,7 @@ UniValue identityupdate(const UniValue& params, bool fHelp) {
 		TransferIdentityBalances(vchIdentity, scriptPubKeyOrig, vecSend, coinControl);
 	}
 	
-	SendMoneyDynamic(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxIn, outPoint.n, copyIdentity.multiSigInfo.vchIdentityes.size() > 0, coinControl.HasSelected()? &coinControl: NULL);
+	SendMoneyDynamic(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxIn, outPoint.n, copyIdentity.multiSigInfo.vchIdentityes.size() > 0, coinControl.HasSelected()? &coinControl: nullptr);
 	UniValue res(UniValue::VARR);
 	if(copyIdentity.multiSigInfo.vchIdentityes.size() > 0)
 	{
@@ -2763,7 +2763,7 @@ UniValue identitybalance(const UniValue& params, bool fHelp)
     {
 		const CIdentityPayment& identityPayment = vtxPaymentPos[i];
 		coins = view.AccessCoins(identityPayment.txHash);
-		if(coins == NULL)
+		if(coins == nullptr)
 			continue;
        
 		if(!coins->IsAvailable(identityPayment.nOut))
@@ -2801,7 +2801,7 @@ int identityunspent(const vector<unsigned char> &vchIdentity, COutPoint& outpoin
 		const CIdentityIndex& identity = vtxPos[i];
 		coins = view.AccessCoins(identity.txHash);
 
-		if(coins == NULL)
+		if(coins == nullptr)
 			continue;
          for (unsigned int j = 0;j<coins->vout.size();j++)
 		 {
@@ -3202,7 +3202,7 @@ UniValue identitypay(const UniValue& params, bool fHelp) {
     string strFailReason;
 
     bool fCreated = pwalletMain->CreateTransaction(vecSend, wtx, keyChange, nFeeRequired, nChangePosRet,
-												   strFailReason, NULL, true, ALL_COINS, false);
+												   strFailReason, nullptr, true, ALL_COINS, false);
 								
     if (!fCreated)
         throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, strFailReason);

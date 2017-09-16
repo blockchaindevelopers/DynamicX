@@ -48,7 +48,7 @@
  
 // Key used by getwork miners.
 // Allocated in InitRPCMining, free'd in ShutdownRPCMining
-static CReserveKey* pMiningKey = NULL;
+static CReserveKey* pMiningKey = nullptr;
 
 void InitRPCMining()
 {
@@ -64,7 +64,7 @@ void ShutdownRPCMining()
     if (!pMiningKey)
         return;
 
-    delete pMiningKey; pMiningKey = NULL;
+    delete pMiningKey; pMiningKey = nullptr;
 }
 
 UniValue getpowrewardstart(const UniValue& params, bool fHelp)
@@ -98,7 +98,7 @@ UniValue GetNetworkHashPS(int lookup, int height) {
     if (height >= 0 && height < chainActive.Height())
         pb = chainActive[height];
 
-    if (pb == NULL || !pb->nHeight)
+    if (pb == nullptr || !pb->nHeight)
         return 0;
 
     // If lookup is -1, then use blocks since last difficulty change.
@@ -233,7 +233,7 @@ UniValue generate(const UniValue& params, bool fHelp)
             ++pblock->nNonce;
         }
         CValidationState state;
-        if (!ProcessNewBlock(state, Params(), NULL, pblock, true, NULL))
+        if (!ProcessNewBlock(state, Params(), nullptr, pblock, true, nullptr))
             throw JSONRPCError(RPC_INTERNAL_ERROR, "ProcessNewBlock, block not accepted");
         ++nHeight;
         blockHashes.push_back(pblock->GetHash().GetHex());
@@ -539,7 +539,7 @@ UniValue getwork(const UniValue& params, bool fHelp)
         pblock->vtx[0] = newTx;
         pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
 
-        assert(pwalletMain != NULL);
+        assert(pwalletMain != nullptr);
         const CChainParams& chainParams = Params();
         return CheckWork(chainParams, pblock, *pwalletMain, *pMiningKey);
     }
@@ -1006,7 +1006,7 @@ UniValue submitblock(const UniValue& params, bool fHelp)
     CValidationState state;
     submitblock_StateCatcher sc(block.GetHash());
     RegisterValidationInterface(&sc);
-    bool fAccepted = ProcessNewBlock(state, Params(), NULL, &block, true, NULL);
+    bool fAccepted = ProcessNewBlock(state, Params(), nullptr, &block, true, nullptr);
     UnregisterValidationInterface(&sc);
     if (fBlockPresent)
     {
