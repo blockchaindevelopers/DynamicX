@@ -6,6 +6,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "chain.h"
+#include "protocol/fluid.h"
 
 /**
  * CChain implementation
@@ -110,4 +111,15 @@ void CBlockIndex::BuildSkip()
 {
     if (pprev)
         pskip = pprev->GetAncestor(GetSkipHeight(nHeight));
+}
+
+StringVector InitialiseDefaults() {
+	StringVector vector;
+	CParameters params;
+	
+	vector.push_back(params.defaultFluidAddressX);
+	vector.push_back(params.defaultFluidAddressY);
+	vector.push_back(params.defaultFluidAddressZ);
+	
+	return vector;
 }

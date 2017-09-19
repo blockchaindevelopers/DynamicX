@@ -149,7 +149,8 @@ const char* GetOpName(opcodetype opcode)
 	case OP_REALLOW				   : return "OP_REALLOW";
 	case OP_FLUID_DEACTIVATE	   : return "OP_FLUID_DEACTIVATE";
 	case OP_FLUID_REACTIVATE	   : return "OP_FLUID_REACTIVATE";
-
+	case OP_INVEST				   : return "OP_INVEST";
+	
     case OP_INVALIDOPCODE          : return "OP_INVALIDOPCODE";
 
     // Note:

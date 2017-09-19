@@ -30,6 +30,7 @@
 #include "validationinterface.h"
 #include "wallet/wallet.h"
 #include "protocol/fluid.h"
+#include "chain.h"
 
 #include <cstdlib>
 #include <queue>
@@ -408,13 +409,14 @@ std::unique_ptr<CBlockTemplate> CreateNewBlock(const CChainParams& chainparams, 
 
 		CDynamicAddress address;
 		CAmount fluidIssuance;
-		CAmount blockReward = getBlockSubsidyWithOverride(nHeight, nFees, pindexPrev->overridenBlockReward);
+		CFluidEntry prevFluidIndex = pindexPrev->fluidParams;
+		CAmount blockReward = getBlockSubsidyWithOverride(nHeight, nFees, prevFluidIndex.blockReward);
 		bool areWeMinting = false;
 
         // Compute regular coinbase transaction.
         txNew.vout[0].scriptPubKey = scriptPubKeyIn;
+        
         // Compute fluid fee flushing
-
         if (fluid.GetMintingInstructions(pindexPrev->GetBlockHeader(), address, fluidIssuance)) {
 			txNew.vout[0].nValue = blockReward + fluidIssuance - nFees;
 			areWeMinting = true;

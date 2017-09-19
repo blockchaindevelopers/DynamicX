@@ -11,6 +11,15 @@
 #include <cstdint>
 #include <string>
 
+/* Units of Time */
+static const int TIME_ONESECOND = 1;
+static const int TIME_ONEMINUTE = TIME_ONESECOND * 60;
+static const int TIME_ONEHOUR = TIME_ONEMINUTE * 60;
+static const int TIME_ONEDAY = TIME_ONEHOUR * 24;
+static const int TIME_ONEWEEK = TIME_ONEDAY * 7;
+static const int TIME_ONEMONTH = TIME_ONEWEEK * 30;
+static const int TIME_ONEYEAR = TIME_ONEMONTH * 12;
+
 int64_t GetTime();
 int64_t GetTimeMillis();
 int64_t GetTimeMicros();

@@ -15,6 +15,7 @@
 #include "spork.h"
 #include "util.h"
 #include "protocol/fluid.h"
+#include "chain.h"
 
 #include <boost/lexical_cast.hpp>
 
@@ -302,13 +303,13 @@ void CDynodePayments::FillBlockPayee(CMutableTransaction& txNew, CAmount nFees)
 	CDynamicAddress addressX;
 	
 	if (fluid.GetMintingInstructions(chainActive.Tip()->pprev->GetBlockHeader(), addressX, fluidIssuance)) {
-	    blockValue = 	getBlockSubsidyWithOverride(chainActive.Tip()->nHeight, nFees, chainActive.Tip()->overridenBlockReward) + 
+	    blockValue = 	getBlockSubsidyWithOverride(chainActive.Tip()->nHeight, nFees, chainActive.Tip()->fluidParams.blockReward) + 
 						fluidIssuance;
 	} else {
-		blockValue = 	getBlockSubsidyWithOverride(chainActive.Tip()->nHeight, nFees, chainActive.Tip()->overridenBlockReward);
+		blockValue = 	getBlockSubsidyWithOverride(chainActive.Tip()->nHeight, nFees, chainActive.Tip()->fluidParams.blockReward);
 	}
 	
-	dynodePayment = getDynodeSubsidyWithOverride(chainActive.Tip()->overridenDynodeReward);
+	dynodePayment = getDynodeSubsidyWithOverride(chainActive.Tip()->fluidParams.dynodeReward);
 
     txNew.vout[0].nValue = blockValue;
 
@@ -582,7 +583,7 @@ bool CDynodeBlockPayees::IsTransactionValid(const CTransaction& txNew)
     std::string strPayeesPossible = "";
     
     /* Dirtiest trick in the book */
-	CAmount nDynodePayment = getDynodeSubsidyWithOverride(chainActive.Tip()->overridenDynodeReward);
+	CAmount nDynodePayment = getDynodeSubsidyWithOverride(chainActive.Tip()->fluidParams.dynodeReward);
 
     //require at least DNPAYMENTS_SIGNATURES_REQUIRED signatures
 

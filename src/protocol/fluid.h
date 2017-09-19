@@ -31,6 +31,7 @@
 #include "script/script.h"
 #include "consensus/validation.h"
 #include "utilstrencodings.h"
+#include "dbwrapper.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -59,11 +60,9 @@ static const CAmount PHASE_2_DYNODE_PAYMENT = COIN * 0.618;
 static const int64_t 	maximumFluidDistortionTime 	= 5 * 60;
 static const int 		minimumThresholdForBanning 	= 10;
 
-/**/
-extern bool shouldWeCheckDatabase;
-
+/** Configuration Framework */
 class CParameters {
-private:
+public: 
 	/*
 	 * The three keys controlling the multiple signature system
 	 */
@@ -71,7 +70,6 @@ private:
 	std::string defaultFluidAddressY = "DM1sv8zT529d7rYPtGX5kKM2MjD8YrHg5D"; // importprivkey Mn64HNSDehPY4KKP8bZCMvcweYS7wrNszNWGvPHamcyPhjoZABSp
 	std::string defaultFluidAddressZ = "DKPH9BdcrVyWwRsUVbPtaUQSwJWv2AMrph"; // importprivkey MpPYgqNRGf8qQqkuds6si6UEfpddfps1NJ1uTVbp7P3g3imJLwAC
 
-public: 
 	const char* fluidImportantAddress(KeyNumber adr) {
 		if (adr == KEY_UNE) { return (defaultFluidAddressX.c_str()); }
 		else if (adr == KEY_DEUX) { return (defaultFluidAddressY.c_str()); }
@@ -80,11 +78,13 @@ public:
 	}
 };
 
+bool CheckIfAddressValid(std::string string);
+
+/** Fluid Asset Management Framework */
 class Fluid : public CParameters, public HexFunctions {
 public:
 
-	bool IsGivenKeyMaster(CDynamicAddress inputKey, int &whichOne);
-	bool HowManyKeysWeHave(CDynamicAddress inputKey, bool &keyOne, bool &keyTwo, bool &keyThree);
+	bool IsGivenKeyMaster(CDynamicAddress inputKey);
 	bool CheckIfQuorumExists(std::string token, std::string &message, bool individual = false);
 	bool GenericConsentMessage(std::string message, std::string &signedString, CDynamicAddress signer);
 	bool CheckNonScriptQuorum(std::string token, std::string &message, bool individual = false);
@@ -131,6 +131,9 @@ CAmount getDynodeSubsidyWithOverride(CAmount lastOverrideCommand, bool fDynode =
 void BuildFluidInformationIndex(CBlockIndex* pindex, CAmount &nExpectedBlockValue, CAmount nFees, CAmount nValueIn, 
 								CAmount nValueOut, bool fDynodePaid);
 bool IsTransactionFluid(CScript txOut);
+
+int ApproximateBlocksFromTime(int64_t timeConsidered, bool fromScratch=true);
+int64_t ApproximateTimeFromBlocks(int heightConsidered, bool fromScratch=true);
 
 extern Fluid fluid;
 

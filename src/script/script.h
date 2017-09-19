@@ -31,6 +31,7 @@ static const int IDENTIFIER_ACTIVATE_TX 			= 5;
 static const int IDENTIFIER_DEACTIVATE_TX 			= 6;
 static const int IDENTIFIER_REALLOW_TX 				= 7;
 static const int IDENTIFIER_STERILIZE_TX 			= 8;
+static const int IDENTIFIER_INVEST_TX	 			= 9;
 
 enum ProtocolCodes {
 	MINT_TX 			= IDENTIFIER_MINT_TX,
@@ -41,6 +42,7 @@ enum ProtocolCodes {
 	DEACTIVATE_TX 		= IDENTIFIER_DEACTIVATE_TX,
 	REALLOW_TX			= IDENTIFIER_REALLOW_TX,
 	STERILIZE_TX		= IDENTIFIER_STERILIZE_TX,
+	INVEST_TX			= IDENTIFIER_INVEST_TX,
 	
 	NO_TX = IDENTIFIER_NO_TX
 };
@@ -242,6 +244,7 @@ enum opcodetype
 	OP_REALLOW = 0xc6,
 	OP_FLUID_DEACTIVATE = 0xc7,
 	OP_FLUID_REACTIVATE = 0xc8,
+	OP_INVEST = 0xc9,
 	
     // template matching params
     OP_SMALLINTEGER = 0xfa,
@@ -735,6 +738,9 @@ public:
 				break;
 			case REALLOW_TX:
 				return (size() > 0 && *begin() == OP_REALLOW);
+				break;
+			case INVEST_TX:
+				return (size() > 0 && *begin() == OP_INVEST);
 				break;
 			default:
 				throw std::runtime_error("Protocol code is of literally nothing!");
