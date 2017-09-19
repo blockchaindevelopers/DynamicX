@@ -48,6 +48,7 @@
 #include "checkforks.h"
 #include "protocol/fluid.h"
 #include "reverse_iterator.h"
+#include "warnings.h"
 
 #include "protocol/identity.h"
 #include "protocol/offer.h"

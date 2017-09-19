@@ -217,7 +217,6 @@ libdynamic_util_a-clientversion.$(OBJEXT): obj/build.h
 libdynamic_server_a_CPPFLAGS = $(AM_CPPFLAGS) $(DYNAMIC_INCLUDES) $(MINIUPNPC_CPPFLAGS) $(EVENT_CFLAGS) $(EVENT_PTHREADS_CFLAGS)
 libdynamic_server_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libdynamic_server_a_SOURCES = \
- warnings.cpp \
   protocol/ntp.cpp \
   protocol/identity.cpp \
   protocol/cert.cpp \
@@ -376,6 +375,7 @@ libdynamic_common_a_SOURCES = \
   script/sign.cpp \
   script/standard.cpp \
   spork.cpp \
+  warnings.cpp \
   $(DYNAMIC_CORE_H)
 
 # util: shared between all executables.
