@@ -1161,7 +1161,7 @@ double GetMoneySupply(bool fBurnt)
 	CAmount nSupply = 0;
 	
     CBlockIndex* pindex = chainActive.Tip();
-    if (fBurnt) { nSupply = pindex->nDynamicBurnt; } 
+    if (fBurnt) { nSupply = pindex->fluidParams.nDynamicBurnt; } 
 		   else { nSupply = pindex->nMoneySupply; }
     
     return (double) nSupply / COIN;  

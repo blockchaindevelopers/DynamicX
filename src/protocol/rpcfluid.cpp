@@ -37,6 +37,7 @@
 #include "utilmoneystr.h"
 #include "utilstrencodings.h"
 #include "main.h"
+#include "chain.h"
 
 #include <univalue.h>
 
@@ -53,6 +54,7 @@ opcodetype getOpcodeFromString(std::string input) {
 	else if (input == "OP_REALLOW") return OP_REALLOW;
 	else if (input == "OP_FLUID_DEACTIVATE") return OP_FLUID_DEACTIVATE;
 	else if (input == "OP_FLUID_REACTIVATE") return OP_FLUID_REACTIVATE;
+	else if (input == "OP_INVEST") return OP_INVEST;
 	else return OP_RETURN;
 	
 	return OP_RETURN;
@@ -207,8 +209,7 @@ UniValue signtoken(const UniValue& params, bool fHelp)
     if (!address.IsValid())
 		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Dynamic address");
 	
-	int x;
-	if (!fluid.IsGivenKeyMaster(address, x))
+	if (!fluid.IsGivenKeyMaster(address))
 		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Address is not Fluid Protocol Sovreign address");
 	
     if (!fluid.InitiateFluidVerify(address))
@@ -273,7 +274,7 @@ UniValue consenttoken(const UniValue& params, bool fHelp)
 	if (!IsHex(params[1].get_str()))
 		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Hex string is invalid! Token incorrect");
 	
-	if (!fluid.IsGivenKeyMaster(address, x))
+	if (!fluid.IsGivenKeyMaster(address))
 		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Address is not Fluid Protocol Sovreign address");
 	
     if (!fluid.InitiateFluidVerify(address))
@@ -318,7 +319,8 @@ UniValue stringtohash(const UniValue& params, bool fHelp)
 UniValue fluidcommandshistory(const UniValue& params, bool fHelp) {
 	GetLastBlockIndex(chainActive.Tip());
 	CBlockIndex* pindex = chainActive.Tip();
-	StringVector transactionRecord = pindex->existingFluidTransactions;
+	CFluidEntry fluidIndex = pindex->fluidParams;
+	StringVector transactionRecord = fluidIndex.fluidHistory;
 
 	UniValue obj(UniValue::VOBJ);
 
@@ -332,7 +334,8 @@ UniValue fluidcommandshistory(const UniValue& params, bool fHelp) {
 UniValue sterilizeaddresslist(const UniValue& params, bool fHelp) {
 	GetLastBlockIndex(chainActive.Tip());
 	CBlockIndex* pindex = chainActive.Tip();
-	HashVector bannedDatabase = pindex->bannedAddresses;
+	CFluidEntry fluidIndex = pindex->fluidParams;
+	HashVector bannedDatabase = fluidIndex.bannedAddresses;
 	
 	UniValue obj(UniValue::VOBJ);
 
@@ -341,4 +344,19 @@ UniValue sterilizeaddresslist(const UniValue& params, bool fHelp) {
     }
     
 	return obj;
+}
+
+UniValue lockdynamic(const UniValue& params, bool fHelp) {
+    if (fHelp || params.size() != 1)
+        throw std::runtime_error(
+            "lockdynamic \"string\"\n"
+            "\nInvest Dynamic into a Fixed Deposit\n"
+            "\nArguments:\n"
+            "1. \"string\"         (string, required) String that has to be hashed.\n"
+            "\nExamples:\n"
+            + HelpExampleCli("stringtohex", "\"Hello World!\"")
+            + HelpExampleRpc("stringtohex", "\"Hello World!\"")
+		);
+        
+        
 }

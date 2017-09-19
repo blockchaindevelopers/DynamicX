@@ -33,6 +33,8 @@
 #include "util.h"
 #include "utilmoneystr.h"
 #include "core_io.h"
+#include "utiltime.h"
+#include "chain.h"
 
 #include "wallet/wallet.h"
 #include "wallet/walletdb.h"
@@ -41,6 +43,41 @@ Fluid fluid;
 
 extern CWallet* pwalletMain;
 bool shouldWeCheckDatabase = true;
+
+int ApproximateBlocksFromTime(int64_t timeConsidered, bool fromScratch) {
+	GetLastBlockIndex(chainActive.Tip());
+	CBlockIndex* pindex = chainActive.Tip();
+	int64_t nHeight = pindex->nHeight;
+	int64_t nTime = pindex->nTime;
+	
+	if(fromScratch)
+		return nHeight + (timeConsidered / (2 * 64));
+	else if (nTime > timeConsidered && !fromScratch)
+		return nHeight + (nTime - timeConsidered / (2 * 64));
+	else
+		return -1; // Ideally shouldn't happen
+}
+
+int64_t ApproximateTimeFromBlocks(int heightConsidered, bool fromScratch) {
+	GetLastBlockIndex(chainActive.Tip());
+	CBlockIndex* pindex = chainActive.Tip();
+	int64_t nHeight = pindex->nHeight;
+	int64_t nTime = pindex->nTime;
+
+	if(fromScratch)
+		return nTime + (heightConsidered * (2*64));
+	else if (nHeight > heightConsidered && !fromScratch)
+		return nTime + (nHeight - heightConsidered * (2*64));
+	else
+		return -1; // Ideally shouldn't happen
+}
+
+bool CheckIfAddressValid(std::string string) {
+	
+	CDynamicAddress address; address.SetString(string);
+	return address.IsValid();
+	
+}
 
 bool getBlockFromHeader(const CBlockHeader& blockHeader, CBlock &block) {
 	uint256 hash = blockHeader.GetHash();
@@ -89,101 +126,45 @@ bool Fluid::InitiateFluidVerify(CDynamicAddress dynamicAddress) {
 #endif
 }
 
-/** Checks if any given address is a master key, and if so, which one */
-bool Fluid::IsGivenKeyMaster(CDynamicAddress inputKey, int &whichOne) {
-	whichOne = 0;
-	bool addressOne;
-	{
-		CDynamicAddress considerX; considerX = fluidImportantAddress(KEY_UNE);
-		addressOne = (considerX == inputKey);
-		if(addressOne) whichOne = 1;
-	}
-	bool addressTwo;
-	{
-		CDynamicAddress considerY; considerY = fluidImportantAddress(KEY_DEUX);
-		addressTwo = (considerY == inputKey);
-		if(addressTwo) whichOne = 2;
-	}
-	bool addressThree;
-	{
-		CDynamicAddress considerZ; considerZ = fluidImportantAddress(KEY_TROIS);
-		addressThree = (considerZ == inputKey);
-		if(addressThree) whichOne = 3;
+/** Checks if any given address is a current master key (invoked by RPC) */
+bool Fluid::IsGivenKeyMaster(CDynamicAddress inputKey) {
+	GetLastBlockIndex(chainActive.Tip());
+	CBlockIndex* pindex = chainActive.Tip();
+	
+	for (const std::string& address : pindex->fluidParams.fluidManagers) {
+		CDynamicAddress attemptKey; attemptKey.SetString(address);
+		if (inputKey.IsValid() && attemptKey.IsValid() && inputKey == attemptKey)
+			return true;
 	}
 	
-	if (addressOne ||
-		addressTwo ||
-		addressThree)
-		return true;
-	else
-		return false;
-}
-
-/** Checks how many Fluid Keys the wallet owns */
-bool Fluid::HowManyKeysWeHave(CDynamicAddress inputKey, bool &keyOne, bool &keyTwo, bool &keyThree) {
-	keyOne = false, keyTwo = false, keyThree = false; // Assume first
-	int verifyNumber;
-	
-	for (int x = 0; x <= 3; x++) {
-		if(IsGivenKeyMaster(inputKey, verifyNumber)) {
-			if(InitiateFluidVerify(inputKey)) {
-				if(verifyNumber == 1)
-					keyOne = true;
-				else if (verifyNumber == 2)
-					keyTwo = true;
-				else if (verifyNumber == 3)
-					keyThree = true;
-			}
-		}
-	}
-	
-	if (keyOne == true || keyTwo == true || keyThree == true)
-		return true;
-	else
-		return false;
+	return false;
 }
 
 /** Checks whether as to parties have actually signed it - please use this with ones with the OP_CODE */
 bool Fluid::CheckIfQuorumExists(std::string token, std::string &message, bool individual) {
-	bool addressOneConsents, addressTwoConsents, addressThreeConsents;
+	std::pair<CDynamicAddress, bool> keyOne;
+	std::pair<CDynamicAddress, bool> keyTwo;
+	keyOne.second = false, keyTwo.second = false;
 	
-	if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_UNE), message, 1))
-		if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_UNE), message, 2))
-			addressOneConsents = false;
-		else 
-			addressOneConsents = true;
-	else 	addressOneConsents = true;
-
-	if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_DEUX), message,1 ))
-		if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_DEUX), message, 2))
-			addressTwoConsents = false;
-		else 
-			addressTwoConsents = true;
-	else 	addressTwoConsents = true;
-		
-	if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_TROIS), message, 1))
-		if (!GenericVerifyInstruction(token, fluidImportantAddress(KEY_TROIS), message ,2))
-			addressThreeConsents = false;
-		else 
-			addressThreeConsents = true;
-	else 	addressThreeConsents = true;
-
-	if (individual) {
-		if (addressOneConsents == true ||
-			addressTwoConsents == true ||
-			addressThreeConsents == true)
-			return true;
-		else
+	GetLastBlockIndex(chainActive.Tip());
+	CBlockIndex* pindex = chainActive.Tip();
+	
+	for (const std::string& address : pindex->fluidParams.fluidManagers) {
+		CDynamicAddress attemptKey; attemptKey.SetString(address);
+		if (!attemptKey.IsValid())
 			return false;
-	} else {
-	if 	( (addressOneConsents && addressTwoConsents) ||
-		  (addressTwoConsents && addressThreeConsents) ||
-		  (addressOneConsents && addressThreeConsents)
-		)
-		return true;
-	else
-		return false;
+		
+		if ((GenericVerifyInstruction(token, attemptKey, message, 1) || GenericVerifyInstruction(token, attemptKey, message, 2))
+			&& !keyTwo.second
+			&& attemptKey.ToString() != keyTwo.first.ToString())
+			keyOne = std::make_pair(attemptKey, true);
+		else if ((GenericVerifyInstruction(token, attemptKey, message, 1) || GenericVerifyInstruction(token, attemptKey, message, 2)) 
+				 && keyOne.second
+				 && attemptKey.ToString() != keyOne.first.ToString())
+			keyTwo = std::make_pair(attemptKey, true);
 	}
+	
+	return (keyOne.second && keyTwo.second);
 }
 
 
@@ -559,13 +540,16 @@ void Fluid::AddRemoveBanAddresses(const CBlockHeader& blockHeader, HashVector& b
 /* Check if transaction exists in record */
 bool Fluid::CheckTransactionInRecord(CScript fluidInstruction, CBlockIndex* pindex) {
 	std::string verificationString;
-	StringVector transactionRecord;
+	CFluidEntry fluidIndex;
 	if (chainActive.Height() <= minimumThresholdForBanning || !shouldWeCheckDatabase)
 		return false;
-	else if (pindex == nullptr) 
-		transactionRecord = chainActive.Tip()->existingFluidTransactions;
-	else
-		transactionRecord = pindex->existingFluidTransactions;
+	else if (pindex == nullptr) {
+		GetLastBlockIndex(chainActive.Tip());
+		fluidIndex = chainActive.Tip()->fluidParams;
+	} else
+		fluidIndex = pindex->fluidParams;
+	
+	StringVector transactionRecord = fluidIndex.fluidHistory;
 	
 	if (IsTransactionFluid(fluidInstruction)) {
 			verificationString = ScriptToAsmStr(fluidInstruction);
@@ -587,15 +571,17 @@ bool Fluid::CheckTransactionInRecord(CScript fluidInstruction, CBlockIndex* pind
 
 bool Fluid::CheckIfAddressIsBlacklisted(CScript scriptPubKey, CBlockIndex* pindex) {
 	/* Step 1: Copy vector */
-	HashVector bannedDatabase;
-	
+	CFluidEntry fluidIndex;
 	if (chainActive.Height() <= minimumThresholdForBanning || !shouldWeCheckDatabase)
 		return false;
-	else if (pindex == nullptr) 
-		bannedDatabase = chainActive.Tip()->bannedAddresses;
-	else
-		bannedDatabase = pindex->bannedAddresses;
+	else if (pindex == nullptr) {
+		GetLastBlockIndex(chainActive.Tip());
+		fluidIndex = chainActive.Tip()->fluidParams;
+	} else
+		fluidIndex = pindex->fluidParams;
 	
+	HashVector bannedDatabase = fluidIndex.bannedAddresses;
+
 	CTxDestination source;
 	/* Step 2: Get destination */
 	if (ExtractDestination(scriptPubKey, source)){
@@ -619,7 +605,6 @@ bool Fluid::CheckIfAddressIsBlacklisted(CScript scriptPubKey, CBlockIndex* pinde
 
 bool Fluid::ProcessBanEntry(std::string getBanInstruction, int64_t timestamp, HashVector& bannedList) {
 	uint256 entry;
-	std::string one = fluidImportantAddress(KEY_UNE), two = fluidImportantAddress(KEY_DEUX), three = fluidImportantAddress(KEY_TROIS);
 	/* Can we get hash to insert? */
 	if (!GenericParseHash(getBanInstruction, timestamp, entry))
 		return false;
@@ -630,11 +615,6 @@ bool Fluid::ProcessBanEntry(std::string getBanInstruction, int64_t timestamp, Ha
 	{
 		/* Is it already there? */
 		if (offendingHash == entry) {
-			return false;
-			/* You can't jsut ban the hodl addresses */
-		} else if ( entry == Hash(one.begin(), one.end()) ||
-					entry == Hash(two.begin(), two.end()) ||
-					entry == Hash(three.begin(), three.end()) ) {
 			return false;
 		}
 	}
@@ -815,59 +795,66 @@ bool Fluid::CheckTransactionToBlock(const CTransaction &transaction, const CBloc
 
 void BuildFluidInformationIndex(CBlockIndex* pindex, CAmount &nExpectedBlockValue, CAmount nFees, CAmount nValueIn, 
 								CAmount nValueOut, bool fDynodePaid) {
-	
 	CBlockIndex* prevIndex = pindex->pprev;
 	const CBlockHeader& previousBlock = pindex->pprev->GetBlockHeader();
+	
+	CFluidEntry FluidIndex;
+	CFluidEntry prevFluidIndex = pindex->pprev->fluidParams;
 	
 	CAmount fluidIssuance, dynamicBurnt, newReward = 0, newDynodeReward = 0;
 	CDynamicAddress addressX;
 	
-	if (fluid.GetMintingInstructions(previousBlock, addressX, fluidIssuance)) {
-	    nExpectedBlockValue = 	getDynodeSubsidyWithOverride(prevIndex->overridenDynodeReward, fDynodePaid) + 
-								getBlockSubsidyWithOverride(prevIndex->nHeight, nFees, prevIndex->overridenBlockReward) + 
-								fluidIssuance;
-	} else {
-		nExpectedBlockValue = 	getDynodeSubsidyWithOverride(prevIndex->overridenDynodeReward, fDynodePaid) + 
-								getBlockSubsidyWithOverride(prevIndex->nHeight, nFees, prevIndex->overridenBlockReward);
-	}
-
-    // Get Destruction Transactions on the Network
-    fluid.GetDestructionTxes(previousBlock, dynamicBurnt);
-
-   	pindex->nMoneySupply = (prevIndex? prevIndex->nMoneySupply : 0) + (nValueOut - nValueIn) - dynamicBurnt;
-   	pindex->nDynamicBurnt = (prevIndex? prevIndex->nDynamicBurnt : 0) + dynamicBurnt;
-
-	// Get override reward transactions from the network
 	if (!fluid.GetProofOverrideRequest(previousBlock, newReward)) {
-			pindex->overridenBlockReward = (prevIndex? prevIndex->overridenBlockReward : 0);
+			FluidIndex.blockReward = (prevIndex? prevFluidIndex.blockReward : 0);
 	} else {
-			pindex->overridenBlockReward = newReward;
+			FluidIndex.blockReward = newReward;
 	}
 	 
 	if (!fluid.GetDynodeOverrideRequest(previousBlock, newDynodeReward)) {
-	 		pindex->overridenDynodeReward = (prevIndex? prevIndex->overridenDynodeReward : 0);
+	 		FluidIndex.dynodeReward = (prevIndex? prevFluidIndex.dynodeReward : 0);
 	} else {
-	 		pindex->overridenDynodeReward = newDynodeReward;
+	 		FluidIndex.dynodeReward = newDynodeReward;
 	}
 	
-	HashVector bannedAddresses;
-	StringVector existingFluidTransactions;
+	if (fluid.GetMintingInstructions(previousBlock, addressX, fluidIssuance)) {
+	    nExpectedBlockValue = 	getDynodeSubsidyWithOverride(prevFluidIndex.dynodeReward, fDynodePaid) + 
+								getBlockSubsidyWithOverride(prevIndex->nHeight, nFees, prevFluidIndex.blockReward) + 
+								fluidIssuance;
+	} else {
+		nExpectedBlockValue = 	getDynodeSubsidyWithOverride(prevFluidIndex.dynodeReward, fDynodePaid) + 
+								getBlockSubsidyWithOverride(prevIndex->nHeight, nFees, prevFluidIndex.blockReward);
+	}
 	
-	if (chainActive.Height() >= minimumThresholdForBanning) {
+	fluid.GetDestructionTxes(previousBlock, dynamicBurnt);
+
+   	pindex->nMoneySupply = (prevIndex? prevIndex->nMoneySupply : 0) + nExpectedBlockValue - dynamicBurnt;
+   	FluidIndex.nDynamicBurnt = (prevIndex? prevFluidIndex.nDynamicBurnt : 0) + dynamicBurnt;
+
+	HashVector bannedAddresses;
+	StringVector fluidHistory;
+	
+	if (prevIndex->nHeight + 1  >= minimumThresholdForBanning) {
 		// Handle the ban address system and update the vector
-		bannedAddresses.insert(bannedAddresses.end(), prevIndex->bannedAddresses.begin(), prevIndex->bannedAddresses.end());	
+		bannedAddresses.insert(bannedAddresses.end(), prevFluidIndex.bannedAddresses.begin(), prevFluidIndex.bannedAddresses.end());	
 		fluid.AddRemoveBanAddresses(prevIndex->GetBlockHeader(), bannedAddresses);
 
 		std::set<uint256> set(bannedAddresses.begin(), bannedAddresses.end());
 		bannedAddresses.assign(set.begin(), set.end());
-		pindex->bannedAddresses = bannedAddresses;
+		FluidIndex.bannedAddresses = bannedAddresses;
 		
 		// Scan and add Fluid Transactions to the Database
-		existingFluidTransactions.insert(existingFluidTransactions.end(), prevIndex->existingFluidTransactions.begin(), prevIndex->existingFluidTransactions.end());
-		fluid.AddFluidTransactionsToRecord(prevIndex->GetBlockHeader(), existingFluidTransactions);
+		fluidHistory.insert(fluidHistory.end(), prevFluidIndex.fluidHistory.begin(), prevFluidIndex.fluidHistory.end());
+		fluid.AddFluidTransactionsToRecord(prevIndex->GetBlockHeader(), fluidHistory);
 
-		std::set<std::string> setX(existingFluidTransactions.begin(), existingFluidTransactions.end());
-		existingFluidTransactions.assign(setX.begin(), setX.end());
-		pindex->existingFluidTransactions = existingFluidTransactions;
+		std::set<std::string> setX(fluidHistory.begin(), fluidHistory.end());
+		fluidHistory.assign(setX.begin(), setX.end());
+		FluidIndex.fluidHistory = fluidHistory;
 	}
+	
+	pindex->fluidParams = FluidIndex;
+}
+	
+std::string generateInvestmentStr(int64_t releaseHeight, CAmount investment, CDynamicAddress destination) {
+	return StitchString(StitchString(std::to_string(releaseHeight), std::to_string(investment), false),
+						destination.ToString(), false);
 }

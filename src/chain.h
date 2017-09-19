@@ -12,6 +12,7 @@
 #include "pow.h"
 #include "tinyformat.h"
 
+StringVector InitialiseDefaults();
 
 /**
  * Maximum amount of time that a block timestamp is allowed to exceed the
@@ -97,6 +98,125 @@ enum BlockStatus {
     BLOCK_FAILED_MASK        =   BLOCK_FAILED_VALID | BLOCK_FAILED_CHILD,
 };
 
+class CInvestment {
+public:
+	int64_t releaseHeight;
+	CAmount investment;
+	std::string destination;
+
+	CInvestment() {
+        SetNull();
+    }
+
+	ADD_SERIALIZE_METHODS;
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+		READWRITE(VARINT(releaseHeight));
+		READWRITE(VARINT(investment));
+		READWRITE(destination);
+	}
+
+    inline friend bool operator==(const CInvestment &a, const CInvestment &b) {
+        return (
+			a.releaseHeight == b.releaseHeight
+			&& a.investment == b.investment
+			&& a.destination == b.destination
+		);
+    }
+
+    inline CInvestment operator=(const CInvestment &b) {
+		releaseHeight = b.releaseHeight;
+		investment = b.investment;
+		destination = b.destination;
+        return *this;
+    }
+
+    inline friend bool operator!=(const CInvestment &a, const CInvestment &b) {
+        return !(a == b);
+    }
+    
+    inline void SetNull() { 
+		releaseHeight = 0; 
+		investment = 0; 
+		destination = "";
+	}
+
+    inline bool IsNull() const { 
+		return (releaseHeight == 0 && investment == 0 && destination == ""); 
+	}
+};
+
+/** Fluid Protocol Entry Corresponding to Each Block */
+class CFluidEntry
+{
+public:
+	CAmount blockReward;
+	CAmount dynodeReward;
+	CAmount nDynamicBurnt;
+	HashVector bannedAddresses;
+	StringVector fluidHistory;
+	StringVector fluidManagers;
+    std::vector<CInvestment> investments;
+    
+	CFluidEntry() {
+        SetNull();
+    }
+
+	ADD_SERIALIZE_METHODS;
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+		READWRITE(VARINT(blockReward));
+		READWRITE(VARINT(dynodeReward));
+		READWRITE(bannedAddresses);
+		READWRITE(fluidHistory);
+		READWRITE(fluidManagers);
+		READWRITE(investments);
+		READWRITE(nDynamicBurnt);
+	}
+
+    inline friend bool operator==(const CFluidEntry &a, const CFluidEntry &b) {
+        return (
+			a.bannedAddresses == b.bannedAddresses
+			&& a.fluidHistory == b.fluidHistory
+			&& a.fluidManagers == b.fluidManagers
+			&& a.investments == b.investments
+			&& a.blockReward == b.blockReward
+			&& a.dynodeReward == b.dynodeReward
+			&& a.nDynamicBurnt == b.nDynamicBurnt
+		);
+    }
+
+    inline CFluidEntry operator=(const CFluidEntry &b) {
+		bannedAddresses = b.bannedAddresses;
+		fluidHistory = b.fluidHistory;
+		fluidManagers = b.fluidManagers;
+		investments = b.investments;
+		blockReward = b.blockReward;
+		dynodeReward = b.dynodeReward;
+		nDynamicBurnt = b.nDynamicBurnt;
+        return *this;
+    }
+
+    inline friend bool operator!=(const CFluidEntry &a, const CFluidEntry &b) {
+        return !(a == b);
+    }
+    
+    inline void SetNull() { 
+		bannedAddresses.clear(); 
+		fluidHistory.clear(); 
+		investments.clear();
+		fluidManagers = InitialiseDefaults(); // Not really null but this is the default parameter
+		blockReward = 0;
+		dynodeReward = 0;
+		nDynamicBurnt = 0;
+	}
+
+    inline bool IsNull() const { 
+		return (bannedAddresses.empty() && fluidHistory.empty() && fluidManagers == InitialiseDefaults() 
+				&& investments.empty() && blockReward == 0 && dynodeReward == 0 && nDynamicBurnt == 0); 
+	}
+};
+
 /** The block chain is a tree shaped structure starting with the
  * genesis block at the root, with each block potentially having multiple
  * candidates to be the next block. A blockindex may have multiple pprev pointing
@@ -148,15 +268,12 @@ public:
     unsigned int nBits;
     unsigned int nNonce;
 
-	//! DynamicX Protocol Inferences from Master Addresses and External Functions
+	//! Money Supply Tracking
 	CAmount nMoneySupply;
-	CAmount nDynamicBurnt;
-	CAmount overridenBlockReward;
-	CAmount overridenDynodeReward;
-	std::vector<uint256> bannedAddresses;
-	std::vector<std::string> existingFluidTransactions;
-	bool allowFluidTransactions;
-	
+
+	//! DynamicX Protocol Inferences from Master Addresses and External Functions
+	CFluidEntry fluidParams;
+    
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
     uint32_t nSequenceId;
 
@@ -175,12 +292,7 @@ public:
         nStatus = 0;
         nSequenceId = 0;
 		nMoneySupply = 0;
-		nDynamicBurnt = 0;
-		overridenBlockReward = 0;
-		overridenDynodeReward = 0;
-		bannedAddresses.clear();
-		existingFluidTransactions.clear();
-		allowFluidTransactions = true; // Must default to true
+		fluidParams.SetNull();
 		
         nVersion       = 0;
         hashMerkleRoot = uint256();
@@ -343,15 +455,9 @@ public:
         READWRITE(hashMerkleRoot);
         READWRITE(nTime);
         READWRITE(nBits);
-        READWRITE(nNonce);
-        // block fluid tracking parameters 
+        READWRITE(nNonce);	
         READWRITE(nMoneySupply);
-		READWRITE(nDynamicBurnt);
-		READWRITE(overridenBlockReward);
-		READWRITE(overridenDynodeReward);
-		READWRITE(bannedAddresses);
-		READWRITE(existingFluidTransactions);
-		READWRITE(allowFluidTransactions);
+		READWRITE(fluidParams);
     }
 
     uint256 GetBlockHash() const

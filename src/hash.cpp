@@ -12,11 +12,6 @@
 
 #include "pubkey.h"
 
-int argonParameter_mCost = 128;
-int argonParameter_lanes = 2;
-int argonParameter_threads = 1;
-int argonParameter_TCost = 1;
-
 inline uint32_t ROTL32(uint32_t x, int8_t r)
 {
     return (x << r) | (x >> (32 - r));
