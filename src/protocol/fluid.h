@@ -96,6 +96,7 @@ public:
 	bool GenericSignMessage(std::string message, std::string &signedString, CDynamicAddress signer);
 	bool GenericParseNumber(std::string scriptString, int64_t timeStamp, CAmount &howMuch, bool txCheckPurpose=false);
 	bool GenericParseHash(std::string scriptString, int64_t timeStamp, uint256 &hash, bool txCheckPurpose=false);
+	bool GenericParseAddrs(std::string scriptString, int64_t timeStamp, std::pair<CDynamicAddress, CDynamicAddress> &addresses, bool txCheckPurpose=false);
 	bool GenericVerifyInstruction(std::string uniqueIdentifier, CDynamicAddress signer, std::string &messageTokenKey, int whereToLook=1);
 	
 	bool ParseMintKey(int64_t nTime, CDynamicAddress &destination, CAmount &coinAmount, std::string uniqueIdentifier, bool txCheckPurpose=false);
@@ -106,10 +107,13 @@ public:
 	bool GetProofOverrideRequest(const CBlockHeader& blockHeader, CAmount &howMuch);
 	bool GetDynodeOverrideRequest(const CBlockHeader& blockHeader, CAmount &howMuch);
 	
+	void ReplaceFluidMasters(const CBlockHeader& blockHeader, StringVector& fluidManagers);
 	void AddRemoveBanAddresses(const CBlockHeader& blockHeader, HashVector& bannedList);
+	
 	bool CheckIfAddressIsBlacklisted(CScript scriptPubKey, CBlockIndex* pindex = nullptr);
 	bool ProcessBanEntry(std::string getBanInstruction, int64_t timestamp, HashVector& bannedList);
 	bool RemoveEntry(std::string getBanInstruction, int64_t timestamp, HashVector& bannedList);
+	bool ReplaceMasters(std::string getReplaceInstruction, int64_t timestamp, StringVector& masterList);
 	
 	bool InsertTransactionToRecord(CScript fluidInstruction, StringVector& transactionRecord);
 	bool CheckTransactionInRecord(CScript fluidInstruction, CBlockIndex* pindex = nullptr);

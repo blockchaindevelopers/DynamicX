@@ -142,7 +142,7 @@ const char* GetOpName(opcodetype opcode)
 	// Fluid Autonomus Monetary Management System (FAM2S)
 	case OP_MINT				   : return "OP_MINT";
 	case OP_DESTROY				   : return "OP_DESTROY";
-	case OP_DROPLET				   : return "OP_DROPLET";
+	case OP_REASSIGN			   : return "OP_REASSIGN";
 	case OP_REWARD_DYNODE		   : return "OP_REWARD_DYNODE";
 	case OP_REWARD_MINING		   : return "OP_REWARD_MINING";
 	case OP_STERILIZE			   : return "OP_STERILIZE";

@@ -32,6 +32,7 @@ static const int IDENTIFIER_DEACTIVATE_TX 			= 6;
 static const int IDENTIFIER_REALLOW_TX 				= 7;
 static const int IDENTIFIER_STERILIZE_TX 			= 8;
 static const int IDENTIFIER_INVEST_TX	 			= 9;
+static const int IDENTIFIER_REASSIGN_TX	 			= 10;
 
 enum ProtocolCodes {
 	MINT_TX 			= IDENTIFIER_MINT_TX,
@@ -43,6 +44,7 @@ enum ProtocolCodes {
 	REALLOW_TX			= IDENTIFIER_REALLOW_TX,
 	STERILIZE_TX		= IDENTIFIER_STERILIZE_TX,
 	INVEST_TX			= IDENTIFIER_INVEST_TX,
+	REASSIGN_TX			= IDENTIFIER_REASSIGN_TX,
 	
 	NO_TX = IDENTIFIER_NO_TX
 };
@@ -237,7 +239,7 @@ enum opcodetype
 	// Fluid Autonomus Monetary Management System (FAM2S)
     OP_MINT = 0xc0,
 	OP_DESTROY = 0xc1,
-	OP_DROPLET = 0xc2,
+	OP_REASSIGN = 0xc2,
 	OP_REWARD_DYNODE = 0xc3,
 	OP_REWARD_MINING = 0xc4,
 	OP_STERILIZE = 0xc5,
@@ -741,6 +743,9 @@ public:
 				break;
 			case INVEST_TX:
 				return (size() > 0 && *begin() == OP_INVEST);
+				break;
+			case REASSIGN_TX:
+				return (size() > 0 && *begin() == OP_REASSIGN);
 				break;
 			default:
 				throw std::runtime_error("Protocol code is of literally nothing!");

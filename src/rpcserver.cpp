@@ -417,6 +417,7 @@ static const CRPCCommand vRPCCommands[] =
     { "Protocol",           "stringtohash",	 		  &stringtohash,		   true  },
     { "Protocol",           "sterilizeaddresslist",	  &sterilizeaddresslist,   true  },
     { "Protocol",           "fluidcommandshistory",	  &fluidcommandshistory,   true  },
+    { "Protocol",           "getfluidmasters",	      &getfluidmasters,   	   true  },
 
     /* Syscoin-ported DynamicX Protocol */
     { "Identity",           "identitynew",		  	  &identitynew,		  	  	true  },

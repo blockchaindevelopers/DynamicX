@@ -142,10 +142,8 @@ bool Fluid::IsGivenKeyMaster(CDynamicAddress inputKey) {
 
 /** Checks whether as to parties have actually signed it - please use this with ones with the OP_CODE */
 bool Fluid::CheckIfQuorumExists(std::string token, std::string &message, bool individual) {
-	bool fFirstSet = false;
 	std::pair<CDynamicAddress, bool> keyOne;
 	std::pair<CDynamicAddress, bool> keyTwo;
-	keyOne.first = "", keyTwo.first = "";
 	keyOne.second = false, keyTwo.second = false;
 	
 	GetLastBlockIndex(chainActive.Tip());
@@ -157,17 +155,12 @@ bool Fluid::CheckIfQuorumExists(std::string token, std::string &message, bool in
 			return false;
 		
 		if ((GenericVerifyInstruction(token, attemptKey, message, 1) || GenericVerifyInstruction(token, attemptKey, message, 2))
-			&& !fFirstSet && attemptKey.ToString() != keyTwo.first.ToString()) {
+			&& !keyOne.second && attemptKey.ToString() != keyTwo.first.ToString())
 			keyOne = std::make_pair(attemptKey, true);
-			fFirstSet = true;
-			LogPrintf("Key One Recognised as: %s\n", attemptKey.ToString());
-		}
 		
 		if ((GenericVerifyInstruction(token, attemptKey, message, 1) || GenericVerifyInstruction(token, attemptKey, message, 2))
-			&& fFirstSet && attemptKey.ToString() != keyOne.first.ToString()) {
+			&& keyOne.second && attemptKey.ToString() != keyOne.first.ToString())
 			keyTwo = std::make_pair(attemptKey, true);
-			LogPrintf("Key Two Recognised as: %s\n", attemptKey.ToString());
-		}
 	}
 	
 	if (individual && keyOne.first.ToString() != keyTwo.first.ToString())
@@ -338,6 +331,46 @@ bool Fluid::GenericParseHash(std::string scriptString, int64_t timeStamp, uint25
 	
 	LogPrintf("Processed UINT256 HASH: %s\n", hash.ToString());
 	
+	return true;
+}
+
+bool Fluid::GenericParseAddrs(std::string scriptString, int64_t timeStamp, std::pair<CDynamicAddress, CDynamicAddress> &addresses, bool txCheckPurpose) { 
+	// Step 1: Make sense out of ASM ScriptKey, split OPCODE from Hex
+	std::string r = getRidOfScriptStatement(scriptString); scriptString = r;
+	
+	// Step 1.1.1: Check if our key matches the required quorum
+	std::string message;
+	if (!CheckNonScriptQuorum(scriptString, message)) {
+		LogPrintf("GenericParseHash: GenericVerifyInstruction FAILED! Cannot continue!, identifier: %s\n", scriptString);
+		return false;
+	}
+	
+	// Step 1.2: Convert new Hex Data to dehexed token
+	std::string dehexString = HexToString(scriptString);
+	scriptString = dehexString;
+	
+	// Step 2: Convert the Dehexed Token to sense
+	StringVector strs, ptrs; SeperateString(dehexString, strs, false); SeperateString(strs.at(0), ptrs, true);
+	
+	if(1 >= (int)strs.size())
+		return false;
+	
+	// Step 3: Convert the token to our variables
+	std::string lq = ptrs.at(0);
+	std::string lr = ptrs.at(1);
+	std::string ls = ptrs.at(2); ScrubString(ls, true);
+	
+	// Step 4: Final steps of parsing, is the timestamp exceeding five minutes?
+	if (timeStamp > stringToInteger(ls) + maximumFluidDistortionTime && !txCheckPurpose)
+		return false;
+	
+	// Step 3: Get addresses
+	std::pair<CDynamicAddress, CDynamicAddress> pair;
+	addresses.first.SetString(lq); addresses.second.SetString(lr);
+	
+	if (!addresses.first.IsValid() || !addresses.second.IsValid())
+		return false;
+
 	return true;
 }
 
@@ -546,6 +579,28 @@ void Fluid::AddRemoveBanAddresses(const CBlockHeader& blockHeader, HashVector& b
 	}
 }
 
+void Fluid::ReplaceFluidMasters(const CBlockHeader& blockHeader, StringVector& fluidManagers) {
+	/* Step One: Get the bloukz! */
+	CBlock block; 
+	std::string message;
+	if(!getBlockFromHeader(blockHeader, block))
+		throw std::runtime_error("Cannot access blockchain database!");
+	
+	/* Step Two: Process transactions */
+    for (const CTransaction& tx : block.vtx) {
+		for (const CTxOut& txout : tx.vout) {
+			/* First those who add addresses */
+			if (txout.scriptPubKey.IsProtocolInstruction(REASSIGN_TX)) {
+				if (CheckIfQuorumExists(ScriptToAsmStr(txout.scriptPubKey), message)) {
+					if (!ReplaceMasters(ScriptToAsmStr(txout.scriptPubKey), block.nTime, fluidManagers)) {
+						LogPrintf("Master replacement from pubkey: %s , FAILED!\n", ScriptToAsmStr(txout.scriptPubKey));
+					}
+				}
+			}
+		}
+	}
+}
+
 /* Check if transaction exists in record */
 bool Fluid::CheckTransactionInRecord(CScript fluidInstruction, CBlockIndex* pindex) {
 	std::string verificationString;
@@ -612,6 +667,25 @@ bool Fluid::CheckIfAddressIsBlacklisted(CScript scriptPubKey, CBlockIndex* pinde
 	return false;
 }
 
+bool Fluid::ReplaceMasters(std::string getReplaceInstruction, int64_t timestamp, StringVector& masterList) {
+	std::pair<CDynamicAddress, CDynamicAddress> entry;
+
+	if (!GenericParseAddrs(getReplaceInstruction, timestamp, entry))
+		return false;
+	
+	LogPrintf("ReplaceMasters(): Address %s to be replaced with %s \n", entry.first.ToString(), entry.second.ToString());
+	
+	for (const std::string& masterKey : masterList)
+	{
+		if (masterKey == entry.first.ToString())
+			masterList.erase(std::remove(masterList.begin(), masterList.end(), entry.first.ToString()), masterList.end()); // Remove old key
+	}
+	
+	masterList.push_back(entry.second.ToString()); // Pushback new one
+	
+	return true;
+}
+
 bool Fluid::ProcessBanEntry(std::string getBanInstruction, int64_t timestamp, HashVector& bannedList) {
 	uint256 entry;
 	/* Can we get hash to insert? */
@@ -676,7 +750,6 @@ bool Fluid::InsertTransactionToRecord(CScript fluidInstruction, StringVector& tr
 						return false;
 					}
 				}
-				
 				transactionRecord.push_back(verificationString);
 				return true;
 			}
@@ -838,17 +911,25 @@ void BuildFluidInformationIndex(CBlockIndex* pindex, CAmount &nExpectedBlockValu
 
    	pindex->nMoneySupply = (prevIndex? prevIndex->nMoneySupply : 0) + nExpectedBlockValue - dynamicBurnt;
    	FluidIndex.nDynamicBurnt = (prevIndex? prevFluidIndex.nDynamicBurnt : 0) + dynamicBurnt;
-
+		
 	HashVector bannedAddresses;
-	StringVector fluidHistory;
+	StringVector fluidHistory, fluidManagers;
 	
 	if (prevIndex->nHeight + 1  >= minimumThresholdForBanning) {
+		// Handle Fluid Managers
+		fluidManagers.insert(fluidManagers.end(), prevFluidIndex.fluidManagers.begin(), prevFluidIndex.fluidManagers.end());	
+		fluid.ReplaceFluidMasters(prevIndex->GetBlockHeader(), fluidManagers);
+
+		std::set<std::string> set(fluidManagers.begin(), fluidManagers.end());
+		fluidManagers.assign(set.begin(), set.end());
+		FluidIndex.fluidManagers = fluidManagers;
+		
 		// Handle the ban address system and update the vector
 		bannedAddresses.insert(bannedAddresses.end(), prevFluidIndex.bannedAddresses.begin(), prevFluidIndex.bannedAddresses.end());	
 		fluid.AddRemoveBanAddresses(prevIndex->GetBlockHeader(), bannedAddresses);
 
-		std::set<uint256> set(bannedAddresses.begin(), bannedAddresses.end());
-		bannedAddresses.assign(set.begin(), set.end());
+		std::set<uint256> setW(bannedAddresses.begin(), bannedAddresses.end());
+		bannedAddresses.assign(setW.begin(), setW.end());
 		FluidIndex.bannedAddresses = bannedAddresses;
 		
 		// Scan and add Fluid Transactions to the Database
@@ -857,6 +938,7 @@ void BuildFluidInformationIndex(CBlockIndex* pindex, CAmount &nExpectedBlockValu
 
 		std::set<std::string> setX(fluidHistory.begin(), fluidHistory.end());
 		fluidHistory.assign(setX.begin(), setX.end());
+		
 		FluidIndex.fluidHistory = fluidHistory;
 	}
 	
