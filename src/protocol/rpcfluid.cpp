@@ -47,7 +47,7 @@ extern void SendCustomTransaction(CScript generatedScript, CWalletTx& wtxNew, CA
 opcodetype getOpcodeFromString(std::string input) {
     if (input == "OP_MINT") return OP_MINT;
 	else if (input == "OP_DESTROY") return OP_DESTROY;
-	else if (input == "OP_DROPLET") return OP_DROPLET;
+	else if (input == "OP_REASSIGN") return OP_REASSIGN;
 	else if (input == "OP_REWARD_DYNODE") return OP_REWARD_DYNODE;
 	else if (input == "OP_REWARD_MINING") return OP_REWARD_MINING;
 	else if (input == "OP_STERILIZE") return OP_STERILIZE;
@@ -157,7 +157,7 @@ UniValue sendfluidtransaction(const UniValue& params, bool fHelp)
     
     if (fHelp || params.size() != 2)
         throw std::runtime_error(
-            "sendfluidtransaction \"OP_MINT || OP_DESTROY || OP_DROPLET || OP_REWARD_DYNODE || OP_REWARD_MINING || OP_STERILIZE || OP_FLUID_DEACTIVATE || OP_FLUID_REACTIVATE\" \"hexstring\"\n"
+            "sendfluidtransaction \"OP_MINT || OP_DESTROY || OP_REASSIGN || OP_REWARD_DYNODE || OP_REWARD_MINING || OP_STERILIZE || OP_FLUID_DEACTIVATE || OP_FLUID_REACTIVATE\" \"hexstring\"\n"
             "\Send Fluid transactions to the network\n"
             "\nArguments:\n"
             "1. \"opcode\"  (string, required) The Fluid operation to be executed.\n"
@@ -346,17 +346,18 @@ UniValue sterilizeaddresslist(const UniValue& params, bool fHelp) {
 	return obj;
 }
 
-UniValue lockdynamic(const UniValue& params, bool fHelp) {
-    if (fHelp || params.size() != 1)
-        throw std::runtime_error(
-            "lockdynamic \"string\"\n"
-            "\nInvest Dynamic into a Fixed Deposit\n"
-            "\nArguments:\n"
-            "1. \"string\"         (string, required) String that has to be hashed.\n"
-            "\nExamples:\n"
-            + HelpExampleCli("stringtohex", "\"Hello World!\"")
-            + HelpExampleRpc("stringtohex", "\"Hello World!\"")
-		);
-        
-        
+UniValue getfluidmasters(const UniValue& params, bool fHelp) {
+	GetLastBlockIndex(chainActive.Tip());
+	CBlockIndex* pindex = chainActive.Tip();
+	CFluidEntry fluidIndex = pindex->fluidParams;
+	
+	StringVector managerLogs = fluidIndex.fluidManagers;
+
+	UniValue obj(UniValue::VOBJ);
+
+    for (const std::string& manager : managerLogs) {
+		obj.push_back(Pair("manager", manager));
+    }
+    
+	return obj;
 }

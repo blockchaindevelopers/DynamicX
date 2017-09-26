@@ -187,16 +187,16 @@ public:
         if(startNewChain == true) { MineGenesis(genesis, consensus.powLimit, true); }
 
         consensus.hashGenesisBlock = genesis.GetHash();
-
+   		
         if(!startNewChain) {
             assert(consensus.hashGenesisBlock == uint256S("0x00000e838e773c35415a2996c8545ec517875d13d0691d55122c45dbb13b8db0"));
             assert(genesis.hashMerkleRoot == uint256S("0x5ba0a842fae652d9e7a855619cafe34e94f1d5bfab1c32b8ee977db89d3fd754"));
 		}
-		
-        vSeeds.push_back(CDNSSeedData("dnsseeder.io", "dynx.dnsseeder.io"));
-        vSeeds.push_back(CDNSSeedData("dnsseeder.com", "dynx.dnsseeder.com"));
-        vSeeds.push_back(CDNSSeedData("dnsseeder.host", "dynx.dnsseeder.host"));
-        vSeeds.push_back(CDNSSeedData("dnsseeder.net", "dynx.dnsseeder.net"));
+	
+        vSeeds.push_back(CDNSSeedData("dnsseeder.io", "dyn.dnsseeder.io"));
+        vSeeds.push_back(CDNSSeedData("dnsseeder.com", "dyn.dnsseeder.com"));
+        vSeeds.push_back(CDNSSeedData("dnsseeder.host", "dyn.dnsseeder.host"));
+        vSeeds.push_back(CDNSSeedData("dnsseeder.net", "dyn.dnsseeder.net"));
 
         // Dynamic addresses start with 'D'
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,30);
