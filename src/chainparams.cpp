@@ -183,20 +183,20 @@ public:
         nPruneAfterHeight = 20545;
         startNewChain = false;
 
-        genesis = CreateGenesisBlock(1489863148, 423094, UintToArith256(consensus.powLimit).GetCompact(), 1, (1 * COIN));
+        genesis = CreateGenesisBlock(1506385523, 522934, UintToArith256(consensus.powLimit).GetCompact(), 1, (1 * COIN));
         if(startNewChain == true) { MineGenesis(genesis, consensus.powLimit, true); }
 
         consensus.hashGenesisBlock = genesis.GetHash();
-        		
+
         if(!startNewChain) {
-            assert(consensus.hashGenesisBlock == uint256S("0x00000ce9ce63ee661a41dd01fccaa4407e28e684cf925c58c87374082f07806d"));
-            assert(genesis.hashMerkleRoot == uint256S("0xe89257a8e8dc153acd33b55c571d4b4878fce912cc4e334c2a4bddcd3cbbfcc9"));
+            assert(consensus.hashGenesisBlock == uint256S("0x00000e838e773c35415a2996c8545ec517875d13d0691d55122c45dbb13b8db0"));
+            assert(genesis.hashMerkleRoot == uint256S("0x5ba0a842fae652d9e7a855619cafe34e94f1d5bfab1c32b8ee977db89d3fd754"));
 		}
 		
-        vSeeds.push_back(CDNSSeedData("dnsseeder.io", "dyn.dnsseeder.io"));
-        vSeeds.push_back(CDNSSeedData("dnsseeder.com", "dyn.dnsseeder.com"));
-        vSeeds.push_back(CDNSSeedData("dnsseeder.host", "dyn.dnsseeder.host"));
-        vSeeds.push_back(CDNSSeedData("dnsseeder.net", "dyn.dnsseeder.net"));
+        vSeeds.push_back(CDNSSeedData("dnsseeder.io", "dynx.dnsseeder.io"));
+        vSeeds.push_back(CDNSSeedData("dnsseeder.com", "dynx.dnsseeder.com"));
+        vSeeds.push_back(CDNSSeedData("dnsseeder.host", "dynx.dnsseeder.host"));
+        vSeeds.push_back(CDNSSeedData("dnsseeder.net", "dynx.dnsseeder.net"));
 
         // Dynamic addresses start with 'D'
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,30);
@@ -226,19 +226,8 @@ public:
 
         checkpointData = (CCheckpointData) {
             boost::assign::map_list_of
-            (  0, uint256S("0x00000ce9ce63ee661a41dd01fccaa4407e28e684cf925c58c87374082f07806d"))
-            ( 100, uint256S("0x000001d1c23fd5c965b8f5d9914c864b0ec6f9d3b94b8e75df277a69923de547"))
-            ( 1000, uint256S("0x000009047aa21dbe0492cec5161c0d16e67e09772868d3f33660f2fe82469bfc"))
-            ( 2000, uint256S("0x00000c8d245d50f5367fce0395968eede651a57f7d3109391de2a1b1127a3d65"))
-            ( 4000, uint256S("0x000009bb9a4bede31a48de0d0b5855f2216f010b8b9e1b841904e727b96170dd"))
-            ( 8000, uint256S("0x000004afc06a08b1ffff872beb61bf8d24c3f7917b47fb34a538038dbb69d47c"))
-	    ( 16000, uint256S("0x000007acf3133e96fbd19c269dda826a7d493390ff581c8125c8f56769c3959a"))
-	    ( 20547, uint256S("0x000007e2309c07f0c75e2bd31122e2062c24afd4b8a9981b4706f3f9083c5adc"))
-            ( 32000, uint256S("0x00000fb0818a910115ee27577621e8867824f578958fec651423ae8d67d6c6c4"))
-   	    ( 48000, uint256S("0x000008b04997bc4b28909d42b2ce7b15c550609bd08d3a089572885ddce31679"))
-	    ( 64000, uint256S("0x0000014bfcfcd0a0c09508f35aa274e6f181a6e9cfc695498a49a539499de6e5"))
-	    ( 92000, uint256S("0x00000352b5397a483a4cbc8942647f8be0e513d4386d2adfcb03a6299326cd1a")),
-            1489863148, // * UNIX timestamp of last checkpoint block
+            (  0, uint256S("0x00000e838e773c35415a2996c8545ec517875d13d0691d55122c45dbb13b8db0")),
+            1506385523, // * UNIX timestamp of last checkpoint block
             0,          // * total number of transactions between genesis and last checkpoint
             //   (the tx=... number in the SetBestChain debug.log lines)
             2000        // * estimated number of transactions per day after checkpoint
